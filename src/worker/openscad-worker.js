@@ -212,10 +212,56 @@ function applyOverrides(scadContent, parameters) {
 }
 
 /**
- * Render OpenSCAD to STL
+ * Supported output formats
+ */
+const OUTPUT_FORMATS = {
+  STL: 'stl',
+  OBJ: 'obj',
+  OFF: 'off',
+  AMF: 'amf',
+  '3MF': '3mf',
+};
+
+/**
+ * Render using export method (fallback for formats without dedicated renderTo* methods)
+ * @param {string} scadContent - OpenSCAD source code
+ * @param {string} format - Output format (obj, off, amf, 3mf)
+ * @returns {Promise<string|ArrayBuffer>} Rendered data
+ */
+async function renderWithExport(scadContent, format) {
+  // This is a fallback approach if OpenSCAD WASM doesn't have format-specific methods
+  // We'll try using the file system approach: write .scad, export to format
+  
+  const inputFile = '/tmp/input.scad';
+  const outputFile = `/tmp/output.${format}`;
+  
+  try {
+    // Write input file
+    openscadInstance.FS.writeFile(inputFile, scadContent);
+    
+    // Execute OpenSCAD export command
+    // This assumes OpenSCAD WASM supports command-line style operations
+    await openscadInstance.callMain(['-o', outputFile, inputFile]);
+    
+    // Read output file
+    const outputData = openscadInstance.FS.readFile(outputFile);
+    
+    // Clean up
+    openscadInstance.FS.unlink(inputFile);
+    openscadInstance.FS.unlink(outputFile);
+    
+    return outputData;
+  } catch (error) {
+    console.error(`[Worker] Export to ${format} failed:`, error);
+    throw new Error(`Export to ${format.toUpperCase()} format not supported by OpenSCAD WASM`);
+  }
+}
+
+/**
+ * Render OpenSCAD to specified format
  */
 async function render(payload) {
-  const { requestId, scadContent, parameters, timeoutMs, files, mainFile } = payload;
+  const { requestId, scadContent, parameters, timeoutMs, files, mainFile, outputFormat = 'stl' } = payload;
 
   try {
     self.postMessage({
@@ -259,27 +305,72 @@ async function render(payload) {
       }, timeoutMs || 60000);
     });
 
-    // Render to STL
+    // Determine the format to render
+    const format = (outputFormat || 'stl').toLowerCase();
+    const formatName = format.toUpperCase();
+    
+    // Render to specified format
     const renderPromise = (async () => {
-      // Note: renderToStl is a blocking call - we can't get intermediate progress
+      // Note: render methods are blocking calls - we can't get intermediate progress
       // Use indeterminate progress messaging
       self.postMessage({
         type: 'PROGRESS',
-        payload: { requestId, percent: -1, message: 'Rendering model (this may take a while)...' },
+        payload: { requestId, percent: -1, message: `Rendering model to ${formatName} (this may take a while)...` },
       });
 
-      const stlData = await openscadInstance.renderToStl(fullScadContent);
+      let outputData;
+      
+      // Call appropriate render method based on format
+      // OpenSCAD WASM may support: renderToStl, renderToObj, renderToOff, renderToAmf, renderTo3mf
+      switch (format) {
+        case 'stl':
+          outputData = await openscadInstance.renderToStl(fullScadContent);
+          break;
+        case 'obj':
+          // Try renderToObj method if available
+          if (typeof openscadInstance.renderToObj === 'function') {
+            outputData = await openscadInstance.renderToObj(fullScadContent);
+          } else {
+            // Fallback: use writeFile approach
+            outputData = await renderWithExport(fullScadContent, 'obj');
+          }
+          break;
+        case 'off':
+          if (typeof openscadInstance.renderToOff === 'function') {
+            outputData = await openscadInstance.renderToOff(fullScadContent);
+          } else {
+            outputData = await renderWithExport(fullScadContent, 'off');
+          }
+          break;
+        case 'amf':
+          if (typeof openscadInstance.renderToAmf === 'function') {
+            outputData = await openscadInstance.renderToAmf(fullScadContent);
+          } else {
+            outputData = await renderWithExport(fullScadContent, 'amf');
+          }
+          break;
+        case '3mf':
+          if (typeof openscadInstance.renderTo3mf === 'function') {
+            outputData = await openscadInstance.renderTo3mf(fullScadContent);
+          } else {
+            outputData = await renderWithExport(fullScadContent, '3mf');
+          }
+          break;
+        default:
+          throw new Error(`Unsupported output format: ${format}`);
+      }
 
       self.postMessage({
         type: 'PROGRESS',
-        payload: { requestId, percent: 95, message: 'Processing STL output...' },
+        payload: { requestId, percent: 95, message: `Processing ${formatName} output...` },
       });
 
-      return stlData;
+      return { data: outputData, format };
     })();
 
     // Race between render and timeout
-    const stlData = await Promise.race([renderPromise, timeoutPromise]);
+    const result = await Promise.race([renderPromise, timeoutPromise]);
+    const { data: outputData, format: resultFormat } = result;
 
     // Clear timeout
     if (currentRenderTimeout) {
@@ -287,29 +378,38 @@ async function render(payload) {
       currentRenderTimeout = null;
     }
 
-    // Detect STL format and convert to ArrayBuffer
-    let stlBuffer;
+    // Convert output data to ArrayBuffer
+    let outputBuffer;
     let triangleCount = 0;
-    let isAsciiStl = false;
+    let isTextFormat = false;
 
-    if (stlData instanceof ArrayBuffer) {
-      stlBuffer = stlData;
-    } else if (typeof stlData === 'string') {
-      // ASCII STL format (starts with "solid")
-      isAsciiStl = true;
+    if (outputData instanceof ArrayBuffer) {
+      outputBuffer = outputData;
+    } else if (typeof outputData === 'string') {
+      // Text format (ASCII STL, OBJ, OFF, etc.)
+      isTextFormat = true;
       const encoder = new TextEncoder();
-      stlBuffer = encoder.encode(stlData).buffer;
-      // Count triangles in ASCII STL by counting "facet normal" occurrences
-      triangleCount = (stlData.match(/facet normal/g) || []).length;
-    } else if (stlData instanceof Uint8Array) {
-      stlBuffer = stlData.buffer;
+      outputBuffer = encoder.encode(outputData).buffer;
+      
+      // Count triangles for mesh formats
+      if (resultFormat === 'stl') {
+        triangleCount = (outputData.match(/facet normal/g) || []).length;
+      } else if (resultFormat === 'obj') {
+        triangleCount = (outputData.match(/^f /gm) || []).length;
+      } else if (resultFormat === 'off') {
+        // OFF format has triangle count in header
+        const match = outputData.match(/^OFF\s+\d+\s+(\d+)/);
+        if (match) triangleCount = parseInt(match[1]);
+      }
+    } else if (outputData instanceof Uint8Array) {
+      outputBuffer = outputData.buffer;
     } else {
-      throw new Error('Unknown STL data format');
+      throw new Error(`Unknown ${resultFormat.toUpperCase()} data format`);
     }
 
     // For binary STL, read triangle count from header
-    if (!isAsciiStl && stlBuffer.byteLength > 84) {
-      const view = new DataView(stlBuffer);
+    if (resultFormat === 'stl' && !isTextFormat && outputBuffer.byteLength > 84) {
+      const view = new DataView(outputBuffer);
       triangleCount = view.getUint32(80, true);
     }
 
@@ -317,13 +417,14 @@ async function render(payload) {
       type: 'COMPLETE',
       payload: {
         requestId,
-        stl: stlBuffer,
+        data: outputBuffer,
+        format: resultFormat,
         stats: {
           triangles: triangleCount,
-          size: stlBuffer.byteLength,
+          size: outputBuffer.byteLength,
         },
       },
-    }, [stlBuffer]); // Transfer ownership of ArrayBuffer
+    }, [outputBuffer]); // Transfer ownership of ArrayBuffer
 
     console.log('[Worker] Render complete:', triangleCount, 'triangles');
   } catch (error) {

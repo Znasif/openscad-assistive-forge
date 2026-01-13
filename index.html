@@ -12,8 +12,38 @@
     
     <div id="app" role="application" aria-label="OpenSCAD Web Customizer">
       <header class="app-header">
-        <h1>OpenSCAD Web Customizer</h1>
-        <p class="app-tagline">Customize 3D models directly in your browser</p>
+        <div class="header-content">
+          <div class="header-branding">
+            <h1>OpenSCAD Web Customizer</h1>
+            <p class="app-tagline">Customize 3D models directly in your browser</p>
+          </div>
+          <div class="header-controls">
+            <button id="contrastToggle" class="contrast-toggle" aria-label="Toggle high contrast" title="Toggle high contrast mode">
+              <svg class="contrast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2 L12 22"></path>
+                <path d="M12 2 A10 10 0 0 1 12 22" fill="currentColor" opacity="0.5"></path>
+              </svg>
+              <span class="contrast-label">HC</span>
+            </button>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle light/dark theme">
+              <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
       </header>
       
       <main class="app-main" id="main-content">
@@ -87,9 +117,23 @@
               </div>
             </div>
             
+            <div class="format-selector" aria-label="Output format selection">
+              <label for="outputFormat" class="format-label">Output Format:</label>
+              <select id="outputFormat" class="format-select" aria-label="Select output file format">
+                <option value="stl" selected>STL (Standard)</option>
+                <option value="obj">OBJ (Wavefront)</option>
+                <option value="off">OFF (Geometry)</option>
+                <option value="amf">AMF (Additive Manufacturing)</option>
+                <option value="3mf">3MF (3D Manufacturing)</option>
+              </select>
+              <span class="format-info" id="formatInfo" aria-live="polite">
+                Most common format for 3D printing
+              </span>
+            </div>
+            
             <div class="actions">
               <button id="primaryActionBtn" class="btn btn-primary btn-large" aria-label="Generate STL file from current parameters" data-action="generate">Generate STL</button>
-              <a id="downloadFallbackLink" href="#" class="btn btn-sm btn-outline hidden" aria-label="Download previously generated STL file">📥 Download last STL</a>
+              <a id="downloadFallbackLink" href="#" class="btn btn-sm btn-outline hidden" aria-label="Download previously generated file">📥 Download last file</a>
               <button id="shareBtn" class="btn btn-secondary" aria-label="Copy shareable link with current parameters">📋 Copy Share Link</button>
               <button id="exportParamsBtn" class="btn btn-secondary" aria-label="Download parameters as JSON file">💾 Export Params (JSON)</button>
             </div>

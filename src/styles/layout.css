@@ -14,9 +14,20 @@ body {
 
 .app-header {
   background-color: var(--color-accent);
-  color: white;
+  color: var(--color-accent-text);
   padding: var(--space-md) var(--space-lg);
   box-shadow: var(--shadow-md);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.header-branding {
+  flex: 1;
 }
 
 .app-header h1 {
@@ -28,6 +39,122 @@ body {
   font-size: var(--font-size-sm);
   opacity: 0.9;
   margin-top: var(--space-xs);
+}
+
+/* Header Controls Container */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Contrast Toggle Button */
+.contrast-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--border-radius-md);
+  color: var(--color-accent-text);
+  cursor: pointer;
+  padding: var(--space-xs);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.contrast-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.contrast-toggle:focus {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
+.contrast-toggle:active {
+  transform: scale(0.95);
+}
+
+.contrast-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* High contrast mode active state */
+:root[data-high-contrast="true"] .contrast-toggle {
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--border-radius-md);
+  color: var(--color-accent-text);
+  cursor: pointer;
+  padding: var(--space-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.theme-toggle:focus {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-icon {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Hide sun icon by default (light mode), show moon */
+.theme-icon-sun {
+  display: block;
+}
+
+.theme-icon-moon {
+  display: none;
+}
+
+/* In dark mode, show sun icon (to switch to light), hide moon */
+:root[data-theme="dark"] .theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-icon-moon {
+  display: block;
+}
+
+/* Auto mode follows system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-icon-sun {
+    display: none;
+  }
+  
+  :root:not([data-theme="light"]) .theme-icon-moon {
+    display: block;
+  }
 }
 
 .app-main {

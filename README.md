@@ -13,6 +13,7 @@
 - ✅ **No installation** — Just upload and customize
 - ✅ **No account needed** — Start using immediately
 - ✅ **Accessible** — WCAG 2.1 AA compliant, fully keyboard navigable
+- ✅ **Dark mode** 🌗 — Comfortable viewing in any lighting (v1.4)
 - ✅ **Open source** — GPL-3.0-or-later
 
 ```
@@ -143,7 +144,7 @@ width = 50; // [20:100]
 | 🎯 Visual state indicators (pending, rendering, current) | ✅ Complete |
 | 🎨 Smart download button logic | ✅ Complete |
 
-### v1.3 (Current) — ZIP Upload & Multi-File Projects ✅
+### v1.3 — ZIP Upload & Multi-File Projects ✅
 
 | Feature | Status |
 |---------|--------|
@@ -153,13 +154,42 @@ width = 50; // [20:100]
 | 🌳 File tree visualization | ✅ Complete |
 | 📝 Multi-file example project | ✅ Complete |
 
-### v1.4 (Planned) — Advanced Features
+### v1.4 — Dark Mode ✅
+
+| Feature | Status |
+|---------|--------|
+| 🌗 Dark mode with theme toggle | ✅ Complete |
+| 🎨 Three-mode system (Auto, Light, Dark) | ✅ Complete |
+| 💾 Persistent theme preferences | ✅ Complete |
+| 🎨 Theme-aware 3D preview | ✅ Complete |
+| ⌨️ Keyboard accessible theme toggle | ✅ Complete |
+
+### v1.5 (Current) — High Contrast Mode ✅
+
+| Feature | Status |
+|---------|--------|
+| ♿ High contrast mode (WCAG AAA 7:1) | ✅ Complete |
+| 📐 Enhanced typography (12-17% larger) | ✅ Complete |
+| 🔲 Thicker borders and focus rings | ✅ Complete |
+| 🎨 Works with any theme (Light/Dark/Auto) | ✅ Complete |
+| 💾 Persistent HC preferences | ✅ Complete |
+
+### v1.6 (Current) — Multiple Output Formats ✅
+
+| Feature | Status |
+|---------|--------|
+| 📐 Multiple output formats (STL, OBJ, OFF, AMF, 3MF) | ✅ Complete |
+| 🎛️ Format selector UI | ✅ Complete |
+| 📥 Format-specific downloads | ✅ Complete |
+| 🔧 Smart filename generation | ✅ Complete |
+
+### v1.7 (Planned) — Advanced Features
 
 | Feature | Status |
 |---------|--------|
 | 📚 Library bundles (MCAD, BOSL2) | ⏳ Planned |
-| 📐 Multiple output formats (OBJ, 3MF) | ⏳ Planned |
 | 💾 Parameter presets (save/load sets) | ⏳ Planned |
+| 🎨 Custom color themes | ⏳ Planned |
 | 📚 More example models | ⏳ Planned |
 
 ### v2.0 (Future) — Developer Toolchain

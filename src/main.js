@@ -7,11 +7,12 @@ import './styles/main.css';
 import { extractParameters } from './js/parser.js';
 import { renderParameterUI } from './js/ui-generator.js';
 import { stateManager, getShareableURL } from './js/state.js';
-import { downloadSTL, generateFilename, formatFileSize } from './js/download.js';
+import { downloadSTL, downloadFile, generateFilename, formatFileSize, OUTPUT_FORMATS } from './js/download.js';
 import { RenderController, RENDER_QUALITY } from './js/render-controller.js';
 import { PreviewManager } from './js/preview.js';
 import { AutoPreviewController, PREVIEW_STATE } from './js/auto-preview-controller.js';
 import { extractZipFiles, validateZipFile, createFileTree, getZipStats } from './js/zip-handler.js';
+import { themeManager, initThemeToggle } from './js/theme-manager.js';
 
 // Feature detection
 function checkBrowserSupport() {
@@ -55,8 +56,79 @@ let autoPreviewController = null;
 
 // Initialize app
 async function initApp() {
-  console.log('OpenSCAD Web Customizer v1.2.0 (Auto-Preview)');
+  console.log('OpenSCAD Web Customizer v1.6.0 (Multi-Format)');
   console.log('Initializing...');
+
+  // Initialize theme (before any UI rendering)
+  themeManager.init();
+  
+  // Initialize theme toggle button
+  initThemeToggle('themeToggle', (theme, activeTheme, message) => {
+    console.log(`[App] ${message}`);
+    // Optional: Show brief toast notification
+    updateStatus(message);
+    setTimeout(() => {
+      const state = stateManager.getState();
+      if (state.uploadedFile) {
+        updateStatus('Ready');
+      }
+    }, 2000);
+  });
+
+  // Initialize high contrast toggle button
+  const contrastBtn = document.getElementById('contrastToggle');
+  if (contrastBtn) {
+    contrastBtn.addEventListener('click', () => {
+      const enabled = themeManager.toggleHighContrast();
+      const message = enabled ? 'High Contrast: ON' : 'High Contrast: OFF';
+      console.log(`[App] ${message}`);
+      updateStatus(message);
+      
+      // Update ARIA label
+      contrastBtn.setAttribute('aria-label', `High contrast mode: ${enabled ? 'ON' : 'OFF'}. Click to ${enabled ? 'disable' : 'enable'}.`);
+      
+      setTimeout(() => {
+        const state = stateManager.getState();
+        if (state.uploadedFile) {
+          updateStatus('Ready');
+        }
+      }, 2000);
+    });
+    
+    // Set initial ARIA label
+    const initialState = themeManager.highContrast;
+    contrastBtn.setAttribute('aria-label', `High contrast mode: ${initialState ? 'ON' : 'OFF'}. Click to ${initialState ? 'disable' : 'enable'}.`);
+  }
+
+  // Declare format selector elements
+  const outputFormatSelect = document.getElementById('outputFormat');
+  const formatInfo = document.getElementById('formatInfo');
+
+  // Initialize output format selector
+  if (outputFormatSelect && formatInfo) {
+    outputFormatSelect.addEventListener('change', () => {
+      const format = outputFormatSelect.value;
+      const formatDef = OUTPUT_FORMATS[format];
+      
+      if (formatDef) {
+        formatInfo.textContent = formatDef.description;
+        
+        // Update button text
+        const formatName = formatDef.name;
+        if (primaryActionBtn.dataset.action === 'generate') {
+          primaryActionBtn.textContent = `Generate ${formatName}`;
+          primaryActionBtn.setAttribute('aria-label', `Generate ${formatName} file from current parameters`);
+        } else {
+          primaryActionBtn.textContent = `📥 Download ${formatName}`;
+          primaryActionBtn.setAttribute('aria-label', `Download generated ${formatName} file`);
+        }
+      }
+    });
+    
+    // Set initial format info
+    const initialFormat = outputFormatSelect.value;
+    formatInfo.textContent = OUTPUT_FORMATS[initialFormat]?.description || '';
+  }
 
   // Check browser support
   const support = checkBrowserSupport();
@@ -90,6 +162,7 @@ async function initApp() {
   const previewContainer = document.getElementById('previewContainer');
   const autoPreviewToggle = document.getElementById('autoPreviewToggle');
   const previewQualitySelect = document.getElementById('previewQualitySelect');
+  // Note: outputFormatSelect and formatInfo already declared above
   
   // Create preview state indicator element
   const previewStateIndicator = document.createElement('div');
@@ -485,6 +558,13 @@ async function initApp() {
         previewManager = new PreviewManager(previewContainer);
         previewManager.init();
         
+        // Listen for theme changes and update preview
+        themeManager.addListener((theme, activeTheme, highContrast) => {
+          if (previewManager) {
+            previewManager.updateTheme(activeTheme, highContrast);
+          }
+        });
+        
         // Add preview state indicator and rendering overlay to container
         previewContainer.style.position = 'relative';
         previewContainer.appendChild(previewStateIndicator);
@@ -646,32 +726,37 @@ async function initApp() {
     const state = stateManager.getState();
 
     if (action === 'download') {
-      // Download action - get full quality STL from auto-preview controller
+      // Get selected output format
+      const outputFormat = outputFormatSelect?.value || state.outputFormat || 'stl';
+      
+      // Download action - get full quality file from auto-preview controller
       const fullSTL = autoPreviewController?.getCurrentFullSTL(state.parameters);
       
-      if (fullSTL) {
+      if (fullSTL && outputFormat === 'stl') {
         // Use cached full quality STL
         const filename = generateFilename(
           state.uploadedFile.name,
-          state.parameters
+          state.parameters,
+          outputFormat
         );
-        downloadSTL(fullSTL.stl, filename);
+        downloadFile(fullSTL.stl, filename, outputFormat);
         updateStatus(`Downloaded: ${filename}`);
         return;
       }
       
-      // Fallback to legacy state.stl
+      // Fallback to state.stl
       if (!state.stl) {
-        alert('No STL generated yet');
+        alert('No file generated yet');
         return;
       }
 
       const filename = generateFilename(
         state.uploadedFile.name,
-        state.parameters
+        state.parameters,
+        outputFormat
       );
 
-      downloadSTL(state.stl, filename);
+      downloadFile(state.stl, filename, outputFormat);
       updateStatus(`Downloaded: ${filename}`);
       return;
     }
@@ -688,8 +773,12 @@ async function initApp() {
     }
 
     try {
+      // Get selected output format
+      const outputFormat = outputFormatSelect?.value || 'stl';
+      const formatName = OUTPUT_FORMATS[outputFormat]?.name || outputFormat.toUpperCase();
+      
       primaryActionBtn.disabled = true;
-      primaryActionBtn.textContent = '⏳ Generating...';
+      primaryActionBtn.textContent = `⏳ Generating ${formatName}...`;
       
       // Cancel any pending preview renders
       if (autoPreviewController) {
@@ -700,19 +789,20 @@ async function initApp() {
       
       let result;
       
-      // Use auto-preview controller for full render if available
-      if (autoPreviewController) {
+      // Use auto-preview controller for full render if available (STL only for now)
+      if (autoPreviewController && outputFormat === 'stl') {
         result = await autoPreviewController.renderFull(state.parameters);
         
         if (result.cached) {
           console.log('[Download] Using cached full quality render');
         }
       } else {
-        // Fallback to direct render
+        // Direct render with specified format
         result = await renderController.renderFull(
           state.uploadedFile.content,
           state.parameters,
           {
+            outputFormat,
             onProgress: (percent, message) => {
               if (percent < 0) {
                 updateStatus(message);
@@ -730,18 +820,23 @@ async function initApp() {
       lastGeneratedParamsHash = hashParams(state.parameters);
 
       stateManager.setState({
-        stl: result.stl,
+        stl: result.data || result.stl,
+        outputFormat: result.format || outputFormat,
         stlStats: result.stats,
         lastRenderTime: duration,
       });
 
-      updateStatus(`Full quality STL generated in ${duration}s`);
-      statsArea.innerHTML = `<span class="stats-quality full">Full Quality</span> Size: ${formatFileSize(result.stats.size)} | Triangles: ${result.stats.triangles.toLocaleString()} | Time: ${duration}s`;
+      updateStatus(`Full quality ${formatName} generated in ${duration}s`);
+      
+      const triangleInfo = result.stats.triangles > 0 
+        ? ` | Triangles: ${result.stats.triangles.toLocaleString()}` 
+        : '';
+      statsArea.innerHTML = `<span class="stats-quality full">Full Quality ${formatName}</span> Size: ${formatFileSize(result.stats.size)}${triangleInfo} | Time: ${duration}s`;
 
       console.log('Full render complete:', result.stats);
 
       // Do NOT auto-download. User must explicitly click Download.
-      updateStatus(`STL generated successfully in ${duration}s (click Download STL to save)`);
+      updateStatus(`${formatName} generated successfully in ${duration}s (click Download to save)`);
       
       // Update preview state to show full quality
       updatePreviewStateUI(PREVIEW_STATE.CURRENT, { 

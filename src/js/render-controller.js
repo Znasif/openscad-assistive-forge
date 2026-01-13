@@ -143,7 +143,12 @@ export class RenderController {
 
       case 'COMPLETE':
         if (this.currentRequest && payload.requestId === this.currentRequest.id) {
-          this.currentRequest.resolve(payload);
+          // Normalize payload: add 'stl' alias for backwards compatibility with consumers
+          const result = {
+            ...payload,
+            stl: payload.data,  // Alias data as stl for backwards compatibility
+          };
+          this.currentRequest.resolve(result);
           this.currentRequest = null;
         }
         break;
@@ -203,16 +208,17 @@ export class RenderController {
   }
 
   /**
-   * Render OpenSCAD to STL
+   * Render OpenSCAD to specified format
    * @param {string} scadContent - OpenSCAD source code
    * @param {Object} parameters - Parameter overrides
    * @param {Object} options - Render options
    * @param {number} options.timeoutMs - Timeout in milliseconds
    * @param {Function} options.onProgress - Progress callback
    * @param {Object} options.quality - Quality preset (optional, defaults to FULL)
+   * @param {string} options.outputFormat - Output format (stl, obj, off, amf, 3mf)
    * @param {Map<string, string>} options.files - Additional files for multi-file projects
    * @param {string} options.mainFile - Main file path (for multi-file projects)
-   * @returns {Promise<Object>} Render result with STL data and stats
+   * @returns {Promise<Object>} Render result with data and stats
    */
   async render(scadContent, parameters = {}, options = {}) {
     const quality = options.quality || RENDER_QUALITY.FULL;
@@ -247,6 +253,9 @@ export class RenderController {
         // Convert Map to plain object if files are provided
         const filesObject = options.files ? Object.fromEntries(options.files) : undefined;
         
+        // Determine output format (default to stl)
+        const outputFormat = options.outputFormat || 'stl';
+        
         this.worker.postMessage({
           type: 'RENDER',
           payload: {
@@ -254,7 +263,7 @@ export class RenderController {
             scadContent,
             parameters: adjustedParams,
             timeoutMs,
-            outputFormat: 'binstl',
+            outputFormat,
             files: filesObject,
             mainFile: options.mainFile,
           },

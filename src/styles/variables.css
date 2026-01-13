@@ -1,16 +1,25 @@
 /* Design System - CSS Custom Properties */
 :root {
-  /* Colors - Light Mode */
+  /* Colors - Light Mode (default) */
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
+  --color-bg-tertiary: #e8e8e8;
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
   --color-accent: #0066cc;
   --color-accent-hover: #0052a3;
+  --color-accent-text: #ffffff;
   --color-success: #28a745;
+  --color-success-bg: #d4edda;
   --color-error: #dc3545;
+  --color-error-bg: #f8d7da;
   --color-warning: #ffc107;
+  --color-warning-bg: #fff3cd;
   --color-border: #d1d1d1;
+  --color-border-light: #e8e8e8;
+  --color-input-bg: #ffffff;
+  --color-hover-bg: #f0f0f0;
   
   /* Spacing */
   --space-xs: 4px;
@@ -47,15 +56,199 @@
   --breakpoint-wide: 1440px;
 }
 
-/* Dark Mode */
+/* Dark Mode - System Preference (when no manual override) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg-primary: #1a1a1a;
     --color-bg-secondary: #2d2d2d;
+    --color-bg-tertiary: #3a3a3a;
     --color-text-primary: #f5f5f5;
     --color-text-secondary: #a0a0a0;
+    --color-text-tertiary: #707070;
+    --color-accent: #4d9fff;
+    --color-accent-hover: #6db0ff;
+    --color-accent-text: #1a1a1a;
+    --color-success: #4caf50;
+    --color-success-bg: #1e4620;
+    --color-error: #f44336;
+    --color-error-bg: #5a1a1a;
+    --color-warning: #ffb300;
+    --color-warning-bg: #4d3800;
     --color-border: #404040;
+    --color-border-light: #333333;
+    --color-input-bg: #2d2d2d;
+    --color-hover-bg: #3a3a3a;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+    --focus-ring: 0 0 0 3px rgba(77, 159, 255, 0.4);
   }
+}
+
+/* Dark Mode - Manual Override */
+:root[data-theme="dark"] {
+  --color-bg-primary: #1a1a1a;
+  --color-bg-secondary: #2d2d2d;
+  --color-bg-tertiary: #3a3a3a;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a0a0a0;
+  --color-text-tertiary: #707070;
+  --color-accent: #4d9fff;
+  --color-accent-hover: #6db0ff;
+  --color-accent-text: #1a1a1a;
+  --color-success: #4caf50;
+  --color-success-bg: #1e4620;
+  --color-error: #f44336;
+  --color-error-bg: #5a1a1a;
+  --color-warning: #ffb300;
+  --color-warning-bg: #4d3800;
+  --color-border: #404040;
+  --color-border-light: #333333;
+  --color-input-bg: #2d2d2d;
+  --color-hover-bg: #3a3a3a;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+  --focus-ring: 0 0 0 3px rgba(77, 159, 255, 0.4);
+}
+
+/* Light Mode - Manual Override (forces light even if system prefers dark) */
+:root[data-theme="light"] {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-tertiary: #e8e8e8;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-accent: #0066cc;
+  --color-accent-hover: #0052a3;
+  --color-accent-text: #ffffff;
+  --color-success: #28a745;
+  --color-success-bg: #d4edda;
+  --color-error: #dc3545;
+  --color-error-bg: #f8d7da;
+  --color-warning: #ffc107;
+  --color-warning-bg: #fff3cd;
+  --color-border: #d1d1d1;
+  --color-border-light: #e8e8e8;
+  --color-input-bg: #ffffff;
+  --color-hover-bg: #f0f0f0;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
+  --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.3);
+}
+
+/* High Contrast Mode - Works with any theme (Light/Dark/Auto) */
+/* Activated via data-high-contrast="true" on :root */
+:root[data-high-contrast="true"] {
+  /* Enhanced Typography */
+  --font-size-sm: 1rem;        /* +14% from 0.875rem */
+  --font-size-base: 1.125rem;  /* +12.5% from 1rem */
+  --font-size-lg: 1.25rem;     /* +11% from 1.125rem */
+  --font-size-xl: 1.75rem;     /* +17% from 1.5rem */
+  
+  /* Stronger Borders */
+  --border-width: 2px;         /* Standard border width */
+  --border-width-thick: 3px;   /* Thick borders for emphasis */
+  
+  /* Enhanced Focus */
+  --focus-ring-width: 4px;     /* Thicker focus ring (was 3px) */
+  
+  /* Stronger Shadows (more pronounced depth) */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* High Contrast Light Mode */
+:root[data-high-contrast="true"][data-theme="light"],
+:root[data-high-contrast="true"]:not([data-theme="dark"]):not([data-theme="light"]) {
+  /* WCAG AAA (7:1) colors for light backgrounds */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f0f0f0;
+  --color-bg-tertiary: #e0e0e0;
+  --color-text-primary: #000000;      /* Pure black for maximum contrast */
+  --color-text-secondary: #1a1a1a;    /* Near-black */
+  --color-text-tertiary: #333333;     /* Dark gray */
+  --color-accent: #0052cc;            /* Darker blue for 7:1 on white */
+  --color-accent-hover: #003d99;      /* Even darker on hover */
+  --color-accent-text: #ffffff;
+  --color-success: #0d7a1f;           /* Darker green for 7:1 */
+  --color-success-bg: #c8e6c9;
+  --color-error: #b30000;             /* Darker red for 7:1 */
+  --color-error-bg: #ffcccc;
+  --color-warning: #b38600;           /* Darker yellow for 7:1 */
+  --color-warning-bg: #fff4cc;
+  --color-border: #000000;            /* Black borders */
+  --color-border-light: #666666;      /* Dark gray borders */
+  --color-input-bg: #ffffff;
+  --color-hover-bg: #e8e8e8;
+  --focus-ring: 0 0 0 4px #0052cc;    /* Solid blue focus */
+}
+
+/* High Contrast Dark Mode */
+:root[data-high-contrast="true"][data-theme="dark"],
+:root[data-high-contrast="true"]:not([data-theme="light"]):not([data-theme="dark"]) {
+  /* WCAG AAA (7:1) colors for dark backgrounds */
+  --color-bg-primary: #000000;        /* Pure black */
+  --color-bg-secondary: #1a1a1a;
+  --color-bg-tertiary: #2d2d2d;
+  --color-text-primary: #ffffff;      /* Pure white for maximum contrast */
+  --color-text-secondary: #f0f0f0;    /* Near-white */
+  --color-text-tertiary: #cccccc;     /* Light gray */
+  --color-accent: #66b3ff;            /* Lighter blue for 7:1 on black */
+  --color-accent-hover: #99ccff;      /* Even lighter on hover */
+  --color-accent-text: #000000;
+  --color-success: #66ff66;           /* Bright green for 7:1 */
+  --color-success-bg: #0d3d0d;
+  --color-error: #ff6666;             /* Bright red for 7:1 */
+  --color-error-bg: #4d0000;
+  --color-warning: #ffcc00;           /* Bright yellow for 7:1 */
+  --color-warning-bg: #4d3d00;
+  --color-border: #ffffff;            /* White borders */
+  --color-border-light: #999999;      /* Light gray borders */
+  --color-input-bg: #1a1a1a;
+  --color-hover-bg: #333333;
+  --focus-ring: 0 0 0 4px #66b3ff;    /* Solid blue focus */
+}
+
+/* High Contrast - System Dark Preference */
+@media (prefers-color-scheme: dark) {
+  :root[data-high-contrast="true"]:not([data-theme="light"]):not([data-theme="dark"]) {
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #1a1a1a;
+    --color-bg-tertiary: #2d2d2d;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #f0f0f0;
+    --color-text-tertiary: #cccccc;
+    --color-accent: #66b3ff;
+    --color-accent-hover: #99ccff;
+    --color-accent-text: #000000;
+    --color-success: #66ff66;
+    --color-success-bg: #0d3d0d;
+    --color-error: #ff6666;
+    --color-error-bg: #4d0000;
+    --color-warning: #ffcc00;
+    --color-warning-bg: #4d3d00;
+    --color-border: #ffffff;
+    --color-border-light: #999999;
+    --color-input-bg: #1a1a1a;
+    --color-hover-bg: #333333;
+    --focus-ring: 0 0 0 4px #66b3ff;
+  }
+}
+
+/* Apply border width variables globally in high contrast */
+:root[data-high-contrast="true"] * {
+  border-width: var(--border-width, 2px);
+}
+
+:root[data-high-contrast="true"] .btn,
+:root[data-high-contrast="true"] input,
+:root[data-high-contrast="true"] select,
+:root[data-high-contrast="true"] textarea {
+  border-width: var(--border-width-thick, 3px);
 }
 
 /* Reduced Motion */

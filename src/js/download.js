@@ -1,7 +1,43 @@
 /**
- * Download Manager - STL file download
+ * Download Manager - Multi-format file download
  * @license GPL-3.0-or-later
  */
+
+/**
+ * Format definitions with MIME types and extensions
+ */
+export const OUTPUT_FORMATS = {
+  stl: {
+    name: 'STL',
+    extension: '.stl',
+    mimeType: 'application/vnd.ms-pki.stl', // or 'application/octet-stream'
+    description: 'Most common format for 3D printing',
+  },
+  obj: {
+    name: 'OBJ',
+    extension: '.obj',
+    mimeType: 'text/plain', // OBJ is text-based
+    description: 'Wavefront OBJ, widely supported',
+  },
+  off: {
+    name: 'OFF',
+    extension: '.off',
+    mimeType: 'text/plain', // OFF is text-based
+    description: 'Object File Format for geometry',
+  },
+  amf: {
+    name: 'AMF',
+    extension: '.amf',
+    mimeType: 'application/x-amf', // or 'application/xml'
+    description: 'Additive Manufacturing File Format',
+  },
+  '3mf': {
+    name: '3MF',
+    extension: '.3mf',
+    mimeType: 'application/vnd.ms-package.3dmanufacturing-3dmodel+xml',
+    description: '3D Manufacturing Format (modern)',
+  },
+};
 
 /**
  * Generate a short hash from a string
@@ -19,34 +55,47 @@ function shortHash(str) {
 }
 
 /**
- * Generate filename for STL download
+ * Generate filename for download
  * @param {string} modelName - Name of the model
  * @param {Object} parameters - Parameter values
+ * @param {string} format - Output format (stl, obj, off, amf, 3mf)
  * @returns {string} Filename
  */
-export function generateFilename(modelName, parameters) {
+export function generateFilename(modelName, parameters, format = 'stl') {
   const sanitized = modelName
-    .replace(/\.scad$/, '')
+    .replace(/\.(scad|zip)$/, '')
     .replace(/[^a-z0-9_-]/gi, '_')
     .toLowerCase();
   const hash = shortHash(JSON.stringify(parameters));
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  return `${sanitized}-${hash}-${date}.stl`;
+  const extension = OUTPUT_FORMATS[format]?.extension || `.${format}`;
+  return `${sanitized}-${hash}-${date}${extension}`;
 }
 
 /**
- * Download STL file
- * @param {ArrayBuffer} arrayBuffer - STL data
+ * Download file with specified format
+ * @param {ArrayBuffer} arrayBuffer - File data
  * @param {string} filename - Filename
+ * @param {string} format - Output format (stl, obj, off, amf, 3mf)
  */
-export function downloadSTL(arrayBuffer, filename) {
-  const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+export function downloadFile(arrayBuffer, filename, format = 'stl') {
+  const mimeType = OUTPUT_FORMATS[format]?.mimeType || 'application/octet-stream';
+  const blob = new Blob([arrayBuffer], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Download STL file (legacy compatibility)
+ * @param {ArrayBuffer} arrayBuffer - STL data
+ * @param {string} filename - Filename
+ */
+export function downloadSTL(arrayBuffer, filename) {
+  downloadFile(arrayBuffer, filename, 'stl');
 }
 
 /**

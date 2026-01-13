@@ -715,3 +715,70 @@ select:focus-visible {
   font-weight: 600;
   font-family: var(--font-family-base);
 }
+
+/* Format Selector */
+.format-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.format-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+}
+
+.format-select {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 200px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.format-select:hover {
+  border-color: var(--color-accent);
+}
+
+.format-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.format-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* High contrast mode adjustments for format selector */
+:root[data-high-contrast="true"] .format-select {
+  border-width: 2px;
+}
+
+@media (max-width: 768px) {
+  .format-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .format-select,
+  .format-info {
+    width: 100%;
+  }
+}
