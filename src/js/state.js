@@ -244,6 +244,12 @@ const initialState = {
   stlStats: null,
   expandedGroups: [],
   error: null,
+  // Comparison mode
+  comparisonMode: false,
+  activeVariantId: null,
+  // Libraries
+  detectedLibraries: [], // Libraries detected in current .scad file
+  enabledLibraries: [],  // Libraries currently enabled
 };
 
 export const stateManager = new StateManager(initialState);

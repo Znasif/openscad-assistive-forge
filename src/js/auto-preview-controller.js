@@ -49,6 +49,9 @@ export class AutoPreviewController {
     this.pendingParameters = null;
     this.pendingParamHash = null;
     
+    // Enabled libraries for rendering
+    this.enabledLibraries = [];
+    
     // Cache: paramHash -> { stl, stats, timestamp }
     this.previewCache = new Map();
     
@@ -93,6 +96,14 @@ export class AutoPreviewController {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
     }
+  }
+
+  /**
+   * Set enabled libraries for rendering
+   * @param {Array<{id: string, path: string}>} libraries - Enabled library configurations
+   */
+  setEnabledLibraries(libraries) {
+    this.enabledLibraries = libraries || [];
   }
 
   /**
@@ -249,6 +260,7 @@ export class AutoPreviewController {
           ...(this.previewQuality ? { quality: this.previewQuality } : {}),
           files: this.projectFiles,
           mainFile: this.mainFilePath,
+          libraries: this.enabledLibraries,
           onProgress: (percent, message) => {
             this.onProgress(percent, message, 'preview');
           },
@@ -371,6 +383,7 @@ export class AutoPreviewController {
       {
         files: this.projectFiles,
         mainFile: this.mainFilePath,
+        libraries: this.enabledLibraries,
         onProgress: (percent, message) => {
           this.onProgress(percent, message, 'full');
         },

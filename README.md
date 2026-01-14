@@ -5,7 +5,8 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![OpenSCAD](https://img.shields.io/badge/OpenSCAD-WASM-orange.svg)](https://openscad.org/)
 [![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Version](https://img.shields.io/badge/version-1.8.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.10.0-brightgreen.svg)](CHANGELOG.md)
+[![PWA](https://img.shields.io/badge/PWA-enabled-blue.svg)](https://web.dev/progressive-web-apps/)
 
 ## 🎯 What This Does
 
@@ -16,6 +17,7 @@
 - ✅ **Accessible** — WCAG 2.1 AA compliant, fully keyboard navigable
 - ✅ **Dark mode** 🌗 — Comfortable viewing in any lighting
 - ✅ **High contrast** ♿ — WCAG AAA (7:1) for low vision users
+- ✅ **PWA enabled** 📲 — Install as app, works offline
 - ✅ **Open source** — GPL-3.0-or-later
 
 ```
@@ -52,20 +54,36 @@ Then open http://localhost:5173 in your browser.
 
 ## ✨ Features
 
-### Current Release: v1.8.0 — STL Measurements 📏
+### Current Release: v1.10.0 — Library Bundles 📚
 
-The latest release adds real-time dimension measurements to the 3D preview:
+The latest release adds OpenSCAD library bundles and safer URL parameter handling:
+
+|| Feature | Description |
+||---------|-------------|
+|| 📚 **Library Bundles** | MCAD, BOSL2, NopSCADlib, dotSCAD |
+|| 🔍 **Auto-Detection** | include/use statements auto-enable required libs |
+|| 🧰 **Library Manager UI** | Toggle libraries with badges and help |
+|| 🔗 **URL Param Clamping** | Out-of-range URL params are clamped to schema limits |
+|| ✅ **Stability** | Prevents invalid URL params from triggering CGAL failures |
+
+### Previous Release: v1.9.0 — Progressive Web App 📲
+
+|| Feature | Description |
+||---------|-------------|
+|| 📲 **Installable** | Add to home screen on mobile and desktop |
+|| 🔌 **Offline Support** | Full functionality without internet |
+|| ⚡ **Instant Loading** | Cached assets for faster startup |
+|| 🔄 **Auto-Updates** | Seamless version updates with notifications |
+|| 📱 **Native Experience** | Full-screen mode, app icon, splash screen |
+|| 💾 **Smart Caching** | WASM engine cached for offline rendering |
+
+### Previous Release: v1.8.0 — STL Measurements 📏
 
 || Feature | Description |
 ||---------|-------------|
 || 📏 **Dimension Display** | Shows width, depth, height, and volume |
 || 📦 **Bounding Box** | Visual wireframe showing model extents |
 || 🏷️ **Dimension Labels** | Floating text labels on 3D preview |
-|| 🎨 **Theme-Aware** | Colors adapt to light/dark/high-contrast modes |
-|| 💾 **Persistent Toggle** | Preference saved to localStorage |
-|| ♿ **Accessible** | Full keyboard and screen reader support |
-
-**Use Case**: Verify your model dimensions before printing. See at a glance if your 50mm × 40mm × 30mm box will fit your needs!
 
 ### Complete Feature Set
 
@@ -155,16 +173,27 @@ The latest release adds real-time dimension measurements to the 3D preview:
 || 🎨 Theme-aware measurement colors | ✅ Complete |
 || 💾 Persistent measurement toggle | ✅ Complete |
 
-### Coming Soon
-
-#### v1.8 (Planned) — Advanced Features
+#### v1.9 — Progressive Web App ✅
 
 || Feature | Status |
 ||---------|--------|
-|| 📚 Library bundles (MCAD, BOSL2) | ⏳ Planned |
-|| 📏 STL preview with measurements | ⏳ Planned |
-|| 🎨 Custom color themes | ⏳ Planned |
+|| 📲 Install as native app | ✅ Complete |
+|| 🔌 Full offline support | ✅ Complete |
+|| ⚡ Service worker caching | ✅ Complete |
+|| 🔄 Auto-update notifications | ✅ Complete |
+|| 🌍 iOS/Android/Desktop support | ✅ Complete |
+|| 💾 PWA manifest & icons | ✅ Complete |
+
+### Coming Soon
+
+#### v1.11 (Planned) — Quality & Examples
+
+|| Feature | Status |
+||---------|--------|
+|| 🧪 Automated test suite | ⏳ Planned |
 || 📚 More example models | ⏳ Planned |
+|| 🎨 Custom color themes | ⏳ Planned |
+|| 🧩 Advanced parameter types | ⏳ Planned |
 
 #### v2.0 (Future) — Developer Toolchain
 
@@ -279,7 +308,7 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 
 ## 📊 Project Status
 
-**Current Version**: v1.7.0
+**Current Version**: v1.10.0
 
 || Phase | Description | Status |
 ||-------|-------------|--------|
@@ -301,6 +330,9 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 || **v1.5** | **High contrast mode (WCAG AAA)** | ✅ Complete |
 || **v1.6** | **Multiple output formats** | ✅ Complete |
 || **v1.7** | **Parameter presets system** | ✅ Complete |
+|| **v1.8** | **STL measurements & dimensions** | ✅ Complete |
+|| **v1.9** | **PWA support & offline mode** | ✅ Complete |
+|| **v1.10** | **Library bundles & URL safety** | ✅ Complete |
 
 ## ⚖️ Licensing
 
@@ -354,36 +386,20 @@ npm run build
 npm run preview
 ```
 
-## 🎉 What's New in v1.7.0
+## 🎉 What's New in v1.10.0
 
-### Parameter Presets System
+### Library Bundles + URL Safety
 
-Save and manage your favorite parameter configurations!
+Build and share models that depend on OpenSCAD libraries without extra setup.
 
 **Key Features:**
-- 💾 **Save Presets** — Name and describe your configurations
-- 📋 **Quick Load** — Dropdown selector for instant access
-- 📂 **Management Modal** — View all presets, load, export, or delete
-- 📤 **Import/Export** — Share presets as JSON files
-- 🔄 **Smart Merging** — Duplicate names update existing presets
-- 💿 **Persistent** — Stored locally per model in localStorage
+- 📚 **Library Bundles** — MCAD, BOSL2, NopSCADlib, dotSCAD
+- 🔍 **Auto-Detection** — include/use statements auto-enable required libs
+- 🧰 **Library Manager UI** — Toggle libraries with badges and help
+- 🔗 **URL Param Clamping** — Out-of-range URL params are clamped to schema limits
+- ✅ **Stability** — Prevents invalid URL params from triggering CGAL failures
 
-**Perfect for:**
-- Models with many parameters (20+)
-- Frequently used configurations
-- Sharing configurations with others
-- Quickly testing different design variations
-- Building a library of proven settings
-
-**Example Workflow:**
-1. Upload "Universal Cuff" example
-2. Adjust 15 parameters for large adult size
-3. Click 💾 Save Preset → "Large Adult Handle"
-4. Adjust for small child size
-5. Save as "Small Child Handle"
-6. Switch between them with one click!
-
-See [docs/changelogs/CHANGELOG_v1.7.md](docs/changelogs/CHANGELOG_v1.7.md) for complete details.
+See [docs/changelogs/CHANGELOG_v1.10.md](docs/changelogs/CHANGELOG_v1.10.md) for complete details.
 
 ---
 

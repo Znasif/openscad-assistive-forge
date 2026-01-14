@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Web-based OpenSCAD customizer - customize and generate 3D printable STL files directly in your browser" />
     <title>OpenSCAD Web Customizer</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Theme colors -->
+    <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="OpenSCAD Forge" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+    
+    <!-- Microsoft -->
+    <meta name="msapplication-TileColor" content="#0066cc" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
   </head>
   <body>
     <!-- Skip to content link for keyboard users -->
@@ -68,6 +89,7 @@
                 <button id="loadUniversalCuffBtn" class="btn btn-secondary" data-example="universal-cuff">Universal Cuff (Complex)</button>
                 <button id="loadSimpleBoxBtn" class="btn btn-secondary" data-example="simple-box">Simple Box (Beginner)</button>
                 <button id="loadCylinderBtn" class="btn btn-secondary" data-example="cylinder">Parametric Cylinder</button>
+                <button id="loadLibraryTestBtn" class="btn btn-secondary" data-example="library-test">📚 Library Test (MCAD)</button>
               </div>
             </div>
           </div>
@@ -98,6 +120,26 @@
                   <option value="">-- Select Preset --</option>
                 </select>
               </div>
+            </div>
+            
+            <!-- Library Controls -->
+            <div class="library-controls hidden" id="libraryControls" role="region" aria-label="OpenSCAD library bundles">
+              <details class="library-details">
+                <summary class="library-summary">
+                  📚 Libraries <span class="library-badge" id="libraryBadge">0</span>
+                </summary>
+                <div class="library-content">
+                  <p class="library-help">Enable libraries used by this model:</p>
+                  <div class="library-list" id="libraryList">
+                    <!-- Library checkboxes will be dynamically generated here -->
+                  </div>
+                  <div class="library-footer">
+                    <button id="libraryHelpBtn" class="btn-link" aria-label="Learn more about libraries">
+                      ℹ️ What are libraries?
+                    </button>
+                  </div>
+                </div>
+              </details>
             </div>
             
             <div id="parametersContainer" class="parameters-container" aria-labelledby="parameters-heading">
@@ -161,6 +203,7 @@
             <div class="actions">
               <button id="primaryActionBtn" class="btn btn-primary btn-large" aria-label="Generate STL file from current parameters" data-action="generate">Generate STL</button>
               <a id="downloadFallbackLink" href="#" class="btn btn-sm btn-outline hidden" aria-label="Download previously generated file">📥 Download last file</a>
+              <button id="addToComparisonBtn" class="btn btn-secondary" aria-label="Add current configuration to comparison">⚖️ Add to Comparison</button>
               <button id="shareBtn" class="btn btn-secondary" aria-label="Copy shareable link with current parameters">📋 Copy Share Link</button>
               <button id="exportParamsBtn" class="btn btn-secondary" aria-label="Download parameters as JSON file">💾 Export Params (JSON)</button>
             </div>
@@ -189,6 +232,11 @@
               </dl>
             </div>
           </div>
+        </div>
+        
+        <!-- Comparison View (hidden by default) -->
+        <div class="comparison-view hidden" id="comparisonView" role="region" aria-label="Comparison view">
+          <!-- Comparison UI will be dynamically generated here -->
         </div>
       </main>
       

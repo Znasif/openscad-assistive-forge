@@ -1,6 +1,6 @@
 {
   "name": "openscad-web-customizer-forge",
-  "version": "1.8.0",
+  "version": "1.10.0",
   "description": "Web-based OpenSCAD customizer with client-side WASM rendering",
   "type": "module",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "setup-wasm": "node scripts/download-wasm.js",
+    "setup-libraries": "node scripts/setup-libraries.js",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "echo 'Tests coming in Phase 3'",

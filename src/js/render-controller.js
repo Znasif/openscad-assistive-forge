@@ -48,6 +48,7 @@ export class RenderController {
     this.currentRequest = null;
     this.ready = false;
     this.initPromise = null;
+    this.renderQueue = Promise.resolve();
   }
 
   /**
@@ -218,68 +219,72 @@ export class RenderController {
    * @param {string} options.outputFormat - Output format (stl, obj, off, amf, 3mf)
    * @param {Map<string, string>} options.files - Additional files for multi-file projects
    * @param {string} options.mainFile - Main file path (for multi-file projects)
+   * @param {Array<{id: string, path: string}>} options.libraries - Library bundles to mount
    * @returns {Promise<Object>} Render result with data and stats
    */
   async render(scadContent, parameters = {}, options = {}) {
-    const quality = options.quality || RENDER_QUALITY.FULL;
-    const adjustedParams = this.applyQualitySettings(parameters, quality);
-    const timeoutMs = options.timeoutMs || quality.timeoutMs;
+    const run = async () => {
+      const quality = options.quality || RENDER_QUALITY.FULL;
+      const adjustedParams = this.applyQualitySettings(parameters, quality);
+      const timeoutMs = options.timeoutMs || quality.timeoutMs;
 
-    const shouldRetryOnce = (err) => {
-      const msg = err?.message || String(err);
-      // Pattern we see in logs: "Failed to render model: 1101176" (numeric code, no stack)
-      return /^Failed to render model:\s*\d+/.test(msg);
-    };
+      const shouldRetryOnce = (err) => {
+        const msg = err?.message || String(err);
+        // Pattern we see in logs: "Failed to render model: 1101176" (numeric code, no stack)
+        return /^Failed to render model:\s*\d+/.test(msg);
+      };
 
-    const renderOnce = async () => {
-      if (!this.ready) {
-        throw new Error('Worker not ready. Call init() first.');
-      }
+      const renderOnce = async () => {
+        if (!this.ready) {
+          throw new Error('Worker not ready. Call init() first.');
+        }
 
-      if (this.currentRequest) {
-        throw new Error('Render already in progress. Cancel first.');
-      }
+        const requestId = `render-${++this.requestId}`;
 
-      const requestId = `render-${++this.requestId}`;
+        return new Promise((resolve, reject) => {
+          this.currentRequest = {
+            id: requestId,
+            resolve,
+            reject,
+            onProgress: options.onProgress,
+          };
 
-      return new Promise((resolve, reject) => {
-        this.currentRequest = {
-          id: requestId,
-          resolve,
-          reject,
-          onProgress: options.onProgress,
-        };
-
-        // Convert Map to plain object if files are provided
-        const filesObject = options.files ? Object.fromEntries(options.files) : undefined;
-        
-        // Determine output format (default to stl)
-        const outputFormat = options.outputFormat || 'stl';
-        
-        this.worker.postMessage({
-          type: 'RENDER',
-          payload: {
-            requestId,
-            scadContent,
-            parameters: adjustedParams,
-            timeoutMs,
-            outputFormat,
-            files: filesObject,
-            mainFile: options.mainFile,
-          },
+          // Convert Map to plain object if files are provided
+          const filesObject = options.files ? Object.fromEntries(options.files) : undefined;
+          
+          // Determine output format (default to stl)
+          const outputFormat = options.outputFormat || 'stl';
+          
+          this.worker.postMessage({
+            type: 'RENDER',
+            payload: {
+              requestId,
+              scadContent,
+              parameters: adjustedParams,
+              timeoutMs,
+              outputFormat,
+              files: filesObject,
+              mainFile: options.mainFile,
+              libraries: options.libraries,
+            },
+          });
         });
-      });
+      };
+
+      try {
+        return await renderOnce();
+      } catch (err) {
+        if (!shouldRetryOnce(err)) {
+          throw err;
+        }
+        await this.restart();
+        return await renderOnce();
+      }
     };
 
-    try {
-      return await renderOnce();
-    } catch (err) {
-      if (!shouldRetryOnce(err)) {
-        throw err;
-      }
-      await this.restart();
-      return await renderOnce();
-    }
+    const queued = this.renderQueue.then(run, run);
+    this.renderQueue = queued.catch(() => {});
+    return queued;
   }
 
   /**

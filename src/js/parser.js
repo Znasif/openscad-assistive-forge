@@ -3,6 +3,8 @@
  * @license GPL-3.0-or-later
  */
 
+import { detectLibraries } from './library-manager.js';
+
 /**
  * Parse default value from OpenSCAD code
  * @param {string} valueStr - Value string from assignment
@@ -229,8 +231,12 @@ export function extractParameters(scadContent) {
     });
   }
 
+  // Detect library usage
+  const detectedLibraries = detectLibraries(scadContent);
+
   return {
     groups,
     parameters,
+    libraries: detectedLibraries,
   };
 }

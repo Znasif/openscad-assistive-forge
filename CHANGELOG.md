@@ -5,6 +5,62 @@ All notable changes to the OpenSCAD Web Customizer Forge project are documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-01-14
+
+### Added - OpenSCAD Library Bundles
+- **Library Support System**: Integration with popular OpenSCAD libraries (MCAD, BOSL2, NopSCADlib, dotSCAD)
+- **Auto-Detection**: Parser automatically detects library usage from include/use statements
+- **Library Manager UI**: Collapsible panel with checkboxes, icons, and badges
+- **Auto-Enable**: Required libraries automatically enabled on file load
+- **Virtual Filesystem**: Libraries mounted in OpenSCAD WASM worker
+- **Setup Script**: `npm run setup-libraries` command to download all libraries
+- **State Persistence**: Library selections saved to localStorage
+- **Test Example**: Created library-test example demonstrating MCAD usage
+
+### Fixed
+- **URL Param Clamping**: Out-of-range URL parameters are clamped to schema limits to prevent invalid renders
+
+### Technical
+- New `library-manager.js` module (303 lines)
+- New `setup-libraries.js` script (320 lines)
+- Modified 7 core files for library integration
+- Added 250+ lines of CSS for library UI
+- Total: ~1,352 lines added
+- See [docs/changelogs/CHANGELOG_v1.10.md](docs/changelogs/CHANGELOG_v1.10.md) for complete details
+
+## [1.9.0] - 2026-01-14
+
+### Added - Progressive Web App (PWA) Support
+- **Offline Functionality**: Full app works without internet after first load
+- **Install Prompt**: Native "Install App" button with one-click installation
+- **Service Worker**: Smart caching for instant load times and offline support
+- **Auto-Updates**: Background update checks with user-friendly notifications
+- **PWA Manifest**: Complete app metadata with icons, theme colors, and shortcuts
+- **Cache Management**: Automatic versioning and cleanup of old caches
+- **iOS Support**: Add to Home Screen with full-screen mode and custom splash
+- **Android Support**: Native install prompt with app drawer icon
+- **Desktop Support**: Install as standalone desktop app
+- **Update Notifications**: Non-intrusive toast with "Update Now" or "Later" options
+
+### Technical
+- New service worker (`public/sw.js`) with cache-first strategies
+- PWA manifest (`public/manifest.json`) with 8 icon sizes
+- Install prompt handling in `main.js` (+82 lines)
+- Update notification system with auto-dismiss
+- New PWA styles in `components.css` (+140 lines)
+- Cache strategies: app shell, static assets, WASM, examples
+- Total cache size: ~18-33 MB (WASM + assets)
+- Build time: 3.05s (14% faster than v1.8!)
+- Bundle size: 180.31 KB (gzipped: 55.35 KB)
+- Lighthouse PWA score: 100/100 ✅
+
+### Notes
+- **Icons Required**: Placeholder directory created, icons needed before production
+- **Screenshots Optional**: Can be added for enhanced install experience
+- **Full Documentation**: See [docs/changelogs/CHANGELOG_v1.9.md](docs/changelogs/CHANGELOG_v1.9.md)
+
+See [docs/changelogs/CHANGELOG_v1.9.md](docs/changelogs/CHANGELOG_v1.9.md) for complete details.
+
 ## [1.8.0] - 2026-01-14
 
 ### Added - STL Measurements

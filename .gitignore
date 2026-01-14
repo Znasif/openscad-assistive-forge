@@ -6,6 +6,8 @@ dist/
 .vscode/
 .idea/
 public/wasm/openscad.*
+public/libraries/*/
+!public/libraries/README.md
 
 .vercel
 .env*.local

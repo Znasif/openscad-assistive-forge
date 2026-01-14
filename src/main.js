@@ -14,6 +14,9 @@ import { AutoPreviewController, PREVIEW_STATE } from './js/auto-preview-controll
 import { extractZipFiles, validateZipFile, createFileTree, getZipStats } from './js/zip-handler.js';
 import { themeManager, initThemeToggle } from './js/theme-manager.js';
 import { presetManager } from './js/preset-manager.js';
+import { ComparisonController } from './js/comparison-controller.js';
+import { ComparisonView } from './js/comparison-view.js';
+import { libraryManager, LIBRARY_DEFINITIONS } from './js/library-manager.js';
 
 // Feature detection
 function checkBrowserSupport() {
@@ -54,11 +57,121 @@ function showUnsupportedBrowser(missing) {
 let renderController = null;
 let previewManager = null;
 let autoPreviewController = null;
+let comparisonController = null;
+let comparisonView = null;
+
+// Sanitize URL parameters against extracted schema
+function sanitizeUrlParams(extracted, urlParams) {
+  const sanitized = {};
+  const adjustments = {};
+
+  for (const [key, value] of Object.entries(urlParams || {})) {
+    const schema = extracted?.parameters?.[key];
+    if (!schema) {
+      adjustments[key] = { reason: 'unknown-param', value };
+      continue;
+    }
+
+    // Enum validation
+    if (Array.isArray(schema.enum)) {
+      if (!schema.enum.includes(value)) {
+        adjustments[key] = { reason: 'enum', value, allowed: schema.enum };
+        continue;
+      }
+      sanitized[key] = value;
+      continue;
+    }
+
+    // Numeric validation/clamping
+    if (typeof value === 'number') {
+      let nextValue = value;
+      if (schema.minimum !== undefined && nextValue < schema.minimum) {
+        adjustments[key] = { reason: 'min', value, minimum: schema.minimum, maximum: schema.maximum };
+        nextValue = schema.minimum;
+      }
+      if (schema.maximum !== undefined && nextValue > schema.maximum) {
+        adjustments[key] = { reason: 'max', value, minimum: schema.minimum, maximum: schema.maximum };
+        nextValue = schema.maximum;
+      }
+      if (schema.type === 'integer') {
+        nextValue = Math.round(nextValue);
+      }
+      sanitized[key] = nextValue;
+      continue;
+    }
+
+    // Booleans and strings (non-enum) pass through
+    sanitized[key] = value;
+  }
+
+  return { sanitized, adjustments };
+}
 
 // Initialize app
 async function initApp() {
-  console.log('OpenSCAD Web Customizer v1.8.0 (STL Measurements)');
+  console.log('OpenSCAD Web Customizer v1.9.0 (PWA Support)');
   console.log('Initializing...');
+
+  // Register Service Worker for PWA support
+  // In development, avoid Service Worker caching/stale assets which can break testing.
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[PWA] Service Worker registered:', registration.scope);
+      
+      // Handle updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        console.log('[PWA] Update found, installing new service worker');
+        
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version available
+            console.log('[PWA] New version available');
+            showUpdateNotification(registration);
+          }
+        });
+      });
+      
+      // Check for updates periodically (every hour)
+      setInterval(() => {
+        registration.update();
+      }, 60 * 60 * 1000);
+    } catch (error) {
+      console.error('[PWA] Service Worker registration failed:', error);
+    }
+  } else {
+    console.log('[PWA] Service Worker disabled (dev) or not supported');
+  }
+  
+  // Handle install prompt
+  let deferredInstallPrompt = null;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('[PWA] Install prompt available');
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    
+    // Show install button
+    showInstallButton(deferredInstallPrompt);
+  });
+  
+  // Handle successful installation
+  window.addEventListener('appinstalled', () => {
+    console.log('[PWA] App installed successfully');
+    deferredInstallPrompt = null;
+    hideInstallButton();
+    
+    // Show success message
+    const statusArea = document.getElementById('statusArea');
+    if (statusArea) {
+      const originalText = statusArea.textContent;
+      statusArea.textContent = '✅ App installed! You can now use it offline.';
+      setTimeout(() => {
+        statusArea.textContent = originalText;
+      }, 5000);
+    }
+  });
 
   // Initialize theme (before any UI rendering)
   themeManager.init();
@@ -368,6 +481,15 @@ async function initApp() {
     });
     
     console.log('[AutoPreview] Controller initialized');
+    
+    // Subscribe to library manager changes
+    libraryManager.subscribe((action, libraryId) => {
+      console.log(`[Library] ${action}: ${libraryId}`);
+      // Update auto-preview controller with new library list
+      if (autoPreviewController) {
+        autoPreviewController.setEnabledLibraries(getEnabledLibrariesForRender());
+      }
+    });
   }
   
   /**
@@ -544,6 +666,23 @@ async function initApp() {
       // Update file info
       document.getElementById('fileInfo').textContent = `${fileName} (${paramCount} parameters)`;
 
+      // Handle detected libraries
+      const detectedLibraries = extracted.libraries || [];
+      console.log('Detected libraries:', detectedLibraries);
+      stateManager.setState({
+        detectedLibraries,
+      });
+      
+      // Auto-enable detected libraries and show library UI
+      if (detectedLibraries.length > 0) {
+        const autoEnabled = libraryManager.autoEnable(fileContent);
+        if (autoEnabled.length > 0) {
+          console.log('Auto-enabled libraries:', autoEnabled);
+          updateStatus(`Enabled ${autoEnabled.length} required libraries`);
+        }
+        renderLibraryUI(detectedLibraries);
+      }
+
       // Render parameter UI
       const parametersContainer = document.getElementById('parametersContainer');
       const currentValues = renderParameterUI(
@@ -572,6 +711,8 @@ async function initApp() {
       const urlParams = stateManager.loadFromURL();
       if (urlParams && Object.keys(urlParams).length > 0) {
         console.log('Loaded parameters from URL:', urlParams);
+
+        const { sanitized, adjustments } = sanitizeUrlParams(extracted, urlParams);
         
         // Re-render UI with URL parameters - MUST include updatePrimaryActionButton in callback!
         const updatedValues = renderParameterUI(
@@ -587,12 +728,20 @@ async function initApp() {
             }
             // Update button state when parameters change
             updatePrimaryActionButton();
-          }
+          },
+          sanitized
         );
+
+        // Ensure state matches sanitized UI values
+        stateManager.setState({ parameters: updatedValues });
+
+        if (Object.keys(adjustments).length > 0) {
+          updateStatus('Some URL parameters were adjusted to fit allowed ranges.');
+        }
         
         // Trigger initial auto-preview with URL params
         if (autoPreviewController) {
-          autoPreviewController.onParameterChange(stateManager.getState().parameters);
+          autoPreviewController.onParameterChange(updatedValues);
         }
         
         updateStatus(`Ready - ${paramCount} parameters loaded (${Object.keys(urlParams).length} from URL)`);
@@ -632,6 +781,9 @@ async function initApp() {
       if (autoPreviewController) {
         autoPreviewController.setScadContent(fileContent);
         autoPreviewController.setProjectFiles(projectFiles, mainFilePath);
+        // CRITICAL: Set enabled libraries BEFORE triggering initial preview
+        const libsForRender = getEnabledLibrariesForRender();
+        autoPreviewController.setEnabledLibraries(libsForRender);
         updatePreviewStateUI(PREVIEW_STATE.IDLE);
         
         // Trigger initial preview immediately on first load (and also for URL-param loads).
@@ -712,6 +864,10 @@ async function initApp() {
         'cylinder': {
           path: '/examples/parametric-cylinder/parametric_cylinder.scad',
           name: 'parametric_cylinder.scad'
+        },
+        'library-test': {
+          path: '/examples/library-test/library_test.scad',
+          name: 'library_test.scad'
         }
       };
       
@@ -1016,6 +1172,148 @@ async function initApp() {
     updateStatus(`Parameters exported to JSON`);
   });
 
+  // ========== COMPARISON MODE ==========
+  
+  // Initialize comparison controller
+  comparisonController = new ComparisonController(stateManager, renderController, {
+    maxVariants: 4,
+  });
+  
+  const comparisonViewContainer = document.getElementById('comparisonView');
+  comparisonView = new ComparisonView(comparisonViewContainer, comparisonController, {
+    theme: themeManager.getActiveTheme(),
+    highContrast: themeManager.highContrast,
+  });
+  
+  // Listen to theme changes and update comparison view
+  themeManager.addListener((_themePref, activeTheme, highContrast) => {
+    if (comparisonView) {
+      comparisonView.updateTheme(activeTheme, highContrast);
+    }
+  });
+  
+  // Add to Comparison button
+  const addToComparisonBtn = document.getElementById('addToComparisonBtn');
+  addToComparisonBtn?.addEventListener('click', () => {
+    const state = stateManager.getState();
+    
+    if (!state.uploadedFile) {
+      alert('No file uploaded yet');
+      return;
+    }
+    
+    // Check if at max capacity - if so, just enter comparison mode without adding
+    if (comparisonController.isAtMaxCapacity()) {
+      enterComparisonMode();
+      updateStatus('Entered comparison mode (at max variants)');
+      return;
+    }
+    
+    // Generate variant name
+    const count = comparisonController.getVariantCount() + 1;
+    const variantName = `Variant ${count}`;
+    
+    // Add variant
+    const variantId = comparisonController.addVariant(variantName, state.parameters);
+    console.log(`Added variant ${variantId}:`, variantName);
+    
+    // Switch to comparison mode
+    enterComparisonMode();
+    
+    updateStatus(`Added "${variantName}" to comparison`);
+  });
+  
+  // Comparison mode event listeners
+  window.addEventListener('comparison:add-variant', (e) => {
+    const state = stateManager.getState();
+    if (!state.uploadedFile) return;
+
+    const count = comparisonController.getVariantCount() + 1;
+    const providedName = e?.detail?.variantName;
+    const variantName =
+      typeof providedName === 'string' && providedName.trim()
+        ? providedName.trim()
+        : `Variant ${count}`;
+
+    const id = comparisonController.addVariant(variantName, state.parameters);
+
+    updateStatus(`Added "${variantName}" to comparison`);
+  });
+  
+  window.addEventListener('comparison:exit', () => {
+    exitComparisonMode();
+  });
+  
+  window.addEventListener('comparison:download-variant', (e) => {
+    const { variant } = e.detail;
+    if (variant && variant.stl) {
+      const state = stateManager.getState();
+      const filename = generateFilename(
+        `${state.uploadedFile.name.replace('.scad', '')}-${variant.name}`,
+        variant.parameters
+      );
+      
+      // Get selected output format
+      const format = outputFormatSelect ? outputFormatSelect.value : 'stl';
+      downloadFile(variant.stl, filename, format);
+      updateStatus(`Downloaded: ${filename}`);
+    }
+  });
+  
+  window.addEventListener('comparison:edit-variant', (e) => {
+    const { variantId } = e.detail;
+    const variant = comparisonController.getVariant(variantId);
+    
+    if (variant) {
+      // Exit comparison mode and load variant parameters
+      exitComparisonMode();
+      stateManager.setState({ parameters: { ...variant.parameters } });
+      
+      // Re-render parameter UI
+      const state = stateManager.getState();
+      if (state.schema) {
+        renderParameterUI(state.schema, state.parameters);
+      }
+      
+      updateStatus(`Editing ${variant.name}`);
+    }
+  });
+  
+  function enterComparisonMode() {
+    const state = stateManager.getState();
+    stateManager.setState({ comparisonMode: true });
+    
+    // Set project content for comparison controller
+    comparisonController.setProject(
+      state.uploadedFile.content,
+      state.projectFiles,
+      state.mainFile
+    );
+    
+    // Hide main interface, show comparison view
+    mainInterface.classList.add('hidden');
+    comparisonViewContainer.classList.remove('hidden');
+    
+    // Initialize comparison view
+    comparisonView.init();
+    
+    console.log('[Comparison] Entered comparison mode');
+  }
+  
+  function exitComparisonMode() {
+    stateManager.setState({ comparisonMode: false });
+    
+    // Show main interface, hide comparison view
+    mainInterface.classList.remove('hidden');
+    comparisonViewContainer.classList.add('hidden');
+    
+    // Optionally clear variants or keep them
+    // comparisonController.clearAll();
+    
+    console.log('[Comparison] Exited comparison mode');
+    updateStatus('Exited comparison mode');
+  }
+  
   // ========== PRESET SYSTEM ==========
   
   // Clear preset selection when parameters are manually changed
@@ -1522,6 +1820,218 @@ async function initApp() {
   });
 
   updateStatus('Ready - Upload a file to begin');
+}
+
+// PWA Install Button Helper
+function showInstallButton(deferredPrompt) {
+  // Check if install button already exists
+  let installBtn = document.getElementById('pwaInstallBtn');
+  
+  if (!installBtn) {
+    // Create install button
+    installBtn = document.createElement('button');
+    installBtn.id = 'pwaInstallBtn';
+    installBtn.className = 'btn btn-outline pwa-install-btn';
+    installBtn.innerHTML = '📲 Install App';
+    installBtn.setAttribute('aria-label', 'Install this app for offline use');
+    installBtn.setAttribute('title', 'Install for offline use');
+    
+    // Add to header controls
+    const headerControls = document.querySelector('.header-controls');
+    if (headerControls) {
+      headerControls.insertBefore(installBtn, headerControls.firstChild);
+    }
+  }
+  
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      console.warn('[PWA] Install prompt not available');
+      return;
+    }
+    
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user's response
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to install prompt: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+      console.log('[PWA] User accepted the install prompt');
+    } else {
+      console.log('[PWA] User dismissed the install prompt');
+    }
+    
+    // Clear the prompt (can only be used once)
+    deferredPrompt = null;
+  });
+}
+
+function hideInstallButton() {
+  const installBtn = document.getElementById('pwaInstallBtn');
+  if (installBtn) {
+    installBtn.remove();
+  }
+}
+
+// PWA Update Notification Helper
+function showUpdateNotification(registration) {
+  // Create update notification
+  const notification = document.createElement('div');
+  notification.className = 'pwa-update-notification';
+  notification.setAttribute('role', 'alert');
+  notification.innerHTML = `
+    <div class="pwa-update-content">
+      <span class="pwa-update-icon">🔄</span>
+      <div class="pwa-update-text">
+        <strong>Update Available</strong>
+        <p>A new version of the app is ready to install.</p>
+      </div>
+      <div class="pwa-update-actions">
+        <button class="btn btn-sm btn-primary" id="pwaUpdateBtn">Update Now</button>
+        <button class="btn btn-sm btn-outline" id="pwaUpdateDismiss">Later</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Handle update button
+  const updateBtn = notification.querySelector('#pwaUpdateBtn');
+  updateBtn.addEventListener('click', () => {
+    const waiting = registration.waiting;
+    if (waiting) {
+      // Tell the service worker to skip waiting
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+      
+      // Reload the page when the new service worker takes control
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  });
+  
+  // Handle dismiss button
+  const dismissBtn = notification.querySelector('#pwaUpdateDismiss');
+  dismissBtn.addEventListener('click', () => {
+    notification.remove();
+  });
+  
+  // Auto-dismiss after 30 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 30000);
+}
+
+// Library UI Rendering
+function renderLibraryUI(detectedLibraries) {
+  const libraryControls = document.getElementById('libraryControls');
+  const libraryList = document.getElementById('libraryList');
+  const libraryBadge = document.getElementById('libraryBadge');
+  
+  if (!libraryControls || !libraryList || !libraryBadge) {
+    console.warn('Library UI elements not found');
+    return;
+  }
+  
+  // Show library controls
+  libraryControls.classList.remove('hidden');
+  
+  // Update badge count
+  libraryBadge.textContent = libraryManager.getEnabled().length;
+  
+  // Clear existing list
+  libraryList.innerHTML = '';
+  
+  // Get all libraries
+  const allLibraries = Object.values(LIBRARY_DEFINITIONS);
+  
+  // Render library checkboxes
+  allLibraries.forEach(lib => {
+    const isDetected = detectedLibraries.includes(lib.id);
+    const isEnabled = libraryManager.isEnabled(lib.id);
+    
+    const libraryItem = document.createElement('label');
+    libraryItem.className = 'library-item';
+    if (isDetected) {
+      libraryItem.classList.add('library-detected');
+    }
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `library-${lib.id}`;
+    checkbox.checked = isEnabled;
+    checkbox.setAttribute('data-library-id', lib.id);
+    
+    const icon = document.createElement('span');
+    icon.className = 'library-icon';
+    icon.textContent = lib.icon;
+    icon.setAttribute('aria-hidden', 'true');
+    
+    const info = document.createElement('span');
+    info.className = 'library-info';
+    
+    const name = document.createElement('strong');
+    name.className = 'library-name';
+    name.textContent = lib.name;
+    if (isDetected) {
+      const badge = document.createElement('span');
+      badge.className = 'library-required-badge';
+      badge.textContent = 'required';
+      badge.setAttribute('aria-label', 'Required by this model');
+      name.appendChild(badge);
+    }
+    
+    const desc = document.createElement('span');
+    desc.className = 'library-description';
+    desc.textContent = lib.description;
+    
+    info.appendChild(name);
+    info.appendChild(desc);
+    
+    libraryItem.appendChild(checkbox);
+    libraryItem.appendChild(icon);
+    libraryItem.appendChild(info);
+    
+    libraryList.appendChild(libraryItem);
+    
+    // Add event listener
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        libraryManager.enable(lib.id);
+      } else {
+        libraryManager.disable(lib.id);
+      }
+      libraryBadge.textContent = libraryManager.getEnabled().length;
+      updateStatus(`${lib.name} ${checkbox.checked ? 'enabled' : 'disabled'}`);
+    });
+  });
+  
+  // Add library help button handler
+  const libraryHelpBtn = document.getElementById('libraryHelpBtn');
+  if (libraryHelpBtn) {
+    libraryHelpBtn.addEventListener('click', () => {
+      alert(
+        'OpenSCAD Libraries\n\n' +
+        'Libraries provide reusable components and functions for your models.\n\n' +
+        'Common libraries:\n' +
+        '• MCAD: Mechanical components (gears, screws, bearings)\n' +
+        '• BOSL2: Advanced geometry and attachments\n' +
+        '• NopSCADlib: 3D printer parts library\n' +
+        '• dotSCAD: Artistic patterns and designs\n\n' +
+        'Enable libraries that your model uses with include/use statements.\n' +
+        'Required libraries are auto-detected and marked.'
+      );
+    });
+  }
+}
+
+// Update auto-preview to include libraries
+function getEnabledLibrariesForRender() {
+  const paths = libraryManager.getMountPaths();
+  return paths;
 }
 
 // Start the app

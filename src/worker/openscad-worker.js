@@ -7,9 +7,24 @@ import { createOpenSCAD } from 'openscad-wasm-prebuilt';
 
 // Worker state
 let openscadInstance = null;
+let openscadModule = null;
 let initialized = false;
 let currentRenderTimeout = null;
 let mountedFiles = new Map(); // Track files in virtual filesystem
+let mountedLibraries = new Set(); // Track mounted library IDs
+
+/**
+ * Ensure we have access to the underlying OpenSCAD WASM module
+ * @returns {Promise<Object|null>}
+ */
+async function ensureOpenSCADModule() {
+  if (openscadModule) return openscadModule;
+  if (openscadInstance?.getInstance) {
+    const maybeModule = openscadInstance.getInstance();
+    openscadModule = typeof maybeModule?.then === 'function' ? await maybeModule : maybeModule;
+  }
+  return openscadModule;
+}
 
 /**
  * Escape a string for use in a RegExp
@@ -32,6 +47,7 @@ async function initWASM() {
 
     // Initialize OpenSCAD WASM
     openscadInstance = await createOpenSCAD();
+    openscadModule = await ensureOpenSCADModule();
     initialized = true;
 
     self.postMessage({
@@ -59,11 +75,12 @@ async function initWASM() {
  * @returns {Promise<void>}
  */
 async function mountFiles(files) {
-  if (!openscadInstance || !openscadInstance.FS) {
+  const module = await ensureOpenSCADModule();
+  if (!module || !module.FS) {
     throw new Error('OpenSCAD filesystem not available');
   }
   
-  const FS = openscadInstance.FS;
+  const FS = module.FS;
   
   // Create directory structure
   const directories = new Set();
@@ -111,12 +128,12 @@ async function mountFiles(files) {
  * Clear all mounted files from virtual filesystem
  */
 function clearMountedFiles() {
-  if (!openscadInstance || !openscadInstance.FS) {
+  if (!openscadModule || !openscadModule.FS) {
     mountedFiles.clear();
     return;
   }
   
-  const FS = openscadInstance.FS;
+  const FS = openscadModule.FS;
   
   for (const filePath of mountedFiles.keys()) {
     try {
@@ -128,6 +145,105 @@ function clearMountedFiles() {
   
   mountedFiles.clear();
   console.log('[Worker FS] Cleared all mounted files');
+}
+
+/**
+ * Mount library files from public/libraries/ into virtual filesystem
+ * @param {Array<{id: string, path: string}>} libraries - Array of library configurations
+ * @returns {Promise<void>}
+ */
+async function mountLibraries(libraries) {
+  const module = await ensureOpenSCADModule();
+  if (!module || !module.FS) {
+    throw new Error('OpenSCAD filesystem not available');
+  }
+  
+  const FS = module.FS;
+  let totalMounted = 0;
+  
+  for (const lib of libraries) {
+    if (mountedLibraries.has(lib.id)) {
+      console.log(`[Worker FS] Library ${lib.id} already mounted`);
+      continue;
+    }
+    
+    try {
+      console.log(`[Worker FS] Mounting library: ${lib.id} from ${lib.path}`);
+      
+      // Fetch library file list from manifest or directory listing
+      // For now, we'll try to mount the library directory recursively
+      const manifestUrl = `${lib.path}/manifest.json`;
+      const response = await fetch(manifestUrl).catch((err) => {
+        return null;
+      });
+      
+      if (response && response.ok) {
+        const manifest = await response.json();
+        const files = manifest.files || [];
+        
+        // Create library directory
+        try {
+          FS.mkdir(lib.id);
+        } catch (error) {
+          if (error.code !== 'EEXIST') throw error;
+        }
+        
+        // Fetch and mount each file
+        for (const file of files) {
+          try {
+            const fileResponse = await fetch(`${lib.path}/${file}`);
+            if (fileResponse.ok) {
+              const content = await fileResponse.text();
+              const filePath = `${lib.id}/${file}`;
+              
+              // Create subdirectories if needed
+              const parts = file.split('/');
+              let currentPath = lib.id;
+              for (let i = 0; i < parts.length - 1; i++) {
+                currentPath += '/' + parts[i];
+                try {
+                  FS.mkdir(currentPath);
+                } catch (error) {
+                  if (error.code !== 'EEXIST') throw error;
+                }
+              }
+              
+              FS.writeFile(filePath, content);
+              totalMounted++;
+            }
+          } catch (error) {
+            console.warn(`[Worker FS] Failed to mount ${file} from ${lib.id}:`, error.message);
+          }
+        }
+        
+        mountedLibraries.add(lib.id);
+        console.log(`[Worker FS] Successfully mounted library: ${lib.id}`);
+      } else {
+        // No manifest, try to fetch common files
+        console.warn(`[Worker FS] No manifest found for ${lib.id}, skipping`);
+      }
+    } catch (error) {
+      console.error(`[Worker FS] Failed to mount library ${lib.id}:`, error);
+      throw new Error(`Failed to mount library: ${lib.id}`);
+    }
+  }
+  
+  console.log(`[Worker FS] Successfully mounted ${mountedLibraries.size} libraries (${totalMounted} files)`);
+}
+
+/**
+ * Clear mounted libraries from virtual filesystem
+ */
+function clearLibraries() {
+  if (!openscadModule || !openscadModule.FS) {
+    mountedLibraries.clear();
+    return;
+  }
+  
+  // Note: We don't actually delete library files from FS as they may be reused
+  // Just clear the tracking set
+  mountedLibraries.clear();
+  console.log('[Worker FS] Cleared library tracking');
 }
 
 /**
@@ -236,19 +352,24 @@ async function renderWithExport(scadContent, format) {
   const outputFile = `/tmp/output.${format}`;
   
   try {
+    const module = await ensureOpenSCADModule();
+    if (!module || !module.FS) {
+      throw new Error('OpenSCAD filesystem not available');
+    }
+    
     // Write input file
-    openscadInstance.FS.writeFile(inputFile, scadContent);
+    module.FS.writeFile(inputFile, scadContent);
     
     // Execute OpenSCAD export command
     // This assumes OpenSCAD WASM supports command-line style operations
-    await openscadInstance.callMain(['-o', outputFile, inputFile]);
+    await module.callMain(['-o', outputFile, inputFile]);
     
     // Read output file
-    const outputData = openscadInstance.FS.readFile(outputFile);
+    const outputData = module.FS.readFile(outputFile);
     
     // Clean up
-    openscadInstance.FS.unlink(inputFile);
-    openscadInstance.FS.unlink(outputFile);
+    module.FS.unlink(inputFile);
+    module.FS.unlink(outputFile);
     
     return outputData;
   } catch (error) {
@@ -261,13 +382,33 @@ async function renderWithExport(scadContent, format) {
  * Render OpenSCAD to specified format
  */
 async function render(payload) {
-  const { requestId, scadContent, parameters, timeoutMs, files, mainFile, outputFormat = 'stl' } = payload;
+  const { requestId, scadContent, parameters, timeoutMs, files, mainFile, outputFormat = 'stl', libraries } = payload;
 
   try {
     self.postMessage({
       type: 'PROGRESS',
       payload: { requestId, percent: 10, message: 'Preparing model...' },
     });
+
+    // Mount libraries if provided
+    if (libraries && libraries.length > 0) {
+      self.postMessage({
+        type: 'PROGRESS',
+        payload: { requestId, percent: 12, message: `Mounting ${libraries.length} libraries...` },
+      });
+      
+      try {
+        await mountLibraries(libraries);
+        
+        self.postMessage({
+          type: 'PROGRESS',
+          payload: { requestId, percent: 15, message: 'Libraries mounted successfully' },
+        });
+      } catch (error) {
+        console.warn('[Worker] Library mounting failed:', error);
+        // Continue rendering - libraries might not be strictly required
+      }
+    }
 
     // Mount additional files if provided (for multi-file projects)
     if (files && Object.keys(files).length > 0) {
@@ -276,7 +417,7 @@ async function render(payload) {
       
       self.postMessage({
         type: 'PROGRESS',
-        payload: { requestId, percent: 15, message: `Mounting ${filesMap.size} files...` },
+        payload: { requestId, percent: 17, message: `Mounting ${filesMap.size} files...` },
       });
       
       await mountFiles(filesMap);
@@ -523,6 +664,33 @@ self.onmessage = async (e) => {
       clearMountedFiles();
       self.postMessage({
         type: 'FILES_CLEARED',
+        payload: { success: true },
+      });
+      break;
+
+    case 'MOUNT_LIBRARIES':
+      try {
+        await mountLibraries(payload.libraries);
+        self.postMessage({
+          type: 'LIBRARIES_MOUNTED',
+          payload: { success: true, count: payload.libraries.length },
+        });
+      } catch (error) {
+        self.postMessage({
+          type: 'ERROR',
+          payload: {
+            requestId: 'mount-libraries',
+            code: 'LIBRARY_MOUNT_FAILED',
+            message: 'Failed to mount libraries: ' + error.message,
+          },
+        });
+      }
+      break;
+
+    case 'CLEAR_LIBRARIES':
+      clearLibraries();
+      self.postMessage({
+        type: 'LIBRARIES_CLEARED',
         payload: { success: true },
       });
       break;
