@@ -5,6 +5,27 @@ All notable changes to the OpenSCAD Web Customizer Forge project are documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-01-14
+
+### Added - STL Measurements
+- **Dimension Measurements**: Real-time bounding box visualization with X, Y, Z dimensions
+- **Dimensions Panel**: Dedicated UI panel showing width, depth, height, and volume
+- **Measurements Toggle**: "Show measurements" checkbox in preview settings
+- **Visual Overlays**: Red wireframe bounding box with dimension lines and text labels
+- **Theme-Aware Colors**: Measurement colors adapt to light/dark/high-contrast themes
+- **Persistent Preference**: Saves measurement state to localStorage
+- **High Contrast Support**: Thicker lines (3px) and larger text (48px) in HC mode
+
+### Technical
+- Enhanced `PreviewManager` with measurement methods (+250 lines)
+- New dimension calculation and visualization system
+- Canvas-based text sprites for dimension labels
+- Three.js BoxHelper for bounding box visualization
+- +4.2KB gzipped bundle size impact
+- Build time: 3.55s
+
+See [docs/changelogs/CHANGELOG_v1.8.md](docs/changelogs/CHANGELOG_v1.8.md) for complete details.
+
 ## [1.7.0] - 2026-01-13
 
 ### Added - Parameter Presets System

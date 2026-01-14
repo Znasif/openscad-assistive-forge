@@ -57,7 +57,7 @@ let autoPreviewController = null;
 
 // Initialize app
 async function initApp() {
-  console.log('OpenSCAD Web Customizer v1.7.0 (Parameter Presets)');
+  console.log('OpenSCAD Web Customizer v1.8.0 (STL Measurements)');
   console.log('Initializing...');
 
   // Initialize theme (before any UI rendering)
@@ -163,6 +163,8 @@ async function initApp() {
   const previewContainer = document.getElementById('previewContainer');
   const autoPreviewToggle = document.getElementById('autoPreviewToggle');
   const previewQualitySelect = document.getElementById('previewQualitySelect');
+  const measurementsToggle = document.getElementById('measurementsToggle');
+  const dimensionsDisplay = document.getElementById('dimensionsDisplay');
   // Note: outputFormatSelect and formatInfo already declared above
   
   // Create preview state indicator element
@@ -224,6 +226,44 @@ async function initApp() {
         }
       }
     });
+  }
+  
+  // Wire measurements toggle
+  if (measurementsToggle) {
+    // Initialize from localStorage (after preview manager is created)
+    // The checkbox will be set when preview manager is initialized
+    
+    measurementsToggle.addEventListener('change', () => {
+      const enabled = measurementsToggle.checked;
+      if (previewManager) {
+        previewManager.toggleMeasurements(enabled);
+        updateDimensionsDisplay();
+      }
+      console.log(`[App] Measurements ${enabled ? 'enabled' : 'disabled'}`);
+    });
+  }
+  
+  /**
+   * Update the dimensions display panel
+   */
+  function updateDimensionsDisplay() {
+    if (!previewManager || !dimensionsDisplay) return;
+    
+    const dimensions = previewManager.calculateDimensions();
+    
+    if (dimensions && measurementsToggle?.checked) {
+      // Show dimensions panel
+      dimensionsDisplay.classList.remove('hidden');
+      
+      // Update values
+      document.getElementById('dimX').textContent = `${dimensions.x} mm`;
+      document.getElementById('dimY').textContent = `${dimensions.y} mm`;
+      document.getElementById('dimZ').textContent = `${dimensions.z} mm`;
+      document.getElementById('dimVolume').textContent = `${dimensions.volume.toLocaleString()} mm³`;
+    } else {
+      // Hide dimensions panel
+      dimensionsDisplay.classList.add('hidden');
+    }
   }
   
   /**
@@ -300,6 +340,8 @@ async function initApp() {
         console.log('[AutoPreview] Preview ready, cached:', cached);
         // Update button state - preview available but may need full render for download
         updatePrimaryActionButton();
+        // Update dimensions display
+        updateDimensionsDisplay();
       },
       onProgress: (percent, message, type) => {
         if (type === 'preview') {
@@ -562,6 +604,11 @@ async function initApp() {
       if (!previewManager) {
         previewManager = new PreviewManager(previewContainer);
         previewManager.init();
+        
+        // Sync measurements toggle with saved preference
+        if (measurementsToggle) {
+          measurementsToggle.checked = previewManager.measurementsEnabled;
+        }
         
         // Listen for theme changes and update preview
         themeManager.addListener((theme, activeTheme, highContrast) => {

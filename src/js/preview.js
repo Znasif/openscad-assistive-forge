@@ -56,6 +56,11 @@ export class PreviewManager {
     this.animationId = null;
     this.currentTheme = options.theme || 'light';
     this.highContrast = options.highContrast || false;
+    
+    // Measurements
+    this.measurementsEnabled = this.loadMeasurementPreference();
+    this.measurementHelpers = null; // Group containing all measurement visuals
+    this.dimensions = null; // { x, y, z, volume }
   }
 
   /**
@@ -183,6 +188,11 @@ export class PreviewManager {
       this.mesh.material.color.setHex(colors.model);
     }
     
+    // Refresh measurements if they're visible
+    if (this.measurementsEnabled && this.mesh) {
+      this.showMeasurements();
+    }
+    
     console.log(`[Preview] Theme updated to ${themeKey}`);
   }
 
@@ -237,6 +247,11 @@ export class PreviewManager {
 
         // Auto-fit camera to model
         this.fitCameraToModel();
+        
+        // Show measurements if enabled
+        if (this.measurementsEnabled) {
+          this.showMeasurements();
+        }
 
         console.log('[Preview] STL loaded and displayed');
         resolve();
@@ -278,9 +293,232 @@ export class PreviewManager {
   }
 
   /**
+   * Calculate dimensions from the current mesh
+   * @returns {Object} Dimensions { x, y, z, volume, triangles }
+   */
+  calculateDimensions() {
+    if (!this.mesh) return null;
+
+    const box = new THREE.Box3().setFromObject(this.mesh);
+    const size = box.getSize(new THREE.Vector3());
+    const volume = size.x * size.y * size.z;
+    const triangles = this.mesh.geometry.index ? 
+      this.mesh.geometry.index.count / 3 : 
+      this.mesh.geometry.attributes.position.count / 3;
+
+    return {
+      x: Math.round(size.x * 100) / 100, // Round to 2 decimal places
+      y: Math.round(size.y * 100) / 100,
+      z: Math.round(size.z * 100) / 100,
+      volume: Math.round(volume * 100) / 100,
+      triangles: Math.round(triangles),
+    };
+  }
+
+  /**
+   * Toggle measurement display
+   * @param {boolean} enabled - Show or hide measurements
+   */
+  toggleMeasurements(enabled) {
+    this.measurementsEnabled = enabled;
+    this.saveMeasurementPreference(enabled);
+    
+    if (enabled && this.mesh) {
+      this.showMeasurements();
+    } else {
+      this.hideMeasurements();
+    }
+    
+    console.log(`[Preview] Measurements ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Show measurement overlays on the model
+   */
+  showMeasurements() {
+    if (!this.mesh) return;
+    
+    // Remove existing measurements
+    this.hideMeasurements();
+    
+    // Calculate dimensions
+    this.dimensions = this.calculateDimensions();
+    if (!this.dimensions) return;
+    
+    // Create group for all measurement visuals
+    this.measurementHelpers = new THREE.Group();
+    this.measurementHelpers.name = 'measurements';
+    
+    // Get bounding box
+    const box = new THREE.Box3().setFromObject(this.mesh);
+    const min = box.min;
+    const max = box.max;
+    
+    // Choose color based on theme
+    const colors = PREVIEW_COLORS[this.currentTheme];
+    const lineColor = this.currentTheme.includes('dark') ? 0xff6b6b : 0xff0000;
+    
+    // Create bounding box edges
+    const boxHelper = new THREE.BoxHelper(this.mesh, lineColor);
+    boxHelper.material.linewidth = this.highContrast ? 3 : 2;
+    this.measurementHelpers.add(boxHelper);
+    
+    // Add dimension lines and labels (we'll render text as sprites)
+    this.addDimensionLine(
+      new THREE.Vector3(min.x, min.y, min.z),
+      new THREE.Vector3(max.x, min.y, min.z),
+      `${this.dimensions.x} mm`,
+      'X',
+      lineColor
+    );
+    
+    this.addDimensionLine(
+      new THREE.Vector3(min.x, min.y, min.z),
+      new THREE.Vector3(min.x, max.y, min.z),
+      `${this.dimensions.y} mm`,
+      'Y',
+      lineColor
+    );
+    
+    this.addDimensionLine(
+      new THREE.Vector3(min.x, min.y, min.z),
+      new THREE.Vector3(min.x, min.y, max.z),
+      `${this.dimensions.z} mm`,
+      'Z',
+      lineColor
+    );
+    
+    this.scene.add(this.measurementHelpers);
+    console.log('[Preview] Measurements displayed:', this.dimensions);
+  }
+
+  /**
+   * Add a dimension line with label
+   * @param {THREE.Vector3} start - Start point
+   * @param {THREE.Vector3} end - End point
+   * @param {string} label - Dimension label
+   * @param {string} axis - Axis name (X, Y, Z)
+   * @param {number} color - Line color
+   */
+  addDimensionLine(start, end, label, axis, color) {
+    // Create line geometry
+    const points = [start, end];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ 
+      color: color, 
+      linewidth: this.highContrast ? 3 : 2 
+    });
+    const line = new THREE.Line(geometry, material);
+    this.measurementHelpers.add(line);
+    
+    // Create text sprite for label
+    const midpoint = new THREE.Vector3().lerpVectors(start, end, 0.5);
+    const sprite = this.createTextSprite(label, color);
+    
+    // Offset sprite slightly from the line
+    const offset = 5;
+    if (axis === 'X') midpoint.y -= offset;
+    if (axis === 'Y') midpoint.x -= offset;
+    if (axis === 'Z') midpoint.x -= offset;
+    
+    sprite.position.copy(midpoint);
+    this.measurementHelpers.add(sprite);
+  }
+
+  /**
+   * Create a text sprite for dimension labels
+   * @param {string} text - Text content
+   * @param {number} color - Text color
+   * @returns {THREE.Sprite} Text sprite
+   */
+  createTextSprite(text, color) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const fontSize = this.highContrast ? 48 : 32;
+    
+    // Set canvas size
+    canvas.width = 256;
+    canvas.height = 64;
+    
+    // Configure text rendering
+    context.font = `bold ${fontSize}px Arial`;
+    context.fillStyle = this.currentTheme.includes('dark') ? '#ffffff' : '#000000';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    
+    // Draw background for better visibility
+    const bgColor = this.currentTheme.includes('dark') ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)';
+    context.fillStyle = bgColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw text
+    context.fillStyle = this.currentTheme.includes('dark') ? '#ffffff' : '#000000';
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+    
+    // Create texture from canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    
+    // Create sprite
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(20, 5, 1);
+    
+    return sprite;
+  }
+
+  /**
+   * Hide measurement overlays
+   */
+  hideMeasurements() {
+    if (this.measurementHelpers) {
+      // Dispose of geometries and materials
+      this.measurementHelpers.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (child.material.map) child.material.map.dispose();
+          child.material.dispose();
+        }
+      });
+      
+      this.scene.remove(this.measurementHelpers);
+      this.measurementHelpers = null;
+    }
+  }
+
+  /**
+   * Load measurement preference from localStorage
+   * @returns {boolean} Preference value
+   */
+  loadMeasurementPreference() {
+    try {
+      const pref = localStorage.getItem('openscad-customizer-measurements');
+      return pref === 'true';
+    } catch (error) {
+      console.warn('[Preview] Could not load measurement preference:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Save measurement preference to localStorage
+   * @param {boolean} enabled - Measurement enabled state
+   */
+  saveMeasurementPreference(enabled) {
+    try {
+      localStorage.setItem('openscad-customizer-measurements', enabled ? 'true' : 'false');
+    } catch (error) {
+      console.warn('[Preview] Could not save measurement preference:', error);
+    }
+  }
+
+  /**
    * Clear the preview
    */
   clear() {
+    this.hideMeasurements();
+    this.dimensions = null;
+    
     if (this.mesh) {
       this.scene.remove(this.mesh);
       this.mesh.geometry.dispose();

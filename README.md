@@ -5,7 +5,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![OpenSCAD](https://img.shields.io/badge/OpenSCAD-WASM-orange.svg)](https://openscad.org/)
 [![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Version](https://img.shields.io/badge/version-1.7.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.8.0-brightgreen.svg)](CHANGELOG.md)
 
 ## 🎯 What This Does
 
@@ -52,20 +52,20 @@ Then open http://localhost:5173 in your browser.
 
 ## ✨ Features
 
-### Current Release: v1.7.0 — Parameter Presets System 🎉
+### Current Release: v1.8.0 — STL Measurements 📏
 
-The latest release brings powerful configuration management capabilities:
+The latest release adds real-time dimension measurements to the 3D preview:
 
 || Feature | Description |
 ||---------|-------------|
-|| 💾 **Save Presets** | Save current parameters as named configurations |
-|| 📋 **Load Presets** | Quick dropdown selector or management modal |
-|| 📂 **Manage Presets** | View, load, delete, export all saved presets |
-|| 📤 **Import/Export** | Share presets as JSON files |
-|| 🔄 **Smart Merging** | Duplicate names update existing presets |
-|| 💿 **Persistence** | Presets saved per model in localStorage |
+|| 📏 **Dimension Display** | Shows width, depth, height, and volume |
+|| 📦 **Bounding Box** | Visual wireframe showing model extents |
+|| 🏷️ **Dimension Labels** | Floating text labels on 3D preview |
+|| 🎨 **Theme-Aware** | Colors adapt to light/dark/high-contrast modes |
+|| 💾 **Persistent Toggle** | Preference saved to localStorage |
+|| ♿ **Accessible** | Full keyboard and screen reader support |
 
-**Use Case**: Quickly switch between "Small Handle", "Large Handle", "Extra Wide" configurations without manually adjusting 20+ parameters each time!
+**Use Case**: Verify your model dimensions before printing. See at a glance if your 50mm × 40mm × 30mm box will fit your needs!
 
 ### Complete Feature Set
 
@@ -144,6 +144,16 @@ The latest release brings powerful configuration management capabilities:
 || 📋 Management modal | ✅ Complete |
 || 📤 Import/Export as JSON | ✅ Complete |
 || 💿 LocalStorage persistence | ✅ Complete |
+
+#### v1.8 — STL Measurements ✅
+
+|| Feature | Status |
+||---------|--------|
+|| 📏 Real-time dimension display | ✅ Complete |
+|| 📦 Bounding box visualization | ✅ Complete |
+|| 🏷️ Dimension labels on 3D model | ✅ Complete |
+|| 🎨 Theme-aware measurement colors | ✅ Complete |
+|| 💾 Persistent measurement toggle | ✅ Complete |
 
 ### Coming Soon
 

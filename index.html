@@ -120,6 +120,12 @@
                 <input type="checkbox" id="autoPreviewToggle" checked />
                 <span>Auto-preview</span>
               </label>
+              
+              <label class="preview-setting">
+                <input type="checkbox" id="measurementsToggle" aria-describedby="measurementsHelp" />
+                <span>Show measurements</span>
+              </label>
+              <span id="measurementsHelp" class="sr-only">Toggle dimension measurements and bounding box overlay on 3D preview</span>
 
               <label class="preview-setting" for="previewQualitySelect">
                 <span class="preview-setting-label">Preview quality</span>
@@ -160,6 +166,28 @@
             </div>
             
             <div class="stats" id="stats" role="status" aria-live="polite"></div>
+            
+            <div class="dimensions-display hidden" id="dimensionsDisplay" role="region" aria-label="Model dimensions">
+              <h3 class="dimensions-heading">Dimensions</h3>
+              <dl class="dimensions-list">
+                <div class="dimension-item">
+                  <dt>Width (X):</dt>
+                  <dd id="dimX">--</dd>
+                </div>
+                <div class="dimension-item">
+                  <dt>Depth (Y):</dt>
+                  <dd id="dimY">--</dd>
+                </div>
+                <div class="dimension-item">
+                  <dt>Height (Z):</dt>
+                  <dd id="dimZ">--</dd>
+                </div>
+                <div class="dimension-item">
+                  <dt>Volume:</dt>
+                  <dd id="dimVolume">--</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
       </main>
