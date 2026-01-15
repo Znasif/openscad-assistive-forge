@@ -92,6 +92,63 @@ export function extractParameters(scadContent) {
   let currentGroup = 'General';
   let groupOrder = 0;
   let paramOrder = 0;
+  let scopeDepth = 0;
+  let inBlockComment = false;
+
+  const stripForScope = (input, state) => {
+    let output = '';
+    let inString = false;
+    let stringChar = '';
+    let escapeNext = false;
+
+    for (let idx = 0; idx < input.length; idx++) {
+      const char = input[idx];
+      const next = input[idx + 1];
+
+      if (state.inBlockComment) {
+        if (char === '*' && next === '/') {
+          state.inBlockComment = false;
+          idx += 1;
+        }
+        continue;
+      }
+
+      if (!inString && char === '/' && next === '*') {
+        state.inBlockComment = true;
+        idx += 1;
+        continue;
+      }
+
+      if (!inString && char === '/' && next === '/') {
+        break;
+      }
+
+      if (!inString && (char === '"' || char === "'")) {
+        inString = true;
+        stringChar = char;
+        output += ' ';
+        continue;
+      }
+
+      if (inString) {
+        if (!escapeNext && char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        if (!escapeNext && char === stringChar) {
+          inString = false;
+          stringChar = '';
+        }
+        escapeNext = false;
+        output += ' ';
+        continue;
+      }
+
+      output += char;
+    }
+
+    return output;
+  };
 
   // Regex patterns
   const groupPattern = /\/\*\s*\[\s*([^\]]+)\s*\]\s*\*\//;
@@ -100,36 +157,49 @@ export function extractParameters(scadContent) {
   const commentPattern = /\/\/\s*(.+)$/;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    const depthBefore = scopeDepth;
+    let handledGroup = false;
 
-    // Check for group
-    const groupMatch = line.match(groupPattern);
-    if (groupMatch) {
-      currentGroup = groupMatch[1].trim();
-      
-      // Skip Hidden group
-      if (currentGroup.toLowerCase() !== 'hidden') {
-        if (!groups.find((g) => g.id === currentGroup)) {
-          groups.push({
-            id: currentGroup,
-            label: currentGroup,
-            order: groupOrder++,
-          });
+    if (depthBefore === 0) {
+      // Check for group
+      const groupMatch = line.match(groupPattern);
+      if (groupMatch) {
+        currentGroup = groupMatch[1].trim();
+        
+        // Skip Hidden group
+        if (currentGroup.toLowerCase() !== 'hidden') {
+          if (!groups.find((g) => g.id === currentGroup)) {
+            groups.push({
+              id: currentGroup,
+              label: currentGroup,
+              order: groupOrder++,
+            });
+          }
         }
+        handledGroup = true;
       }
-      continue;
     }
 
-    // Check for parameter assignment
-    const assignMatch = line.match(assignmentPattern);
-    if (assignMatch) {
-      const paramName = assignMatch[1];
-      const valueStr = assignMatch[2].trim();
+    // Check for parameter assignment (top-level only)
+    if (!handledGroup && depthBefore === 0) {
+      const assignMatch = line.match(assignmentPattern);
+      if (assignMatch) {
+        const paramName = assignMatch[1];
+        const valueStr = assignMatch[2].trim();
 
-      // Skip if in Hidden group
-      if (currentGroup.toLowerCase() === 'hidden') {
-        continue;
-      }
+        // Skip if in Hidden group
+        if (currentGroup.toLowerCase() === 'hidden') {
+          const scopeState = { inBlockComment };
+          const scopeLine = stripForScope(rawLine, scopeState);
+          inBlockComment = scopeState.inBlockComment;
+          for (const ch of scopeLine) {
+            if (ch === '{') scopeDepth += 1;
+            if (ch === '}') scopeDepth = Math.max(0, scopeDepth - 1);
+          }
+          continue;
+        }
 
       // Parse default value
       const defaultVal = parseDefaultValue(valueStr);
@@ -151,31 +221,11 @@ export function extractParameters(scadContent) {
       if (bracketMatch) {
         const hint = bracketMatch[1].trim();
 
-        // Check if it's a range: [min:max] or [min:step:max]
-        const rangeParts = hint.split(':');
-        if (rangeParts.length >= 2 && rangeParts.every(p => !isNaN(parseFloat(p.trim())))) {
-          const nums = rangeParts.map(p => parseFloat(p.trim()));
+        // Check for color type: [color]
+        if (hint.toLowerCase() === 'color') {
+          param.type = 'color';
+          param.uiType = 'color';
           
-          if (nums.length === 2) {
-            // [min:max]
-            param.minimum = nums[0];
-            param.maximum = nums[1];
-            param.uiType = 'slider';
-          } else if (nums.length === 3) {
-            // [min:step:max]
-            param.minimum = nums[0];
-            param.step = nums[1];
-            param.maximum = nums[2];
-            param.uiType = 'slider';
-            
-            // Determine if integer or float based on step
-            if (Number.isInteger(nums[1]) && !hint.includes('.')) {
-              param.type = 'integer';
-            } else {
-              param.type = 'number';
-            }
-          }
-
           // Extract comment after bracket hint
           const afterBracket = afterAssignment.substring(
             afterAssignment.indexOf(']') + 1
@@ -183,30 +233,84 @@ export function extractParameters(scadContent) {
           if (afterBracket) {
             param.description = afterBracket;
           }
-        } else {
-          // It's an enum: [opt1, opt2, opt3]
-          const enumValues = parseEnumValues(hint);
-          param.enum = enumValues;
-          param.type = 'string'; // Enums are typically strings
+        }
+        // Check for file type: [file] or [file:ext1,ext2]
+        else if (hint.toLowerCase().startsWith('file')) {
+          param.type = 'file';
+          param.uiType = 'file';
           
-          // Check if it's a yes/no toggle
-          const lowerVals = enumValues.map(v => v.toLowerCase());
-          if (
-            enumValues.length === 2 &&
-            lowerVals.includes('yes') &&
-            lowerVals.includes('no')
-          ) {
-            param.uiType = 'toggle';
-          } else {
-            param.uiType = 'select';
+          // Extract accepted file extensions
+          if (hint.includes(':')) {
+            const extPart = hint.substring(hint.indexOf(':') + 1).trim();
+            param.acceptedExtensions = extPart.split(',').map(e => e.trim());
           }
-
-          // Extract comment after bracket hint (if any)
+          
+          // Extract comment after bracket hint
           const afterBracket = afterAssignment.substring(
             afterAssignment.indexOf(']') + 1
           ).trim();
           if (afterBracket) {
             param.description = afterBracket;
+          }
+        }
+        // Check if it's a range: [min:max] or [min:step:max]
+        else {
+          const rangeParts = hint.split(':');
+          if (rangeParts.length >= 2 && rangeParts.every(p => !isNaN(parseFloat(p.trim())))) {
+            const nums = rangeParts.map(p => parseFloat(p.trim()));
+            
+            if (nums.length === 2) {
+              // [min:max]
+              param.minimum = nums[0];
+              param.maximum = nums[1];
+              param.uiType = 'slider';
+            } else if (nums.length === 3) {
+              // [min:step:max]
+              param.minimum = nums[0];
+              param.step = nums[1];
+              param.maximum = nums[2];
+              param.uiType = 'slider';
+              
+              // Determine if integer or float based on step
+              if (Number.isInteger(nums[1]) && !hint.includes('.')) {
+                param.type = 'integer';
+              } else {
+                param.type = 'number';
+              }
+            }
+
+            // Extract comment after bracket hint
+            const afterBracket = afterAssignment.substring(
+              afterAssignment.indexOf(']') + 1
+            ).trim();
+            if (afterBracket) {
+              param.description = afterBracket;
+            }
+          } else {
+            // It's an enum: [opt1, opt2, opt3]
+            const enumValues = parseEnumValues(hint);
+            param.enum = enumValues;
+            param.type = 'string'; // Enums are typically strings
+            
+            // Check if it's a yes/no toggle
+            const lowerVals = enumValues.map(v => v.toLowerCase());
+            if (
+              enumValues.length === 2 &&
+              lowerVals.includes('yes') &&
+              lowerVals.includes('no')
+            ) {
+              param.uiType = 'toggle';
+            } else {
+              param.uiType = 'select';
+            }
+
+            // Extract comment after bracket hint (if any)
+            const afterBracket = afterAssignment.substring(
+              afterAssignment.indexOf(']') + 1
+            ).trim();
+            if (afterBracket) {
+              param.description = afterBracket;
+            }
           }
         }
       } else if (commentMatch) {
@@ -218,7 +322,16 @@ export function extractParameters(scadContent) {
         param.uiType = 'input';
       }
 
-      parameters[paramName] = param;
+        parameters[paramName] = param;
+      }
+    }
+
+    const scopeState = { inBlockComment };
+    const scopeLine = stripForScope(rawLine, scopeState);
+    inBlockComment = scopeState.inBlockComment;
+    for (const ch of scopeLine) {
+      if (ch === '{') scopeDepth += 1;
+      if (ch === '}') scopeDepth = Math.max(0, scopeDepth - 1);
     }
   }
 

@@ -240,6 +240,225 @@ function createTextInput(param, onChange) {
 }
 
 /**
+ * Create a color picker control
+ * @param {Object} param - Parameter definition
+ * @param {Function} onChange - Change handler
+ * @returns {HTMLElement} Control element
+ */
+function createColorControl(param, onChange) {
+  const container = document.createElement('div');
+  container.className = 'param-control param-control--color';
+
+  const label = document.createElement('label');
+  label.htmlFor = `param-${param.name}`;
+  label.textContent = param.name.replace(/_/g, ' ');
+
+  const colorContainer = document.createElement('div');
+  colorContainer.className = 'color-picker-container';
+
+  // Normalize color value to hex format
+  let hexValue = param.default || '#FF0000';
+  if (!hexValue.startsWith('#')) {
+    hexValue = '#' + hexValue;
+  }
+  // Ensure it's 6 digits
+  if (hexValue.length === 4) {
+    // Convert #RGB to #RRGGBB
+    hexValue = '#' + hexValue[1] + hexValue[1] + hexValue[2] + hexValue[2] + hexValue[3] + hexValue[3];
+  }
+
+  const colorInput = document.createElement('input');
+  colorInput.type = 'color';
+  colorInput.id = `param-${param.name}`;
+  colorInput.value = hexValue;
+  colorInput.className = 'color-picker';
+  colorInput.setAttribute('aria-label', `Select color for ${param.name.replace(/_/g, ' ')}`);
+
+  const hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.className = 'color-hex-input';
+  hexInput.value = hexValue.substring(1).toUpperCase(); // Remove # for display
+  hexInput.placeholder = 'RRGGBB';
+  hexInput.maxLength = 6;
+  hexInput.setAttribute('aria-label', `Hex color code for ${param.name.replace(/_/g, ' ')}`);
+
+  const preview = document.createElement('div');
+  preview.className = 'color-preview';
+  preview.style.backgroundColor = hexValue;
+  preview.setAttribute('role', 'img');
+  preview.setAttribute('aria-label', `Color preview: ${hexValue}`);
+
+  // Update on color picker change
+  colorInput.addEventListener('input', (e) => {
+    const hex = e.target.value;
+    hexInput.value = hex.substring(1).toUpperCase();
+    preview.style.backgroundColor = hex;
+    preview.setAttribute('aria-label', `Color preview: ${hex}`);
+    onChange(param.name, hex.substring(1)); // Store without #
+  });
+
+  // Update on hex input change
+  hexInput.addEventListener('input', (e) => {
+    let hex = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+    hexInput.value = hex;
+    
+    if (hex.length === 6) {
+      const fullHex = '#' + hex;
+      colorInput.value = fullHex;
+      preview.style.backgroundColor = fullHex;
+      preview.setAttribute('aria-label', `Color preview: ${fullHex}`);
+      onChange(param.name, hex); // Store without #
+    }
+  });
+
+  colorContainer.appendChild(preview);
+  colorContainer.appendChild(colorInput);
+  colorContainer.appendChild(hexInput);
+
+  container.appendChild(label);
+  container.appendChild(colorContainer);
+
+  if (param.description) {
+    const desc = document.createElement('small');
+    desc.className = 'param-description';
+    desc.textContent = param.description;
+    container.appendChild(desc);
+  }
+
+  return container;
+}
+
+/**
+ * Create a file upload control
+ * @param {Object} param - Parameter definition
+ * @param {Function} onChange - Change handler
+ * @returns {HTMLElement} Control element
+ */
+function createFileControl(param, onChange) {
+  const container = document.createElement('div');
+  container.className = 'param-control param-control--file';
+
+  const label = document.createElement('label');
+  label.htmlFor = `param-${param.name}`;
+  label.textContent = param.name.replace(/_/g, ' ');
+
+  const fileContainer = document.createElement('div');
+  fileContainer.className = 'file-upload-container';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.id = `param-${param.name}`;
+  fileInput.className = 'file-input';
+  fileInput.setAttribute('aria-label', `Upload file for ${param.name.replace(/_/g, ' ')}`);
+  
+  // Set accepted file types if specified
+  if (param.acceptedExtensions && param.acceptedExtensions.length > 0) {
+    fileInput.accept = param.acceptedExtensions.map(ext => `.${ext}`).join(',');
+  }
+
+  const fileButton = document.createElement('button');
+  fileButton.type = 'button';
+  fileButton.className = 'file-upload-button';
+  fileButton.textContent = '📁 Choose File';
+  fileButton.setAttribute('aria-label', `Choose file for ${param.name.replace(/_/g, ' ')}`);
+
+  const fileInfo = document.createElement('div');
+  fileInfo.className = 'file-info';
+  fileInfo.textContent = param.default || 'No file selected';
+  fileInfo.setAttribute('role', 'status');
+  fileInfo.setAttribute('aria-live', 'polite');
+
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.className = 'file-clear-button';
+  clearButton.textContent = '✕';
+  clearButton.title = 'Clear file';
+  clearButton.setAttribute('aria-label', `Clear file for ${param.name.replace(/_/g, ' ')}`);
+  clearButton.style.display = 'none';
+
+  // Button triggers file input
+  fileButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Handle file selection
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        // Read file as base64
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          fileInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+          fileInfo.title = file.name;
+          clearButton.style.display = 'inline-block';
+          
+          // Pass file data to onChange
+          onChange(param.name, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: dataUrl
+          });
+        };
+        reader.onerror = () => {
+          fileInfo.textContent = 'Error reading file';
+          fileInfo.className = 'file-info file-info--error';
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        fileInfo.textContent = 'Error reading file';
+        fileInfo.className = 'file-info file-info--error';
+        console.error('File read error:', error);
+      }
+    }
+  });
+
+  // Clear file
+  clearButton.addEventListener('click', () => {
+    fileInput.value = '';
+    fileInfo.textContent = 'No file selected';
+    fileInfo.className = 'file-info';
+    clearButton.style.display = 'none';
+    onChange(param.name, null);
+  });
+
+  fileContainer.appendChild(fileButton);
+  fileContainer.appendChild(fileInfo);
+  fileContainer.appendChild(clearButton);
+  fileContainer.appendChild(fileInput);
+
+  container.appendChild(label);
+  container.appendChild(fileContainer);
+
+  if (param.description) {
+    const desc = document.createElement('small');
+    desc.className = 'param-description';
+    desc.textContent = param.description;
+    if (param.acceptedExtensions && param.acceptedExtensions.length > 0) {
+      desc.textContent += ` (Accepted: ${param.acceptedExtensions.join(', ')})`;
+    }
+    container.appendChild(desc);
+  }
+
+  return container;
+}
+
+/**
+ * Format file size for display
+ * @param {number} bytes - File size in bytes
+ * @returns {string} Formatted file size
+ */
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
  * Render parameter UI from extracted parameters
  * @param {Object} extractedParams - Output from extractParameters()
  * @param {HTMLElement} container - Container to render into
@@ -308,6 +527,20 @@ export function renderParameterUI(extractedParams, container, onChange, initialV
 
         case 'toggle':
           control = createToggleControl(param, (name, value) => {
+            currentValues[name] = value;
+            onChange(currentValues);
+          });
+          break;
+
+        case 'color':
+          control = createColorControl(param, (name, value) => {
+            currentValues[name] = value;
+            onChange(currentValues);
+          });
+          break;
+
+        case 'file':
+          control = createFileControl(param, (name, value) => {
             currentValues[name] = value;
             onChange(currentValues);
           });

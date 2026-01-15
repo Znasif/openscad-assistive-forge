@@ -17,6 +17,7 @@ import { presetManager } from './js/preset-manager.js';
 import { ComparisonController } from './js/comparison-controller.js';
 import { ComparisonView } from './js/comparison-view.js';
 import { libraryManager, LIBRARY_DEFINITIONS } from './js/library-manager.js';
+import { RenderQueue } from './js/render-queue.js';
 
 // Feature detection
 function checkBrowserSupport() {
@@ -59,6 +60,7 @@ let previewManager = null;
 let autoPreviewController = null;
 let comparisonController = null;
 let comparisonView = null;
+let renderQueue = null;
 
 // Sanitize URL parameters against extracted schema
 function sanitizeUrlParams(extracted, urlParams) {
@@ -109,7 +111,7 @@ function sanitizeUrlParams(extracted, urlParams) {
 
 // Initialize app
 async function initApp() {
-  console.log('OpenSCAD Web Customizer v1.9.0 (PWA Support)');
+  console.log('OpenSCAD Web Customizer v2.3.0 (Audit & Polish)');
   console.log('Initializing...');
 
   // Register Service Worker for PWA support
@@ -355,6 +357,7 @@ async function initApp() {
       console.log(`[App] Measurements ${enabled ? 'enabled' : 'disabled'}`);
     });
   }
+
   
   /**
    * Update the dimensions display panel
@@ -648,6 +651,9 @@ async function initApp() {
 
       const paramCount = Object.keys(extracted.parameters).length;
       console.log(`Found ${paramCount} parameters in ${extracted.groups.length} groups`);
+      const colorParamNames = Object.values(extracted.parameters)
+        .filter((param) => param.uiType === 'color')
+        .map((param) => param.name);
 
       // Store in state (including project files for multi-file support)
       stateManager.setState({
@@ -776,6 +782,9 @@ async function initApp() {
       if (!autoPreviewController) {
         initAutoPreviewController();
       }
+      if (autoPreviewController) {
+        autoPreviewController.setColorParamNames(colorParamNames);
+      }
       
       // Set the SCAD content and project files for auto-preview
       if (autoPreviewController) {
@@ -868,6 +877,10 @@ async function initApp() {
         'library-test': {
           path: '/examples/library-test/library_test.scad',
           name: 'library_test.scad'
+        },
+        'colored-box': {
+          path: '/examples/colored-box/colored_box.scad',
+          name: 'colored_box.scad'
         }
       };
       
@@ -1172,6 +1185,372 @@ async function initApp() {
     updateStatus(`Parameters exported to JSON`);
   });
 
+  // ========== RENDER QUEUE ==========
+  
+  // Initialize render queue
+  renderQueue = new RenderQueue(renderController, {
+    maxQueueSize: 20,
+  });
+  
+  // Render Queue UI elements
+  const queueBadge = document.getElementById('queueBadge');
+  const addToQueueBtn = document.getElementById('addToQueueBtn');
+  const viewQueueBtn = document.getElementById('viewQueueBtn');
+  const queueModal = document.getElementById('renderQueueModal');
+  const queueModalClose = document.getElementById('queueModalClose');
+  const queueModalOverlay = document.getElementById('queueModalOverlay');
+  const queueList = document.getElementById('queueList');
+  const queueEmpty = document.getElementById('queueEmpty');
+  const processQueueBtn = document.getElementById('processQueueBtn');
+  const stopQueueBtn = document.getElementById('stopQueueBtn');
+  const clearCompletedBtn = document.getElementById('clearCompletedBtn');
+  const clearQueueBtn = document.getElementById('clearQueueBtn');
+  const exportQueueBtn = document.getElementById('exportQueueBtn');
+  const importQueueBtn = document.getElementById('importQueueBtn');
+  const queueImportInput = document.getElementById('queueImportInput');
+  const queueStatsTotal = document.getElementById('queueStatsTotal');
+  const queueStatsQueued = document.getElementById('queueStatsQueued');
+  const queueStatsRendering = document.getElementById('queueStatsRendering');
+  const queueStatsComplete = document.getElementById('queueStatsComplete');
+  const queueStatsError = document.getElementById('queueStatsError');
+  
+  // Update queue badge
+  function updateQueueBadge() {
+    const count = renderQueue.getJobCount();
+    if (queueBadge) {
+      queueBadge.textContent = count;
+    }
+  }
+  
+  // Update queue statistics
+  function updateQueueStats() {
+    const stats = renderQueue.getStatistics();
+    if (queueStatsTotal) queueStatsTotal.textContent = stats.total;
+    if (queueStatsQueued) queueStatsQueued.textContent = stats.queued;
+    if (queueStatsRendering) queueStatsRendering.textContent = stats.rendering;
+    if (queueStatsComplete) queueStatsComplete.textContent = stats.complete;
+    if (queueStatsError) queueStatsError.textContent = stats.error;
+  }
+  
+  // Render queue list UI
+  function renderQueueList() {
+    if (!queueList) return;
+    
+    const jobs = renderQueue.getAllJobs();
+    
+    if (jobs.length === 0) {
+      queueEmpty.classList.remove('hidden');
+      return;
+    }
+    
+    queueEmpty.classList.add('hidden');
+    
+    // Clear existing items
+    Array.from(queueList.children).forEach(child => {
+      if (!child.classList.contains('queue-empty')) {
+        child.remove();
+      }
+    });
+    
+    // Render each job
+    jobs.forEach(job => {
+      const jobElement = createQueueJobElement(job);
+      queueList.appendChild(jobElement);
+    });
+    
+    updateQueueStats();
+  }
+  
+  // Create a queue job element
+  function createQueueJobElement(job) {
+    const div = document.createElement('div');
+    div.className = `queue-item queue-item-${job.state}`;
+    div.setAttribute('role', 'listitem');
+    div.dataset.jobId = job.id;
+    
+    const stateIcon = {
+      queued: '⏳',
+      rendering: '⚙️',
+      complete: '✅',
+      error: '❌',
+      cancelled: '⏹️'
+    }[job.state] || '❓';
+    
+    const formatName = OUTPUT_FORMATS[job.outputFormat]?.name || job.outputFormat.toUpperCase();
+    
+    div.innerHTML = `
+      <div class="queue-item-header">
+        <span class="queue-item-icon">${stateIcon}</span>
+        <span class="queue-item-name" contenteditable="${job.state === 'queued' ? 'true' : 'false'}" data-job-id="${job.id}">${job.name}</span>
+        <span class="queue-item-format">${formatName}</span>
+        <span class="queue-item-state">${job.state}</span>
+      </div>
+      <div class="queue-item-body">
+        ${job.error ? `<div class="queue-item-error">${job.error}</div>` : ''}
+        ${job.renderTime ? `<div class="queue-item-time">Render time: ${(job.renderTime / 1000).toFixed(1)}s</div>` : ''}
+        ${job.result?.stats?.triangles ? `<div class="queue-item-stats">${job.result.stats.triangles.toLocaleString()} triangles</div>` : ''}
+      </div>
+      <div class="queue-item-actions">
+        ${job.state === 'complete' ? `<button class="btn btn-sm btn-primary" data-action="download" data-job-id="${job.id}" aria-label="Download ${job.name}">📥 Download</button>` : ''}
+        ${job.state === 'queued' ? `<button class="btn btn-sm btn-outline" data-action="edit" data-job-id="${job.id}" aria-label="Edit ${job.name} parameters">✏️ Edit</button>` : ''}
+        ${job.state === 'queued' ? `<button class="btn btn-sm btn-outline" data-action="cancel" data-job-id="${job.id}" aria-label="Cancel ${job.name}">⏹️ Cancel</button>` : ''}
+        ${job.state !== 'rendering' ? `<button class="btn btn-sm btn-outline" data-action="remove" data-job-id="${job.id}" aria-label="Remove ${job.name}">🗑️ Remove</button>` : ''}
+      </div>
+    `;
+    
+    return div;
+  }
+  
+  // Subscribe to queue changes
+  renderQueue.subscribe((event, data) => {
+    updateQueueBadge();
+    
+    if (queueModal && !queueModal.classList.contains('hidden')) {
+      renderQueueList();
+    }
+    
+    // Handle processing events
+    if (event === 'processing-start') {
+      if (processQueueBtn) {
+        processQueueBtn.classList.add('hidden');
+      }
+      if (stopQueueBtn) {
+        stopQueueBtn.classList.remove('hidden');
+      }
+    } else if (event === 'processing-complete' || event === 'processing-stopped') {
+      if (processQueueBtn) {
+        processQueueBtn.classList.remove('hidden');
+      }
+      if (stopQueueBtn) {
+        stopQueueBtn.classList.add('hidden');
+      }
+      
+      if (event === 'processing-complete') {
+        updateStatus(`Queue processing complete: ${data.completed} succeeded, ${data.failed} failed`);
+      }
+    }
+  });
+  
+  // Add to Queue button
+  addToQueueBtn?.addEventListener('click', () => {
+    const state = stateManager.getState();
+    
+    if (!state.uploadedFile) {
+      alert('No file uploaded yet');
+      return;
+    }
+    
+    if (renderQueue.isAtMaxCapacity()) {
+      alert('Queue is full (maximum 20 jobs)');
+      return;
+    }
+    
+    // Get current output format
+    const outputFormat = outputFormatSelect?.value || 'stl';
+    const count = renderQueue.getJobCount() + 1;
+    const jobName = `Job ${count}`;
+    
+    // Set project for queue
+    const libsForRender = getEnabledLibrariesForRender();
+    renderQueue.setProject(
+      state.uploadedFile.content,
+      state.projectFiles,
+      state.mainFile,
+      libsForRender
+    );
+    
+    // Add job
+    const jobId = renderQueue.addJob(jobName, state.parameters, outputFormat);
+    console.log(`Added job ${jobId} to queue`);
+    
+    updateStatus(`Added "${jobName}" to render queue`);
+  });
+  
+  // View Queue button
+  viewQueueBtn?.addEventListener('click', () => {
+    if (queueModal) {
+      queueModal.classList.remove('hidden');
+      renderQueueList();
+    }
+  });
+  
+  // Close modal handlers
+  queueModalClose?.addEventListener('click', () => {
+    if (queueModal) {
+      queueModal.classList.add('hidden');
+    }
+  });
+  
+  queueModalOverlay?.addEventListener('click', () => {
+    if (queueModal) {
+      queueModal.classList.add('hidden');
+    }
+  });
+  
+  // Process Queue button
+  processQueueBtn?.addEventListener('click', async () => {
+    try {
+      await renderQueue.processQueue();
+    } catch (error) {
+      console.error('Queue processing error:', error);
+      updateStatus(`Queue processing error: ${error.message}`);
+    }
+  });
+  
+  // Stop Queue button
+  stopQueueBtn?.addEventListener('click', () => {
+    renderQueue.stopProcessing();
+    updateStatus('Queue processing stopped');
+  });
+  
+  // Clear Completed button
+  clearCompletedBtn?.addEventListener('click', () => {
+    renderQueue.clearCompleted();
+    renderQueueList();
+    updateStatus('Cleared completed jobs');
+  });
+  
+  // Clear All button
+  clearQueueBtn?.addEventListener('click', () => {
+    if (renderQueue.isQueueProcessing()) {
+      alert('Cannot clear queue while processing');
+      return;
+    }
+    
+    if (renderQueue.getJobCount() === 0) {
+      return;
+    }
+    
+    if (confirm('Are you sure you want to clear all jobs from the queue?')) {
+      renderQueue.clearAll();
+      renderQueueList();
+      updateStatus('Cleared all jobs');
+    }
+  });
+  
+  // Export Queue button
+  exportQueueBtn?.addEventListener('click', () => {
+    const data = renderQueue.exportQueue();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `render-queue-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    updateStatus('Exported queue to JSON');
+  });
+  
+  // Import Queue button
+  importQueueBtn?.addEventListener('click', () => {
+    queueImportInput?.click();
+  });
+  
+  // Queue import handler
+  queueImportInput?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      renderQueue.importQueue(data);
+      renderQueueList();
+      updateStatus('Imported queue from JSON');
+    } catch (error) {
+      console.error('Queue import error:', error);
+      alert('Failed to import queue: ' + error.message);
+    }
+    
+    // Clear file input
+    queueImportInput.value = '';
+  });
+  
+  // Queue item action handlers (event delegation)
+  queueList?.addEventListener('click', async (e) => {
+    const button = e.target.closest('button[data-action]');
+    if (!button) return;
+    
+    const action = button.dataset.action;
+    const jobId = button.dataset.jobId;
+    const job = renderQueue.getJob(jobId);
+    
+    if (!job) return;
+    
+    switch (action) {
+      case 'download':
+        if (job.result?.data) {
+          const state = stateManager.getState();
+          const filename = generateFilename(
+            `${state.uploadedFile.name.replace('.scad', '')}-${job.name}`,
+            job.parameters,
+            job.outputFormat
+          );
+          downloadFile(job.result.data, filename, job.outputFormat);
+          updateStatus(`Downloaded: ${filename}`);
+        }
+        break;
+        
+      case 'edit': {
+        // Close modal and load job parameters
+        queueModal.classList.add('hidden');
+        stateManager.setState({ parameters: { ...job.parameters } });
+        
+        // Re-render parameter UI
+        const editState = stateManager.getState();
+        if (editState.schema) {
+          const parametersContainer = document.getElementById('parametersContainer');
+          renderParameterUI(
+            editState.schema,
+            parametersContainer,
+            (values) => {
+              stateManager.setState({ parameters: values });
+              if (autoPreviewController && editState.uploadedFile) {
+                autoPreviewController.onParameterChange(values);
+              }
+              updatePrimaryActionButton();
+            }
+          );
+        }
+        
+        updateStatus(`Editing ${job.name} parameters`);
+        break;
+      }
+        
+      case 'cancel':
+        renderQueue.cancelJob(jobId);
+        renderQueueList();
+        break;
+        
+      case 'remove':
+        try {
+          renderQueue.removeJob(jobId);
+          renderQueueList();
+        } catch (error) {
+          alert(error.message);
+        }
+        break;
+    }
+  });
+  
+  // Job name editing (contenteditable)
+  queueList?.addEventListener('blur', (e) => {
+    if (e.target.classList.contains('queue-item-name') && e.target.hasAttribute('contenteditable')) {
+      const jobId = e.target.dataset.jobId;
+      const newName = e.target.textContent.trim();
+      
+      if (newName) {
+        renderQueue.renameJob(jobId, newName);
+      } else {
+        // Restore original name if empty
+        const job = renderQueue.getJob(jobId);
+        e.target.textContent = job.name;
+      }
+    }
+  }, true);
+  
   // ========== COMPARISON MODE ==========
   
   // Initialize comparison controller
@@ -2007,7 +2386,11 @@ function renderLibraryUI(detectedLibraries) {
         libraryManager.disable(lib.id);
       }
       libraryBadge.textContent = libraryManager.getEnabled().length;
-      updateStatus(`${lib.name} ${checkbox.checked ? 'enabled' : 'disabled'}`);
+      // Update status area with library toggle feedback
+      const statusArea = document.getElementById('statusArea');
+      if (statusArea) {
+        statusArea.textContent = `${lib.name} ${checkbox.checked ? 'enabled' : 'disabled'}`;
+      }
     });
   });
   

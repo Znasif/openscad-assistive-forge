@@ -10,12 +10,31 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 100vh;
+}
+
+/* Use dynamic viewport height on mobile browsers */
+@supports (height: 100svh) {
+  #app {
+    height: 100svh;
+    min-height: 100svh;
+  }
+}
+
+@supports (height: 100dvh) {
+  #app {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
 }
 
 .app-header {
   background-color: var(--color-accent);
   color: var(--color-accent-text);
   padding: var(--space-md) var(--space-lg);
+  padding-top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
+  padding-left: calc(var(--space-lg) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--space-lg) + env(safe-area-inset-right, 0px));
   box-shadow: var(--shadow-md);
 }
 
@@ -162,6 +181,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* Welcome Screen */
@@ -171,6 +191,35 @@ body {
   align-items: center;
   justify-content: center;
   padding: var(--space-xl);
+  padding-top: calc(var(--space-xl) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--space-xl) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--space-xl) + env(safe-area-inset-right, 0px));
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.welcome-screen::-webkit-scrollbar {
+  width: 8px;
+}
+
+.welcome-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.welcome-screen::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.welcome-screen::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
 }
 
 .welcome-content {
@@ -194,6 +243,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* Mobile-first: stacked layout */
@@ -209,11 +259,114 @@ body {
   min-height: 300px;
   max-height: 50vh;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .preview-panel {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  min-height: 0; /* Important for flex child scrolling */
+}
+
+.param-panel::-webkit-scrollbar,
+.preview-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.param-panel::-webkit-scrollbar-track,
+.preview-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.param-panel::-webkit-scrollbar-thumb,
+.preview-content::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.param-panel::-webkit-scrollbar-thumb:hover,
+.preview-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
+
+/* Scrollable content wrapper for preview panel */
+.preview-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Important for nested flex scrolling */
+  display: flex;
+  flex-direction: column;
+  scrollbar-gutter: stable;
+  /* Custom scrollbar styling (matches OpenSCAD Playground pattern) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Dark mode scrollbar contrast (Firefox) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .welcome-screen,
+  :root:not([data-theme="light"]) .param-panel,
+  :root:not([data-theme="light"]) .preview-content {
+    scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+  }
+}
+
+:root[data-theme="dark"] .welcome-screen,
+:root[data-theme="dark"] .param-panel,
+:root[data-theme="dark"] .preview-content {
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+}
+
+/* WebKit scrollbar dark mode contrast */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .welcome-screen::-webkit-scrollbar-thumb,
+  :root:not([data-theme="light"]) .param-panel::-webkit-scrollbar-thumb,
+  :root:not([data-theme="light"]) .preview-content::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+
+  :root:not([data-theme="light"]) .welcome-screen::-webkit-scrollbar-thumb:hover,
+  :root:not([data-theme="light"]) .param-panel::-webkit-scrollbar-thumb:hover,
+  :root:not([data-theme="light"]) .preview-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+:root[data-theme="dark"] .welcome-screen::-webkit-scrollbar-thumb,
+:root[data-theme="dark"] .param-panel::-webkit-scrollbar-thumb,
+:root[data-theme="dark"] .preview-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme="dark"] .welcome-screen::-webkit-scrollbar-thumb:hover,
+:root[data-theme="dark"] .param-panel::-webkit-scrollbar-thumb:hover,
+:root[data-theme="dark"] .preview-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Preview container within scrollable area - fills available space */
+.preview-content .preview-container {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
+/* Sticky actions at bottom of preview panel */
+.preview-panel .actions {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: var(--color-bg-primary);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Tablet and up: side-by-side layout */
@@ -232,6 +385,7 @@ body {
   
   .preview-panel {
     flex: 1;
+    min-height: 0; /* Ensure flexbox scrolling works */
   }
 }
 
@@ -293,16 +447,63 @@ body {
 .actions {
   padding: var(--space-md);
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-md);
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-primary);
+  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
 }
 
 .stats {
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile-specific: ensure actions stay visible */
+@media (max-width: 767px) {
+  .preview-panel {
+    min-height: 400px;
+  }
+  
+  .preview-content {
+    flex: 1 1 auto;
+  }
+  
+  .preview-panel .actions {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Compact buttons on mobile */
+  .preview-panel .actions .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    padding: var(--space-sm);
+  }
+  
+  .preview-panel .actions .btn-large {
+    flex: 1 1 100%;
+  }
+}
+
+/* Dark mode shadow adjustment */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .preview-panel .actions {
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+:root[data-theme="dark"] .preview-panel .actions {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* High contrast mode */
+:root[data-high-contrast="true"] .preview-panel .actions {
+  border-top: 3px solid var(--color-border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .file-info {
@@ -317,8 +518,8 @@ body {
 
 .error-message {
   position: fixed;
-  bottom: var(--space-lg);
-  right: var(--space-lg);
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--space-lg) + env(safe-area-inset-right, 0px));
   background-color: var(--color-error);
   color: white;
   padding: var(--space-md);

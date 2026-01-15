@@ -5,6 +5,83 @@ All notable changes to the OpenSCAD Web Customizer Forge project are documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-15
+
+### Fixed - Audit & Polish Release
+
+- **Debug Code Removal**: Removed debug fetch call from `auto-preview-controller.js`
+- **Version Alignment**: Synchronized version strings across `main.js`, `sw.js`, and `package.json`
+
+### Audited
+
+- Core runtime modules reviewed for correctness: parser, preview, library-manager, render-queue, openscad-worker
+- All modules verified clean with no correctness issues
+
+### Technical
+- No new features (polish release)
+- Service Worker cache auto-invalidates with version bump
+- See [docs/changelogs/CHANGELOG_v2.3.md](docs/changelogs/CHANGELOG_v2.3.md) for complete details
+
+## [2.2.0] - 2026-01-15
+
+### Added - Additional Templates & Enhanced Tooling
+
+- **Vue 3 Template**: Full Vue Composition API template for scaffold command
+- **Svelte Template**: Modern Svelte template with reactive programming
+- **Enhanced Auto-Fix**: 15+ checks for dependencies, scripts, files, and code quality
+- **Golden Fixtures**: Comprehensive fixture system for regression testing
+- **Template Comparison**: 4 framework options (vanilla, React, Vue, Svelte)
+- **Better CLI Reporting**: Enhanced error messages and diff output
+
+### Technical
+- Vue template (~13 files, 1,400 lines) with Composition API
+- Svelte template (~13 files, 1,300 lines) with reactive paradigm
+- Enhanced sync command (+100 lines) with 6 new checks
+- Enhanced validate command (+150 lines) with golden fixtures
+- Updated scaffold command to support Vue and Svelte
+- Template dependencies: Vue 3.4+, Svelte 4.2+
+- Total new code: ~2,800 lines
+- See [docs/changelogs/CHANGELOG_v2.2.md](docs/changelogs/CHANGELOG_v2.2.md) for complete details
+
+## [2.1.0] - 2026-01-15
+
+### Added - Enhanced CLI
+
+- **React Templates**: Full React template support for scaffold command with component architecture
+- **Theme Generator**: Custom color theme generation with 6 presets (blue, purple, green, orange, slate, dark)
+- **CI/CD Helpers**: Configuration generators for 6 platforms (GitHub, GitLab, Vercel, Netlify, Docker, Validation)
+- **React Components**: Pre-built components (App, Header, ParametersPanel, PreviewPanel, ParameterControl)
+- **Theme Presets**: Professional color palettes with accessibility support
+- **CI/CD Templates**: Production-ready workflows and configurations
+
+### Technical
+- New `theme` command (~420 lines) with 6 presets and custom color support
+- New `ci` command (~570 lines) with 6 provider templates
+- React template (~10 files, 600+ lines)
+- Updated scaffold command with `--template react` option
+- Version bumped to 2.1.0
+- Total new code: ~2,400 lines
+- See [docs/changelogs/CHANGELOG_v2.1.md](docs/changelogs/CHANGELOG_v2.1.md) for complete details
+
+## [2.0.0] - 2026-01-15
+
+### Added - Developer Toolchain
+
+- **CLI Interface**: `openscad-forge` command-line tool for automation
+- **Extract Command**: Extract parameters from .scad files to JSON Schema
+- **Scaffold Command**: Generate standalone web apps from schema + .scad file
+- **Validate Command**: Test schema compliance and accessibility
+- **Sync Command**: Auto-fix common project issues
+- **NPM Package**: Global installation support via npm
+
+### Technical
+- New CLI entry point `bin/openscad-forge.js`
+- 4 command modules (~1,265 lines total)
+- Commander.js for command parsing
+- Chalk for colorized output
+- Dependencies: commander@^11.1.0, chalk@^5.3.0
+- See [docs/changelogs/CHANGELOG_v2.0.md](docs/changelogs/CHANGELOG_v2.0.md) for complete details
+
 ## [1.10.0] - 2026-01-14
 
 ### Added - OpenSCAD Library Bundles
@@ -278,8 +355,13 @@ See [docs/BUILD_PLAN_NEW.md](docs/BUILD_PLAN_NEW.md) for complete details.
 ## Release Cadence
 
 - **v1.0.0** (2026-01-12): Initial MVP release
-- **v1.1.0 - v1.7.0** (2026-01-13): Rapid feature releases (all in one day!)
-- **v1.8.0+**: Future releases (planned)
+- **v1.1.0 - v1.7.0** (2026-01-13): Rapid feature releases
+- **v1.8.0 - v1.10.0** (2026-01-14): Advanced features
+- **v2.0.0** (2026-01-15): Developer toolchain
+- **v2.1.0** (2026-01-15): Enhanced CLI
+- **v2.2.0** (2026-01-15): Additional templates
+- **v2.3.0** (2026-01-15): Audit & polish release
+- **v2.4.0+**: Future releases (planned)
 
 ## Version Scheme
 

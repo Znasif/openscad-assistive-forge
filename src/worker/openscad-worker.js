@@ -247,16 +247,57 @@ function clearLibraries() {
 }
 
 /**
+ * Convert hex color to RGB array [r, g, b] (0-255 range)
+ * @param {string} hex - Hex color code (with or without #)
+ * @returns {Array<number>} RGB array
+ */
+function hexToRgb(hex) {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Convert 3-digit hex to 6-digit
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  return [r, g, b];
+}
+
+/**
  * Convert parameters to OpenSCAD variable assignments
  * @param {Object} parameters - Parameter key-value pairs
+ * @param {Object} paramTypes - Parameter type information for special handling
  * @returns {string} OpenSCAD variable assignments
  */
-function parametersToScad(parameters) {
+function parametersToScad(parameters, paramTypes = {}) {
   if (!parameters || Object.keys(parameters).length === 0) {
     return '';
   }
 
   const assignments = Object.entries(parameters).map(([key, value]) => {
+    // Skip null/undefined values
+    if (value === null || value === undefined) {
+      return null;
+    }
+    
+    // Check if this is a color parameter (hex string)
+    if (paramTypes[key] === 'color' || (typeof value === 'string' && /^#?[0-9A-Fa-f]{6}$/.test(value))) {
+      // Convert hex color to RGB array [r, g, b]
+      const rgb = hexToRgb(value);
+      return `${key} = [${rgb[0]}, ${rgb[1]}, ${rgb[2]}];`;
+    }
+    
+    // Check if this is a file parameter (object with data property)
+    if (typeof value === 'object' && value.data) {
+      // For files, we'll use the filename or a special marker
+      // The actual file data handling happens in the render function
+      return `${key} = "${value.name || 'uploaded_file'}";`;
+    }
+    
     // Handle different value types
     if (typeof value === 'string') {
       // Escape quotes in strings
@@ -266,10 +307,13 @@ function parametersToScad(parameters) {
       return `${key} = ${value};`;
     } else if (typeof value === 'boolean') {
       return `${key} = ${value};`;
+    } else if (Array.isArray(value)) {
+      // Handle arrays (including RGB arrays)
+      return `${key} = [${value.join(', ')}];`;
     } else {
       return `${key} = ${JSON.stringify(value)};`;
     }
-  });
+  }).filter(a => a !== null); // Remove null entries
 
   return assignments.join('\n') + '\n\n';
 }
@@ -292,19 +336,53 @@ function applyOverrides(scadContent, parameters) {
   const prependedKeys = [];
 
   const formatValue = (value) => {
+    // Skip null/undefined
+    if (value === null || value === undefined) {
+      return null;
+    }
+    
+    // Check if this is a color parameter (hex string)
+    if (typeof value === 'string' && /^#?[0-9A-Fa-f]{6}$/.test(value)) {
+      // Convert hex color to RGB array [r, g, b]
+      const rgb = hexToRgb(value);
+      return `[${rgb[0]}, ${rgb[1]}, ${rgb[2]}]`;
+    }
+    
+    // Check if this is a file parameter (object with data property)
+    if (typeof value === 'object' && value.data) {
+      // For files, use the filename
+      const escaped = (value.name || 'uploaded_file').replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return `[${value.join(', ')}]`;
+    }
+    
+    // Handle strings
     if (typeof value === 'string') {
       const escaped = value.replace(/"/g, '\\"');
       return `"${escaped}"`;
     }
+    
+    // Handle numbers and booleans
     if (typeof value === 'number' || typeof value === 'boolean') {
       return String(value);
     }
+    
     return JSON.stringify(value);
   };
 
   for (const [key, value] of Object.entries(parameters)) {
-    const keyRe = escapeRegExp(key);
     const assignmentValue = formatValue(value);
+    
+    // Skip null values
+    if (assignmentValue === null) {
+      continue;
+    }
+    
+    const keyRe = escapeRegExp(key);
     const lineRe = new RegExp(
       `^(\\s*)(${keyRe})\\s*=\\s*[^;]*;([ \\t]*\\/\\/.*)?$`,
       'm'

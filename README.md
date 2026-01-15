@@ -5,7 +5,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![OpenSCAD](https://img.shields.io/badge/OpenSCAD-WASM-orange.svg)](https://openscad.org/)
 [![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Version](https://img.shields.io/badge/version-1.10.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.0-brightgreen.svg)](CHANGELOG.md)
 [![PWA](https://img.shields.io/badge/PWA-enabled-blue.svg)](https://web.dev/progressive-web-apps/)
 
 ## 🎯 What This Does
@@ -54,9 +54,39 @@ Then open http://localhost:5173 in your browser.
 
 ## ✨ Features
 
-### Current Release: v1.10.0 — Library Bundles 📚
+### Current Release: v2.3.0 — Audit & Polish 🔧
 
-The latest release adds OpenSCAD library bundles and safer URL parameter handling:
+A quality-focused release ensuring production readiness:
+
+|| Feature | Description |
+||---------|-------------|
+|| 🔍 **Codebase Audit** | Comprehensive review of all core runtime modules |
+|| 🧹 **Debug Code Removal** | Removed debug fetch calls from production code |
+|| 🔢 **Version Alignment** | Synchronized version strings across all files |
+|| ✅ **Production Ready** | All modules verified clean and correct |
+
+### Previous Release: v2.2.0 — Additional Templates & Enhanced Tooling 🚀
+
+Adds Vue and Svelte templates, plus enhanced CLI capabilities:
+
+|| Feature | Description |
+||---------|-------------|
+|| 🎭 **Vue 3 Template** | Generate Vue Composition API customizers with `--template vue` |
+|| ⚡ **Svelte Template** | Generate Svelte customizers with `--template svelte` |
+|| 🔧 **Enhanced Auto-Fix** | 15+ checks for dependencies, scripts, and code quality |
+|| 🧪 **Golden Fixtures** | Regression testing with parameter comparison |
+|| 🏗️ **4 Templates** | Choose from vanilla, React, Vue, or Svelte |
+|| 📊 **Better Reporting** | Enhanced diff output and error messages |
+
+### Previous Release: v2.1.0 — Enhanced CLI 🚀
+
+|| Feature | Description |
+||---------|-------------|
+|| ⚛️ **React Templates** | Generate React-based customizers with `--template react` |
+|| 🎨 **Theme Generator** | Create custom color themes (5 presets + custom colors) |
+|| 🔧 **CI/CD Helpers** | Pre-configured workflows for GitHub, GitLab, Vercel, Netlify, Docker |
+
+### Previous Release: v1.10.0 — Library Bundles 📚
 
 || Feature | Description |
 ||---------|-------------|
@@ -184,24 +214,36 @@ The latest release adds OpenSCAD library bundles and safer URL parameter handlin
 || 🌍 iOS/Android/Desktop support | ✅ Complete |
 || 💾 PWA manifest & icons | ✅ Complete |
 
+#### v2.0 — Developer Toolchain ✅
+
+|| Feature | Status |
+||---------|--------|
+|| 🛠️ CLI parameter extraction | ✅ Complete |
+|| 📦 Standalone app scaffolding | ✅ Complete |
+|| ✅ Validation harness | ✅ Complete |
+|| 🔄 Auto-sync & fixes | ✅ Complete |
+
+#### v2.1 — Enhanced CLI ✅
+
+|| Feature | Status |
+||---------|--------|
+|| ⚛️ React template support | ✅ Complete |
+|| 🎨 Custom theme generator | ✅ Complete |
+|| 🔄 CI/CD integration helpers | ✅ Complete |
+|| 📦 GitHub Actions workflows | ✅ Complete |
+|| 🐳 Docker containerization | ✅ Complete |
+|| 🧪 Golden fixture testing | ✅ Complete |
+
 ### Coming Soon
 
-#### v1.11 (Planned) — Quality & Examples
+#### v3.0 (Future) — Community Platform
 
 || Feature | Status |
 ||---------|--------|
-|| 🧪 Automated test suite | ⏳ Planned |
-|| 📚 More example models | ⏳ Planned |
-|| 🎨 Custom color themes | ⏳ Planned |
-|| 🧩 Advanced parameter types | ⏳ Planned |
-
-#### v2.0 (Future) — Developer Toolchain
-
-|| Feature | Status |
-||---------|--------|
-|| 🛠️ CLI parameter extraction | ⏳ Planned |
-|| 📦 Standalone app scaffolding | ⏳ Planned |
-|| ✅ Validation harness | ⏳ Planned |
+|| 🌐 Model hosting & sharing | ⏳ Planned |
+|| 👥 User accounts (optional) | ⏳ Planned |
+|| 🔍 Model gallery with search | ⏳ Planned |
+|| 🍴 Remix/fork functionality | ⏳ Planned |
 
 ## 📋 Supported File Formats
 
@@ -246,6 +288,169 @@ my-project.zip
 │   └── helpers.scad   # Helper functions
 └── modules/
     └── parts.scad     # Reusable modules
+```
+
+## 🛠️ CLI Tools (v2.0+)
+
+### Installation
+
+Install globally via npm:
+
+```bash
+npm install -g openscad-web-customizer-forge
+```
+
+Or use directly with npx:
+
+```bash
+npx openscad-web-customizer-forge --help
+```
+
+### Commands
+
+#### Extract Parameters
+
+Extract Customizer parameters from a `.scad` file to JSON Schema:
+
+```bash
+openscad-forge extract model.scad --out params.schema.json --pretty
+```
+
+**Options:**
+- `-o, --out <path>` — Output file path (default: `params.schema.json`)
+- `-f, --format <format>` — Output format: `json` or `yaml` (default: `json`)
+- `--pretty` — Pretty-print JSON output
+
+#### Scaffold Web App
+
+Generate a standalone web app from a schema and `.scad` file:
+
+```bash
+openscad-forge scaffold \
+  --schema params.schema.json \
+  --scad model.scad \
+  --out ./my-customizer \
+  --title "My Customizer"
+```
+
+**Options:**
+- `-s, --schema <path>` — Parameter schema JSON file (required)
+- `--scad <path>` — OpenSCAD source file (required)
+- `-o, --out <path>` — Output directory (default: `./webapp`)
+- `--template <name>` — Template: `vanilla` or `react` (default: `vanilla`)
+- `--title <title>` — App title (uses schema title if not specified)
+- `--theme <theme>` — Theme preset: `default`, `dark`, or `custom`
+
+#### Validate Project
+
+Validate a web app for schema compliance and accessibility:
+
+```bash
+openscad-forge validate ./my-customizer --cases tests.json
+```
+
+**Options:**
+- `--cases <path>` — Test cases JSON file
+- `--ref <ref>` — Reference implementation: `docker-openscad` or `wasm` (default: `wasm`)
+- `--tolerance <n>` — STL comparison tolerance (default: `0.001`)
+- `--format <format>` — Output format: `text`, `json`, or `junit` (default: `text`)
+
+#### Sync & Auto-Fix
+
+Detect and apply safe fixes to a web app:
+
+```bash
+openscad-forge sync ./my-customizer --apply-safe-fixes
+```
+
+**Options:**
+- `--dry-run` — Show what would be fixed without applying
+- `--apply-safe-fixes` — Apply only safe, auto-fixable changes
+- `--force` — Apply all fixes (may be breaking)
+
+#### Generate Custom Themes
+
+Create custom color themes for your web app:
+
+```bash
+# Use a preset theme
+openscad-forge theme --preset purple --out theme.css
+
+# Create a custom theme
+openscad-forge theme --custom --primary "#9333ea" --out theme.css
+
+# List available presets
+openscad-forge theme --list
+```
+
+**Options:**
+- `-o, --out <path>` — Output CSS file path
+- `--preset <name>` — Use a theme preset: `blue`, `purple`, `green`, `orange`, `slate`, `dark`
+- `--custom` — Generate custom theme from colors
+- `--primary <color>` — Primary color (hex)
+- `--secondary <color>` — Secondary color (hex)
+- `--background <color>` — Background color (hex)
+- `--list` — List available theme presets
+- `--force` — Overwrite existing file
+
+#### Generate CI/CD Configurations
+
+Create CI/CD configuration files for various platforms:
+
+```bash
+# Generate GitHub Actions workflow
+openscad-forge ci --provider github
+
+# Generate Docker configuration
+openscad-forge ci --provider docker
+
+# List available providers
+openscad-forge ci --list
+```
+
+**Options:**
+- `--provider <name>` — CI/CD provider: `github`, `gitlab`, `vercel`, `netlify`, `docker`, `validation`
+- `-o, --out <path>` — Output directory (default: current directory)
+- `--list` — List available providers
+
+**Available Providers:**
+- `github` — GitHub Actions workflow with testing and deployment
+- `gitlab` — GitLab CI/CD pipeline
+- `vercel` — Vercel deployment configuration
+- `netlify` — Netlify deployment configuration
+- `docker` — Docker containerization (Dockerfile, nginx.conf, docker-compose.yml)
+- `validation` — Golden fixtures and automated testing
+
+### Example Workflow
+
+```bash
+# 1. Extract parameters from your OpenSCAD model
+openscad-forge extract box.scad --out box-schema.json --pretty
+
+# 2. Generate a standalone web app (React version)
+openscad-forge scaffold \
+  --schema box-schema.json \
+  --scad box.scad \
+  --out box-customizer \
+  --template react \
+  --title "Box Customizer"
+
+# 3. Generate a custom theme
+openscad-forge theme --preset purple --out box-customizer/src/styles/theme.css
+
+# 4. Add CI/CD configuration
+openscad-forge ci --provider github --out box-customizer
+
+# 5. Build and deploy
+cd box-customizer
+npm install
+npm run build
+
+# 6. Validate the app
+openscad-forge validate ./box-customizer
+
+# 7. Fix any issues
+openscad-forge sync ./box-customizer --apply-safe-fixes
 ```
 
 ## ⌨️ Keyboard Shortcuts
@@ -308,7 +513,7 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 
 ## 📊 Project Status
 
-**Current Version**: v1.10.0
+**Current Version**: v2.3.0
 
 || Phase | Description | Status |
 ||-------|-------------|--------|
@@ -333,6 +538,10 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 || **v1.8** | **STL measurements & dimensions** | ✅ Complete |
 || **v1.9** | **PWA support & offline mode** | ✅ Complete |
 || **v1.10** | **Library bundles & URL safety** | ✅ Complete |
+|| **v2.0** | **Developer toolchain (CLI tools)** | ✅ Complete |
+|| **v2.1** | **Enhanced CLI (React, themes, CI/CD)** | ✅ Complete |
+|| **v2.2** | **Vue, Svelte templates, enhanced tooling** | ✅ Complete |
+|| **v2.3** | **Audit & polish release** | ✅ Complete |
 
 ## ⚖️ Licensing
 
@@ -376,7 +585,7 @@ git clone https://github.com/YOUR_ORG/openscad-web-customizer-forge.git
 cd openscad-web-customizer-forge
 npm install
 
-# Start dev server
+# Start dev server (web app)
 npm run dev
 
 # Build for production
@@ -384,22 +593,55 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Link CLI tools for local development
+npm link
+
+# Test CLI commands
+openscad-forge --help
+openscad-forge extract examples/simple-box/simple_box.scad
 ```
 
-## 🎉 What's New in v1.10.0
+## 🎉 What's New in v2.3.0
 
-### Library Bundles + URL Safety
+### Audit & Polish Release
 
-Build and share models that depend on OpenSCAD libraries without extra setup.
+v2.3.0 is a quality-focused release ensuring production readiness.
 
-**Key Features:**
-- 📚 **Library Bundles** — MCAD, BOSL2, NopSCADlib, dotSCAD
-- 🔍 **Auto-Detection** — include/use statements auto-enable required libs
-- 🧰 **Library Manager UI** — Toggle libraries with badges and help
-- 🔗 **URL Param Clamping** — Out-of-range URL params are clamped to schema limits
-- ✅ **Stability** — Prevents invalid URL params from triggering CGAL failures
+**Audit & Fixes:**
+- 🔍 **Codebase Audit** — All core runtime modules reviewed for correctness
+- 🧹 **Debug Code Removal** — Removed debug fetch calls from production code
+- 🔢 **Version Alignment** — Synchronized version strings across all files
+- ✅ **Production Ready** — All modules verified clean and correct
 
-See [docs/changelogs/CHANGELOG_v1.10.md](docs/changelogs/CHANGELOG_v1.10.md) for complete details.
+**CLI Tools (v2.0-v2.2):**
+- 🛠️ **CLI Tools** — Command-line interface for developers
+- ⚛️ **React Templates** — Generate React-based apps with `--template react`
+- 🎭 **Vue Templates** — Generate Vue apps with `--template vue`
+- ⚡ **Svelte Templates** — Generate Svelte apps with `--template svelte`
+- 🎨 **Theme Generator** — Create custom color themes (6 presets + custom)
+- 🔧 **CI/CD Helpers** — Pre-configured GitHub Actions, GitLab CI, Docker, and more
+
+**Examples:**
+```bash
+# Generate a React-based customizer
+openscad-forge scaffold --schema schema.json --scad model.scad --template react --out webapp
+
+# Create a custom purple theme
+openscad-forge theme --preset purple --out theme.css
+
+# Generate GitHub Actions workflow
+openscad-forge ci --provider github
+
+# Complete workflow
+openscad-forge extract model.scad --out schema.json
+openscad-forge scaffold --schema schema.json --scad model.scad --out webapp
+openscad-forge theme --preset blue --out webapp/src/styles/theme.css
+openscad-forge ci --provider github --out webapp
+openscad-forge validate webapp
+```
+
+See [docs/changelogs/CHANGELOG_v2.3.md](docs/changelogs/CHANGELOG_v2.3.md) for complete details.
 
 ---
 

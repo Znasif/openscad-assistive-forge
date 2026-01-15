@@ -41,6 +41,14 @@ const PREVIEW_COLORS = {
   },
 };
 
+function normalizeHexColor(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  return /^#[0-9A-Fa-f]{6}$/.test(normalized) ? normalized : null;
+}
+
 /**
  * Preview manager class
  */
@@ -56,6 +64,7 @@ export class PreviewManager {
     this.animationId = null;
     this.currentTheme = options.theme || 'light';
     this.highContrast = options.highContrast || false;
+    this.colorOverride = null;
     
     // Measurements
     this.measurementsEnabled = this.loadMeasurementPreference();
@@ -185,7 +194,9 @@ export class PreviewManager {
     
     // Update model color if mesh exists
     if (this.mesh && this.mesh.material) {
-      this.mesh.material.color.setHex(colors.model);
+      const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
+      const appliedHex = this.colorOverride || themeHex;
+      this.mesh.material.color.setHex(parseInt(appliedHex.slice(1), 16));
     }
     
     // Refresh measurements if they're visible
@@ -194,6 +205,20 @@ export class PreviewManager {
     }
     
     console.log(`[Preview] Theme updated to ${themeKey}`);
+  }
+
+  /**
+   * Set a color override for the model material
+   * @param {string|null} hexColor
+   */
+  setColorOverride(hexColor) {
+    this.colorOverride = normalizeHexColor(hexColor);
+    if (this.mesh && this.mesh.material) {
+      const colors = PREVIEW_COLORS[this.currentTheme] || PREVIEW_COLORS.light;
+      const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
+      const appliedHex = this.colorOverride || themeHex;
+      this.mesh.material.color.setHex(parseInt(appliedHex.slice(1), 16));
+    }
   }
 
   /**
@@ -234,8 +259,10 @@ export class PreviewManager {
 
         // Create material with theme-aware color
         const colors = PREVIEW_COLORS[this.currentTheme];
+        const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
+        const appliedHex = this.colorOverride || themeHex;
         const material = new THREE.MeshPhongMaterial({
-          color: colors.model,
+          color: parseInt(appliedHex.slice(1), 16),
           specular: 0x111111,
           shininess: 30,
           flatShading: false,

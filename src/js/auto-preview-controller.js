@@ -51,6 +51,9 @@ export class AutoPreviewController {
     
     // Enabled libraries for rendering
     this.enabledLibraries = [];
+
+    // Color parameters for preview tinting
+    this.colorParamNames = [];
     
     // Cache: paramHash -> { stl, stats, timestamp }
     this.previewCache = new Map();
@@ -104,6 +107,46 @@ export class AutoPreviewController {
    */
   setEnabledLibraries(libraries) {
     this.enabledLibraries = libraries || [];
+  }
+
+  /**
+   * Set color parameter names for preview tinting
+   * @param {string[]} names
+   */
+  setColorParamNames(names) {
+    this.colorParamNames = Array.isArray(names) ? names.filter(Boolean) : [];
+  }
+
+  /**
+   * Resolve a preview color override from parameters
+   * @param {Object} parameters
+   * @returns {string|null} Hex color (#RRGGBB) or null
+   */
+  resolvePreviewColor(parameters) {
+    if (!parameters || this.colorParamNames.length === 0) {
+      return null;
+    }
+
+    const useColors = parameters.use_colors;
+    if (useColors === false) {
+      return null;
+    }
+    if (typeof useColors === 'string' && useColors.toLowerCase() !== 'yes') {
+      return null;
+    }
+
+    const preferredKey = this.colorParamNames.includes('box_color')
+      ? 'box_color'
+      : this.colorParamNames[0];
+    const raw = parameters[preferredKey];
+    if (typeof raw !== 'string') {
+      return null;
+    }
+
+    const normalized = raw.startsWith('#') ? raw : `#${raw}`;
+    const isValid = /^#[0-9A-Fa-f]{6}$/.test(normalized);
+    const previewColor = isValid ? normalized : null;
+    return previewColor;
   }
 
   /**
@@ -222,6 +265,16 @@ export class AutoPreviewController {
     if (!cached) return;
     
     try {
+      let previewColor = null;
+      try {
+        const params = JSON.parse(paramHash);
+        previewColor = this.resolvePreviewColor(params);
+      } catch (error) {
+        previewColor = null;
+      }
+      if (this.previewManager?.setColorOverride) {
+        this.previewManager.setColorOverride(previewColor);
+      }
       await this.previewManager.loadSTL(cached.stl);
       this.previewParamHash = paramHash;
       this.setState(PREVIEW_STATE.CURRENT, { 
@@ -281,6 +334,10 @@ export class AutoPreviewController {
       this.previewParamHash = paramHash;
       
       // Load into 3D preview
+      if (this.previewManager?.setColorOverride) {
+        const previewColor = this.resolvePreviewColor(parameters);
+        this.previewManager.setColorOverride(previewColor);
+      }
       await this.previewManager.loadSTL(result.stl);
       
       this.setState(PREVIEW_STATE.CURRENT, { stats: result.stats });
@@ -304,10 +361,12 @@ export class AutoPreviewController {
       this.setState(PREVIEW_STATE.ERROR, { error: error.message });
       this.onError(error, 'preview');
     } finally {
-      if (localScadVersion !== this.scadVersion) return;
-      // If parameters changed during this render, immediately render the latest once we are free.
-      // (OpenSCAD WASM render is blocking in the worker, so "cancel" can't interrupt mid-render.)
-      if (this.pendingParamHash && this.pendingParamHash === this.currentParamHash) {
+      // If the file changed mid-render, skip pending render scheduling.
+      if (localScadVersion !== this.scadVersion) {
+        // Do nothing - stale render result ignored
+      } else if (this.pendingParamHash && this.pendingParamHash === this.currentParamHash) {
+        // If parameters changed during this render, immediately render the latest once we are free.
+        // (OpenSCAD WASM render is blocking in the worker, so "cancel" can't interrupt mid-render.)
         const nextParams = this.pendingParameters;
         const nextHash = this.pendingParamHash;
         this.pendingParameters = null;
@@ -397,6 +456,10 @@ export class AutoPreviewController {
     
     // Also update the preview with full quality result
     try {
+      if (this.previewManager?.setColorOverride) {
+        const previewColor = this.resolvePreviewColor(parameters);
+        this.previewManager.setColorOverride(previewColor);
+      }
       await this.previewManager.loadSTL(result.stl);
       this.previewParamHash = paramHash;
       this.addToCache(paramHash, result);

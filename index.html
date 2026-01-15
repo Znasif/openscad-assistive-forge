@@ -90,6 +90,7 @@
                 <button id="loadSimpleBoxBtn" class="btn btn-secondary" data-example="simple-box">Simple Box (Beginner)</button>
                 <button id="loadCylinderBtn" class="btn btn-secondary" data-example="cylinder">Parametric Cylinder</button>
                 <button id="loadLibraryTestBtn" class="btn btn-secondary" data-example="library-test">📚 Library Test (MCAD)</button>
+                <button id="loadColoredBoxBtn" class="btn btn-secondary" data-example="colored-box">🎨 Colored Box (Color Params)</button>
               </div>
             </div>
           </div>
@@ -153,83 +154,89 @@
               <div class="file-info" id="fileInfo" aria-live="polite"></div>
             </div>
             
-            <div class="status-area" id="statusArea" role="status" aria-live="polite" aria-atomic="true">
-              Ready
-            </div>
+            <!-- Scrollable content wrapper -->
+            <div class="preview-content">
+              <div class="status-area" id="statusArea" role="status" aria-live="polite" aria-atomic="true">
+                Ready
+              </div>
 
-            <div class="preview-settings" aria-label="Preview settings">
-              <label class="preview-setting">
-                <input type="checkbox" id="autoPreviewToggle" checked />
-                <span>Auto-preview</span>
-              </label>
+              <div class="preview-settings" aria-label="Preview settings">
+                <label class="preview-setting">
+                  <input type="checkbox" id="autoPreviewToggle" checked />
+                  <span>Auto-preview</span>
+                </label>
+                
+                <label class="preview-setting">
+                  <input type="checkbox" id="measurementsToggle" aria-describedby="measurementsHelp" />
+                  <span>Show measurements</span>
+                </label>
+                <span id="measurementsHelp" class="sr-only">Toggle dimension measurements and bounding box overlay on 3D preview</span>
+
+                <label class="preview-setting" for="previewQualitySelect">
+                  <span class="preview-setting-label">Preview quality</span>
+                  <select id="previewQualitySelect" aria-label="Select preview quality">
+                    <option value="fidelity">Fidelity (slower)</option>
+                    <option value="balanced" selected>Balanced</option>
+                    <option value="fast">Fast (lower resolution)</option>
+                  </select>
+                </label>
+              </div>
               
-              <label class="preview-setting">
-                <input type="checkbox" id="measurementsToggle" aria-describedby="measurementsHelp" />
-                <span>Show measurements</span>
-              </label>
-              <span id="measurementsHelp" class="sr-only">Toggle dimension measurements and bounding box overlay on 3D preview</span>
-
-              <label class="preview-setting" for="previewQualitySelect">
-                <span class="preview-setting-label">Preview quality</span>
-                <select id="previewQualitySelect" aria-label="Select preview quality">
-                  <option value="fidelity">Fidelity (slower)</option>
-                  <option value="balanced" selected>Balanced</option>
-                  <option value="fast">Fast (lower resolution)</option>
+              <div class="preview-container" id="previewContainer" role="img" aria-label="3D model preview">
+                <!-- 3D preview or placeholder -->
+                <div class="preview-placeholder">
+                  <p>3D preview will appear here after generating STL</p>
+                </div>
+              </div>
+              
+              <div class="format-selector" aria-label="Output format selection">
+                <label for="outputFormat" class="format-label">Output Format:</label>
+                <select id="outputFormat" class="format-select" aria-label="Select output file format">
+                  <option value="stl" selected>STL (Standard)</option>
+                  <option value="obj">OBJ (Wavefront)</option>
+                  <option value="off">OFF (Geometry)</option>
+                  <option value="amf">AMF (Additive Manufacturing)</option>
+                  <option value="3mf">3MF (3D Manufacturing)</option>
                 </select>
-              </label>
-            </div>
-            
-            <div class="preview-container" id="previewContainer" role="img" aria-label="3D model preview">
-              <!-- 3D preview or placeholder -->
-              <div class="preview-placeholder">
-                <p>3D preview will appear here after generating STL</p>
+                <span class="format-info" id="formatInfo" aria-live="polite">
+                  Most common format for 3D printing
+                </span>
+              </div>
+              
+              <div class="stats" id="stats" role="status" aria-live="polite"></div>
+              
+              <div class="dimensions-display hidden" id="dimensionsDisplay" role="region" aria-label="Model dimensions">
+                <h3 class="dimensions-heading">Dimensions</h3>
+                <dl class="dimensions-list">
+                  <div class="dimension-item">
+                    <dt>Width (X):</dt>
+                    <dd id="dimX">--</dd>
+                  </div>
+                  <div class="dimension-item">
+                    <dt>Depth (Y):</dt>
+                    <dd id="dimY">--</dd>
+                  </div>
+                  <div class="dimension-item">
+                    <dt>Height (Z):</dt>
+                    <dd id="dimZ">--</dd>
+                  </div>
+                  <div class="dimension-item">
+                    <dt>Volume:</dt>
+                    <dd id="dimVolume">--</dd>
+                  </div>
+                </dl>
               </div>
             </div>
             
-            <div class="format-selector" aria-label="Output format selection">
-              <label for="outputFormat" class="format-label">Output Format:</label>
-              <select id="outputFormat" class="format-select" aria-label="Select output file format">
-                <option value="stl" selected>STL (Standard)</option>
-                <option value="obj">OBJ (Wavefront)</option>
-                <option value="off">OFF (Geometry)</option>
-                <option value="amf">AMF (Additive Manufacturing)</option>
-                <option value="3mf">3MF (3D Manufacturing)</option>
-              </select>
-              <span class="format-info" id="formatInfo" aria-live="polite">
-                Most common format for 3D printing
-              </span>
-            </div>
-            
+            <!-- Actions bar - sticky at bottom -->
             <div class="actions">
               <button id="primaryActionBtn" class="btn btn-primary btn-large" aria-label="Generate STL file from current parameters" data-action="generate">Generate STL</button>
               <a id="downloadFallbackLink" href="#" class="btn btn-sm btn-outline hidden" aria-label="Download previously generated file">📥 Download last file</a>
               <button id="addToComparisonBtn" class="btn btn-secondary" aria-label="Add current configuration to comparison">⚖️ Add to Comparison</button>
+              <button id="addToQueueBtn" class="btn btn-secondary" aria-label="Add current configuration to render queue">📋 Add to Queue</button>
+              <button id="viewQueueBtn" class="btn btn-secondary" aria-label="View and manage render queue">🔄 Queue <span class="queue-badge" id="queueBadge">0</span></button>
               <button id="shareBtn" class="btn btn-secondary" aria-label="Copy shareable link with current parameters">📋 Copy Share Link</button>
               <button id="exportParamsBtn" class="btn btn-secondary" aria-label="Download parameters as JSON file">💾 Export Params (JSON)</button>
-            </div>
-            
-            <div class="stats" id="stats" role="status" aria-live="polite"></div>
-            
-            <div class="dimensions-display hidden" id="dimensionsDisplay" role="region" aria-label="Model dimensions">
-              <h3 class="dimensions-heading">Dimensions</h3>
-              <dl class="dimensions-list">
-                <div class="dimension-item">
-                  <dt>Width (X):</dt>
-                  <dd id="dimX">--</dd>
-                </div>
-                <div class="dimension-item">
-                  <dt>Depth (Y):</dt>
-                  <dd id="dimY">--</dd>
-                </div>
-                <div class="dimension-item">
-                  <dt>Height (Z):</dt>
-                  <dd id="dimZ">--</dd>
-                </div>
-                <div class="dimension-item">
-                  <dt>Volume:</dt>
-                  <dd id="dimVolume">--</dd>
-                </div>
-              </dl>
             </div>
           </div>
         </div>
@@ -242,6 +249,66 @@
       
       <div class="error-message hidden" id="errorMessage" role="alert" aria-live="assertive" aria-atomic="true"></div>
     </div>
+    
+    <!-- Render Queue Modal -->
+    <div class="modal hidden" id="renderQueueModal" role="dialog" aria-labelledby="queueModalTitle" aria-modal="true">
+      <div class="modal-overlay" id="queueModalOverlay"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 id="queueModalTitle">Render Queue</h2>
+          <button class="modal-close" id="queueModalClose" aria-label="Close render queue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body" id="queueModalBody">
+          <!-- Queue controls -->
+          <div class="queue-controls">
+            <button id="processQueueBtn" class="btn btn-primary" aria-label="Process all queued jobs">
+              ▶️ Process Queue
+            </button>
+            <button id="stopQueueBtn" class="btn btn-outline hidden" aria-label="Stop processing queue">
+              ⏸️ Stop
+            </button>
+            <button id="clearCompletedBtn" class="btn btn-outline" aria-label="Clear completed jobs">
+              🗑️ Clear Completed
+            </button>
+            <button id="clearQueueBtn" class="btn btn-outline" aria-label="Clear all jobs">
+              🗑️ Clear All
+            </button>
+            <button id="exportQueueBtn" class="btn btn-outline" aria-label="Export queue as JSON">
+              💾 Export Queue
+            </button>
+            <button id="importQueueBtn" class="btn btn-outline" aria-label="Import queue from JSON">
+              📂 Import Queue
+            </button>
+          </div>
+          
+          <!-- Queue statistics -->
+          <div class="queue-stats" id="queueStats" aria-live="polite">
+            <span class="queue-stat">Total: <strong id="queueStatsTotal">0</strong></span>
+            <span class="queue-stat">Queued: <strong id="queueStatsQueued">0</strong></span>
+            <span class="queue-stat">Rendering: <strong id="queueStatsRendering">0</strong></span>
+            <span class="queue-stat">Complete: <strong id="queueStatsComplete">0</strong></span>
+            <span class="queue-stat">Error: <strong id="queueStatsError">0</strong></span>
+          </div>
+          
+          <!-- Queue list -->
+          <div class="queue-list" id="queueList" role="list">
+            <!-- Queue items will be dynamically generated here -->
+            <div class="queue-empty" id="queueEmpty">
+              <p>No jobs in queue</p>
+              <p class="queue-empty-hint">Click "Add to Queue" to add jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Hidden file input for queue import -->
+    <input type="file" id="queueImportInput" accept=".json" style="display: none;" aria-hidden="true" />
     
     <script type="module" src="/src/main.js"></script>
   </body>

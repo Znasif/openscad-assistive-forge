@@ -97,6 +97,11 @@ export class LibraryManager {
    */
   loadState() {
     try {
+      // Check if localStorage is available (browser environment)
+      if (typeof localStorage === 'undefined') {
+        return; // Skip in Node.js environment
+      }
+      
       const saved = localStorage.getItem('openscad-customizer-libraries');
       if (saved) {
         const state = JSON.parse(saved);
@@ -117,6 +122,11 @@ export class LibraryManager {
    */
   saveState() {
     try {
+      // Check if localStorage is available (browser environment)
+      if (typeof localStorage === 'undefined') {
+        return; // Skip in Node.js environment
+      }
+      
       const state = {};
       for (const [id, lib] of Object.entries(this.libraries)) {
         state[id] = { enabled: lib.enabled };
