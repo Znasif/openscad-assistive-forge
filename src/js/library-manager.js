@@ -1,7 +1,7 @@
 /**
  * OpenSCAD Library Bundle Manager
  * @license GPL-3.0-or-later
- * 
+ *
  * Manages OpenSCAD library bundles (MCAD, BOSL2, etc.)
  */
 
@@ -63,14 +63,14 @@ export const LIBRARY_DEFINITIONS = {
  */
 export function detectLibraries(scadContent) {
   const detected = new Set();
-  
+
   // Match include/use statements
   const includePattern = /(?:include|use)\s*<([^>]+)>/g;
   let match;
-  
+
   while ((match = includePattern.exec(scadContent)) !== null) {
     const includePath = match[1];
-    
+
     // Check which library it belongs to
     for (const libId of Object.keys(LIBRARY_DEFINITIONS)) {
       if (includePath.startsWith(libId + '/')) {
@@ -78,7 +78,7 @@ export function detectLibraries(scadContent) {
       }
     }
   }
-  
+
   return Array.from(detected);
 }
 
@@ -101,7 +101,7 @@ export class LibraryManager {
       if (typeof localStorage === 'undefined') {
         return; // Skip in Node.js environment
       }
-      
+
       const saved = localStorage.getItem('openscad-customizer-libraries');
       if (saved) {
         const state = JSON.parse(saved);
@@ -126,12 +126,15 @@ export class LibraryManager {
       if (typeof localStorage === 'undefined') {
         return; // Skip in Node.js environment
       }
-      
+
       const state = {};
       for (const [id, lib] of Object.entries(this.libraries)) {
         state[id] = { enabled: lib.enabled };
       }
-      localStorage.setItem('openscad-customizer-libraries', JSON.stringify(state));
+      localStorage.setItem(
+        'openscad-customizer-libraries',
+        JSON.stringify(state)
+      );
     } catch (error) {
       console.warn('Failed to save library state:', error);
     }
@@ -178,7 +181,7 @@ export class LibraryManager {
    * @returns {Array<Object>} Array of enabled library objects
    */
   getEnabled() {
-    return Object.values(this.libraries).filter(lib => lib.enabled);
+    return Object.values(this.libraries).filter((lib) => lib.enabled);
   }
 
   /**
@@ -212,7 +215,7 @@ export class LibraryManager {
    * @returns {Array<Object>} Array of {id, path} objects for enabled libraries
    */
   getMountPaths() {
-    return this.getEnabled().map(lib => ({
+    return this.getEnabled().map((lib) => ({
       id: lib.id,
       path: lib.path,
     }));
@@ -226,14 +229,14 @@ export class LibraryManager {
   autoEnable(scadContent) {
     const detected = detectLibraries(scadContent);
     const autoEnabled = [];
-    
+
     for (const libId of detected) {
       if (!this.isEnabled(libId)) {
         this.enable(libId);
         autoEnabled.push(libId);
       }
     }
-    
+
     return autoEnabled;
   }
 
@@ -245,7 +248,7 @@ export class LibraryManager {
   subscribe(callback) {
     this.listeners.push(callback);
     return () => {
-      this.listeners = this.listeners.filter(cb => cb !== callback);
+      this.listeners = this.listeners.filter((cb) => cb !== callback);
     };
   }
 
@@ -270,9 +273,9 @@ export class LibraryManager {
    */
   getStats() {
     const all = Object.values(this.libraries);
-    const enabled = all.filter(lib => lib.enabled);
-    const popular = all.filter(lib => lib.popular);
-    
+    const enabled = all.filter((lib) => lib.enabled);
+    const popular = all.filter((lib) => lib.popular);
+
     return {
       total: all.length,
       enabled: enabled.length,
@@ -298,7 +301,7 @@ export class LibraryManager {
    */
   async checkAvailability() {
     const availability = {};
-    
+
     for (const [id, lib] of Object.entries(this.libraries)) {
       try {
         // Try to fetch manifest or a test file
@@ -308,7 +311,7 @@ export class LibraryManager {
         availability[id] = false;
       }
     }
-    
+
     return availability;
   }
 

@@ -22,10 +22,10 @@ include_lid = "yes"; // [yes, no]
 // Add ventilation holes
 ventilation = "no"; // [yes, no]
 
-// Number of holes per side
+// Number of holes per side @depends(ventilation==yes)
 hole_count = 3; // [1:10]
 
-// Hole diameter
+// Hole diameter in mm @depends(ventilation==yes)
 hole_diameter = 5; // [3:1:10]
 
 /* [Advanced] */

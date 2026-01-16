@@ -14,13 +14,13 @@ export class ComparisonView {
     this.comparisonController = comparisonController;
     this.theme = options.theme || 'light';
     this.highContrast = options.highContrast || false;
-    
+
     // Track preview managers for each variant
     this.previewManagers = new Map(); // variantId -> PreviewManager
-    
+
     // Flag to prevent concurrent auto-render cycles
     this.isAutoRendering = false;
-    
+
     // Subscribe to comparison controller changes
     this.comparisonController.subscribe((event, data) => {
       this.handleComparisonEvent(event, data);
@@ -33,17 +33,17 @@ export class ComparisonView {
   async init() {
     this.container.innerHTML = this.createComparisonLayout();
     this.attachEventListeners();
-    
+
     // Render any existing variants (they may have been added before init)
     const existingVariants = this.comparisonController.getAllVariants();
     for (const variant of existingVariants) {
       await this.addVariantCard(variant);
     }
-    
+
     // Auto-render all pending variants for better UX
     this.autoRenderPendingVariants();
   }
-  
+
   /**
    * Automatically render all pending variants
    */
@@ -52,21 +52,22 @@ export class ComparisonView {
     if (this.isAutoRendering) {
       return;
     }
-    
-    const pendingVariants = this.comparisonController.getAllVariants()
-      .filter(v => v.state === 'pending');
-    
+
+    const pendingVariants = this.comparisonController
+      .getAllVariants()
+      .filter((v) => v.state === 'pending');
+
     if (pendingVariants.length === 0) return;
 
     this.isAutoRendering = true;
-    
+
     try {
       // Render each pending variant sequentially
       for (const variant of pendingVariants) {
         // Re-check if variant is still pending (might have been rendered by manual click)
         const currentVariant = this.comparisonController.getVariant(variant.id);
         if (!currentVariant || currentVariant.state !== 'pending') continue;
-        
+
         try {
           await this.comparisonController.renderVariant(variant.id);
         } catch (error) {
@@ -74,11 +75,12 @@ export class ComparisonView {
           // Continue with next variant even if one fails
         }
       }
-      
+
       // After completing, check if new pending variants were added during rendering
-      const newPendingVariants = this.comparisonController.getAllVariants()
-        .filter(v => v.state === 'pending');
-      
+      const newPendingVariants = this.comparisonController
+        .getAllVariants()
+        .filter((v) => v.state === 'pending');
+
       if (newPendingVariants.length > 0) {
         // Render new pending variants (isAutoRendering is still true)
         for (const variant of newPendingVariants) {
@@ -185,7 +187,7 @@ export class ComparisonView {
         this.clearAllVariantCards();
         break;
     }
-    
+
     this.updateControls();
     this.updateEmptyState();
   }
@@ -221,7 +223,7 @@ export class ComparisonView {
       });
       await previewManager.init();
       this.previewManagers.set(variant.id, previewManager);
-      
+
       // If variant already has an STL (from previous render), load it immediately
       if (variant.stl && variant.state === 'complete') {
         previewManager.loadSTL(variant.stl);
@@ -307,7 +309,7 @@ export class ComparisonView {
     if (statusDiv) {
       const stateClass = `variant-state-${variant.state}`;
       statusDiv.className = `variant-status ${stateClass}`;
-      
+
       const stateLabel = this.getStateLabel(variant.state);
       statusDiv.innerHTML = `
         <span class="status-label">${stateLabel}</span>
@@ -367,7 +369,8 @@ export class ComparisonView {
     // Clear grid
     const grid = document.getElementById('comparison-grid');
     if (grid) {
-      grid.innerHTML = '<div class="comparison-empty-state"><p>No variants yet. Click "Add Variant" to start comparing.</p></div>';
+      grid.innerHTML =
+        '<div class="comparison-empty-state"><p>No variants yet. Click "Add Variant" to start comparing.</p></div>';
     }
   }
 
@@ -382,7 +385,8 @@ export class ComparisonView {
     const emptyState = grid.querySelector('.comparison-empty-state');
 
     if (!hasVariants && !emptyState) {
-      grid.innerHTML = '<div class="comparison-empty-state"><p>No variants yet. Click "Add Variant" to start comparing.</p></div>';
+      grid.innerHTML =
+        '<div class="comparison-empty-state"><p>No variants yet. Click "Add Variant" to start comparing.</p></div>';
     } else if (hasVariants && emptyState) {
       emptyState.remove();
     }
@@ -401,7 +405,9 @@ export class ComparisonView {
 
     if (addBtn) {
       addBtn.disabled = atMax;
-      addBtn.title = atMax ? 'Maximum variants reached' : 'Add variant to comparison';
+      addBtn.title = atMax
+        ? 'Maximum variants reached'
+        : 'Add variant to comparison';
     }
 
     if (renderAllBtn) {
@@ -434,25 +440,33 @@ export class ComparisonView {
     // Render button
     const renderBtn = card.querySelector('.variant-render-btn');
     if (renderBtn) {
-      renderBtn.addEventListener('click', () => this.handleRenderVariant(variantId));
+      renderBtn.addEventListener('click', () =>
+        this.handleRenderVariant(variantId)
+      );
     }
 
     // Download button
     const downloadBtn = card.querySelector('.variant-download-btn');
     if (downloadBtn) {
-      downloadBtn.addEventListener('click', () => this.handleDownloadVariant(variantId));
+      downloadBtn.addEventListener('click', () =>
+        this.handleDownloadVariant(variantId)
+      );
     }
 
     // Edit button
     const editBtn = card.querySelector('.variant-edit-btn');
     if (editBtn) {
-      editBtn.addEventListener('click', () => this.handleEditVariant(variantId));
+      editBtn.addEventListener('click', () =>
+        this.handleEditVariant(variantId)
+      );
     }
 
     // Delete button
     const deleteBtn = card.querySelector('.variant-delete-btn');
     if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => this.handleDeleteVariant(variantId));
+      deleteBtn.addEventListener('click', () =>
+        this.handleDeleteVariant(variantId)
+      );
     }
   }
 
@@ -497,12 +511,12 @@ export class ComparisonView {
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `comparison-${Date.now()}.json`;
     a.click();
-    
+
     URL.revokeObjectURL(url);
   }
 
@@ -572,7 +586,7 @@ export class ComparisonView {
   updateTheme(theme, highContrast) {
     this.theme = theme;
     this.highContrast = highContrast;
-    
+
     // Update all preview managers
     this.previewManagers.forEach((pm) => {
       pm.updateTheme(theme, highContrast);
@@ -608,7 +622,7 @@ export class ComparisonView {
     // Dispose all preview managers
     this.previewManagers.forEach((pm) => pm.dispose());
     this.previewManagers.clear();
-    
+
     // Clear container
     this.container.innerHTML = '';
   }

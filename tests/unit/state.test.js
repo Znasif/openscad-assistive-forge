@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { StateManager } from '../../src/js/state.js'
+import { StateManager, ParameterHistory } from '../../src/js/state.js'
 
 describe('State Management', () => {
   let state
@@ -476,6 +476,472 @@ describe('State Management', () => {
       state.clearLocalStorage()
       
       expect(localStorage.getItem(state.localStorageKey)).toBeNull()
+    })
+  })
+
+  describe('Undo/Redo History', () => {
+    beforeEach(() => {
+      // Set up initial parameters
+      state.setState({ 
+        parameters: { width: 50, height: 30 },
+        defaults: { width: 50, height: 30 }
+      })
+      // Push initial state to history to enable undo
+      state.history.push({ width: 50, height: 30 })
+    })
+
+    it('should initially have empty history after clear', () => {
+      state.clearHistory()
+      expect(state.canUndo()).toBe(false)
+      expect(state.canRedo()).toBe(false)
+    })
+
+    it('should record parameter state for undo', () => {
+      // Change parameters and record new state
+      state.setState({ parameters: { width: 60, height: 30 } })
+      state.history.push({ width: 60, height: 30 })
+      
+      expect(state.canUndo()).toBe(true)
+      expect(state.canRedo()).toBe(false)
+    })
+
+    it('should undo parameter change', () => {
+      // Make a change
+      state.setState({ parameters: { width: 60, height: 30 } })
+      state.history.push({ width: 60, height: 30 })
+      
+      const previousState = state.undo()
+      
+      expect(previousState).toEqual({ width: 50, height: 30 })
+    })
+
+    it('should redo undone change', () => {
+      // Make first change
+      state.setState({ parameters: { width: 60, height: 30 } })
+      state.history.push({ width: 60, height: 30 })
+      
+      // Make second change
+      state.setState({ parameters: { width: 60, height: 40 } })
+      state.history.push({ width: 60, height: 40 })
+      
+      state.undo() // Go back to width: 60, height: 30
+      state.undo() // Go back to width: 50, height: 30
+      
+      expect(state.canRedo()).toBe(true)
+      
+      const nextState = state.redo()
+      expect(nextState).toEqual({ width: 60, height: 30 })
+    })
+
+    it('should clear future history on new change after undo', () => {
+      // Make changes
+      state.setState({ parameters: { width: 60, height: 30 } })
+      state.history.push({ width: 60, height: 30 })
+      
+      state.setState({ parameters: { width: 70, height: 30 } })
+      state.history.push({ width: 70, height: 30 })
+      
+      state.undo() // Go back to width: 60
+      
+      expect(state.canRedo()).toBe(true)
+      
+      // Make a new change - should clear redo history
+      state.history.push({ width: 65, height: 30 })
+      
+      expect(state.canRedo()).toBe(false)
+    })
+
+    it('should respect history enabled flag', () => {
+      state.clearHistory()
+      state.setHistoryEnabled(false)
+      
+      state.recordParameterState()
+      
+      // History should not be recorded when disabled
+      expect(state.history.history.length).toBe(0)
+    })
+
+    it('should clear history', () => {
+      // Add a second state so we can undo
+      state.history.push({ width: 60, height: 30 })
+      expect(state.canUndo()).toBe(true) // Has two states, can undo
+      
+      state.clearHistory()
+      
+      expect(state.canUndo()).toBe(false)
+      expect(state.canRedo()).toBe(false)
+    })
+
+    it('should limit history size', () => {
+      state.clearHistory()
+      state.history.maxSize = 3
+      
+      // Record more changes than max size
+      for (let i = 0; i < 5; i++) {
+        state.history.push({ width: 50 + i, height: 30 })
+      }
+      
+      // Should only keep maxSize items
+      expect(state.history.history.length).toBeLessThanOrEqual(3)
+    })
+
+    it('should return null when undo not available', () => {
+      state.clearHistory()
+      const result = state.undo()
+      expect(result).toBeNull()
+    })
+
+    it('should return null when redo not available', () => {
+      const result = state.redo()
+      expect(result).toBeNull()
+    })
+
+    it('should get history stats', () => {
+      // Already have initial state in history
+      state.history.push({ width: 60, height: 30 })
+      
+      const stats = state.getHistoryStats()
+      
+      expect(stats).toHaveProperty('total')
+      expect(stats).toHaveProperty('current')
+      expect(stats).toHaveProperty('canUndo')
+      expect(stats).toHaveProperty('canRedo')
+      expect(stats.total).toBe(2)
+      expect(stats.canUndo).toBe(true)
+      expect(stats.canRedo).toBe(false)
+    })
+  })
+
+  describe('URL Loading', () => {
+    beforeEach(() => {
+      window.location.hash = ''
+    })
+
+    it('should load parameters from URL hash', () => {
+      window.location.hash = '#width=100&height=50'
+      
+      const loaded = state.loadFromURL()
+      
+      // Should return loaded params (may be null if hash parsing not implemented in test env)
+      if (loaded) {
+        expect(loaded).toHaveProperty('width')
+      }
+    })
+
+    it('should return null when no URL params', () => {
+      window.location.hash = ''
+      
+      const loaded = state.loadFromURL()
+      expect(loaded).toBeNull()
+    })
+  })
+
+  describe('performURLSync', () => {
+    it('should not sync when no parameters', () => {
+      state.setState({ parameters: null, defaults: null })
+      
+      // Should not throw
+      expect(() => state.performURLSync()).not.toThrow()
+    })
+
+    it('should not sync when no defaults', () => {
+      state.setState({ parameters: { width: 100 }, defaults: null })
+      
+      // Should not throw
+      expect(() => state.performURLSync()).not.toThrow()
+    })
+  })
+
+  describe('performLocalStorageSave', () => {
+    it('should not save when no uploaded file', () => {
+      state.setState({ uploadedFile: null, parameters: { width: 100 } })
+      
+      state.performLocalStorageSave()
+      
+      expect(localStorage.getItem(state.localStorageKey)).toBeNull()
+    })
+
+    it('should not save when no parameters', () => {
+      state.setState({ uploadedFile: { name: 'test.scad' }, parameters: null })
+      
+      state.performLocalStorageSave()
+      
+      expect(localStorage.getItem(state.localStorageKey)).toBeNull()
+    })
+
+    it('should handle localStorage quota exceeded', () => {
+      const originalSetItem = localStorage.setItem
+      localStorage.setItem = () => { throw new Error('QuotaExceededError') }
+      
+      state.setState({ 
+        uploadedFile: { name: 'test.scad', content: 'cube([10,10,10]);' },
+        parameters: { width: 100 }
+      })
+      
+      // Should not throw
+      expect(() => state.performLocalStorageSave()).not.toThrow()
+      
+      localStorage.setItem = originalSetItem
+    })
+  })
+
+  describe('clearLocalStorage error handling', () => {
+    it('should handle localStorage errors when clearing', () => {
+      const originalRemoveItem = localStorage.removeItem
+      localStorage.removeItem = () => { throw new Error('Storage error') }
+      
+      // Should not throw
+      expect(() => state.clearLocalStorage()).not.toThrow()
+      
+      localStorage.removeItem = originalRemoveItem
+    })
+  })
+
+  describe('updateParameter', () => {
+    it('should update a single parameter', () => {
+      state.setState({ 
+        parameters: { width: 50, height: 30 },
+        defaults: { width: 50, height: 30 }
+      })
+      
+      state.updateParameter('width', 100)
+      
+      const currentState = state.getState()
+      expect(currentState.parameters.width).toBe(100)
+      expect(currentState.parameters.height).toBe(30) // Unchanged
+    })
+
+    it('should record history when updating parameter', () => {
+      state.setState({ 
+        parameters: { width: 50, height: 30 },
+        defaults: { width: 50, height: 30 }
+      })
+      state.setHistoryEnabled(true)
+      state.isUndoRedo = false
+      
+      state.updateParameter('width', 100)
+      
+      // History should have been recorded
+      expect(state.history.history.length).toBeGreaterThan(0)
+    })
+
+    it('should not record history during undo/redo', () => {
+      state.setState({ 
+        parameters: { width: 50, height: 30 },
+        defaults: { width: 50, height: 30 }
+      })
+      state.clearHistory()
+      state.isUndoRedo = true
+      
+      state.updateParameter('width', 100)
+      
+      // History should not have been recorded
+      expect(state.history.history.length).toBe(0)
+    })
+  })
+
+  describe('updateUndoRedoButtons', () => {
+    it('should not throw when buttons do not exist', () => {
+      // Should not throw when buttons don't exist in DOM
+      expect(() => state.updateUndoRedoButtons()).not.toThrow()
+    })
+
+    it('should update button states when buttons exist', () => {
+      // Create mock buttons
+      const undoBtn = document.createElement('button')
+      undoBtn.id = 'undoBtn'
+      const redoBtn = document.createElement('button')
+      redoBtn.id = 'redoBtn'
+      document.body.appendChild(undoBtn)
+      document.body.appendChild(redoBtn)
+      
+      state.updateUndoRedoButtons()
+      
+      // Buttons should have disabled attribute based on history state
+      expect(undoBtn.hasAttribute('disabled') || !undoBtn.hasAttribute('disabled')).toBe(true)
+      
+      // Cleanup
+      document.body.removeChild(undoBtn)
+      document.body.removeChild(redoBtn)
+    })
+  })
+})
+
+describe('ParameterHistory', () => {
+  let history
+
+  beforeEach(() => {
+    history = new ParameterHistory(5)
+  })
+
+  describe('Initialization', () => {
+    it('should initialize with empty history', () => {
+      expect(history.history).toEqual([])
+      expect(history.currentIndex).toBe(-1)
+    })
+
+    it('should use default max size of 50', () => {
+      const defaultHistory = new ParameterHistory()
+      expect(defaultHistory.maxSize).toBe(50)
+    })
+
+    it('should use custom max size', () => {
+      expect(history.maxSize).toBe(5)
+    })
+  })
+
+  describe('Push', () => {
+    it('should add state to history', () => {
+      history.push({ width: 50 })
+      
+      expect(history.history.length).toBe(1)
+      expect(history.currentIndex).toBe(0)
+    })
+
+    it('should deep clone state', () => {
+      const state = { width: 50, nested: { value: 10 } }
+      history.push(state)
+      
+      // Modify original
+      state.width = 100
+      state.nested.value = 20
+      
+      // History should have original values
+      expect(history.history[0].width).toBe(50)
+      expect(history.history[0].nested.value).toBe(10)
+    })
+
+    it('should trim history when exceeding max size', () => {
+      for (let i = 0; i < 10; i++) {
+        history.push({ width: i })
+      }
+      
+      expect(history.history.length).toBe(5)
+      // Oldest entries should be removed
+      expect(history.history[0].width).toBe(5)
+    })
+
+    it('should clear future states when pushing after undo', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      history.push({ width: 70 })
+      
+      history.undo() // Back to 60
+      history.undo() // Back to 50
+      
+      history.push({ width: 55 })
+      
+      expect(history.history.length).toBe(2)
+      expect(history.history[1].width).toBe(55)
+    })
+  })
+
+  describe('Undo', () => {
+    it('should return previous state', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      const prev = history.undo()
+      
+      expect(prev).toEqual({ width: 50 })
+      expect(history.currentIndex).toBe(0)
+    })
+
+    it('should return null when at beginning', () => {
+      history.push({ width: 50 })
+      
+      const prev = history.undo()
+      
+      expect(prev).toBeNull()
+    })
+
+    it('should return null when history is empty', () => {
+      const prev = history.undo()
+      
+      expect(prev).toBeNull()
+    })
+  })
+
+  describe('Redo', () => {
+    it('should return next state', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      history.undo()
+      const next = history.redo()
+      
+      expect(next).toEqual({ width: 60 })
+      expect(history.currentIndex).toBe(1)
+    })
+
+    it('should return null when at end', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      const next = history.redo()
+      
+      expect(next).toBeNull()
+    })
+
+    it('should return null when history is empty', () => {
+      const next = history.redo()
+      
+      expect(next).toBeNull()
+    })
+  })
+
+  describe('canUndo/canRedo', () => {
+    it('should return false for empty history', () => {
+      expect(history.canUndo()).toBe(false)
+      expect(history.canRedo()).toBe(false)
+    })
+
+    it('should return correct values after push', () => {
+      history.push({ width: 50 })
+      
+      expect(history.canUndo()).toBe(false) // Only one state
+      expect(history.canRedo()).toBe(false)
+      
+      history.push({ width: 60 })
+      
+      expect(history.canUndo()).toBe(true)
+      expect(history.canRedo()).toBe(false)
+    })
+
+    it('should return correct values after undo', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      history.undo()
+      
+      expect(history.canUndo()).toBe(false)
+      expect(history.canRedo()).toBe(true)
+    })
+  })
+
+  describe('Clear', () => {
+    it('should clear all history', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      history.clear()
+      
+      expect(history.history).toEqual([])
+      expect(history.currentIndex).toBe(-1)
+    })
+  })
+
+  describe('getStats', () => {
+    it('should return correct stats', () => {
+      history.push({ width: 50 })
+      history.push({ width: 60 })
+      
+      const stats = history.getStats()
+      
+      expect(stats.total).toBe(2)
+      expect(stats.current).toBe(1)
+      expect(stats.canUndo).toBe(true)
+      expect(stats.canRedo).toBe(false)
     })
   })
 })

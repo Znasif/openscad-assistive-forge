@@ -14,42 +14,46 @@ export async function extractZipFiles(zipFile) {
   try {
     const zip = new JSZip();
     const zipData = await zip.loadAsync(zipFile);
-    
+
     const files = new Map();
     let mainFile = null;
     const scadFiles = [];
-    
+
     // Extract all files
     for (const [relativePath, zipEntry] of Object.entries(zipData.files)) {
       // Skip directories
       if (zipEntry.dir) continue;
-      
+
       // Extract file content as text
       const content = await zipEntry.async('text');
-      
+
       // Normalize path (remove leading slashes, convert backslashes)
-      const normalizedPath = relativePath.replace(/^\/+/, '').replace(/\\/g, '/');
-      
+      const normalizedPath = relativePath
+        .replace(/^\/+/, '')
+        .replace(/\\/g, '/');
+
       files.set(normalizedPath, content);
-      
+
       // Track .scad files for main file detection
       if (normalizedPath.endsWith('.scad')) {
         scadFiles.push(normalizedPath);
       }
-      
-      console.log(`[ZIP] Extracted: ${normalizedPath} (${content.length} bytes)`);
+
+      console.log(
+        `[ZIP] Extracted: ${normalizedPath} (${content.length} bytes)`
+      );
     }
-    
+
     // Detect main file
     mainFile = detectMainFile(scadFiles, files);
-    
+
     if (!mainFile) {
       throw new Error('No .scad files found in ZIP archive');
     }
-    
+
     console.log(`[ZIP] Main file detected: ${mainFile}`);
     console.log(`[ZIP] Total files extracted: ${files.size}`);
-    
+
     return { files, mainFile };
   } catch (error) {
     console.error('[ZIP] Extraction failed:', error);
@@ -64,7 +68,7 @@ export async function extractZipFiles(zipFile) {
  * 2. Look for files in the root directory (no subdirectories)
  * 3. Look for the first .scad file with Customizer annotations
  * 4. Fall back to the first .scad file alphabetically
- * 
+ *
  * @param {string[]} scadFiles - List of .scad file paths
  * @param {Map<string, string>} files - All extracted files
  * @returns {string|null} - Path to main file
@@ -72,24 +76,25 @@ export async function extractZipFiles(zipFile) {
 function detectMainFile(scadFiles, files) {
   if (scadFiles.length === 0) return null;
   if (scadFiles.length === 1) return scadFiles[0];
-  
+
   // Strategy 1: Look for "main.scad"
-  const mainScad = scadFiles.find(path => 
-    path.toLowerCase() === 'main.scad' || 
-    path.toLowerCase().endsWith('/main.scad')
+  const mainScad = scadFiles.find(
+    (path) =>
+      path.toLowerCase() === 'main.scad' ||
+      path.toLowerCase().endsWith('/main.scad')
   );
   if (mainScad) return mainScad;
-  
+
   // Strategy 2: Look for files with "main" in the name
-  const mainNamed = scadFiles.find(path => 
+  const mainNamed = scadFiles.find((path) =>
     path.toLowerCase().includes('main')
   );
   if (mainNamed) return mainNamed;
-  
+
   // Strategy 3: Prefer root directory files
-  const rootFiles = scadFiles.filter(path => !path.includes('/'));
+  const rootFiles = scadFiles.filter((path) => !path.includes('/'));
   if (rootFiles.length === 1) return rootFiles[0];
-  
+
   // Strategy 4: Look for Customizer annotations
   for (const path of rootFiles.length > 0 ? rootFiles : scadFiles) {
     const content = files.get(path);
@@ -97,11 +102,9 @@ function detectMainFile(scadFiles, files) {
       return path;
     }
   }
-  
+
   // Strategy 5: Fall back to first file (prefer root, then alphabetical)
-  return rootFiles.length > 0 
-    ? rootFiles.sort()[0] 
-    : scadFiles.sort()[0];
+  return rootFiles.length > 0 ? rootFiles.sort()[0] : scadFiles.sort()[0];
 }
 
 /**
@@ -112,11 +115,11 @@ function detectMainFile(scadFiles, files) {
 function hasCustomizerAnnotations(content) {
   // Look for common Customizer patterns
   const patterns = [
-    /\/\*\s*\[.*?\]\s*\*\//,  // /*[Group]*/
-    /\/\/\s*\[.*?\]/,          // // [min:max] or // [opt1, opt2]
+    /\/\*\s*\[.*?\]\s*\*\//, // /*[Group]*/
+    /\/\/\s*\[.*?\]/, // // [min:max] or // [opt1, opt2]
   ];
-  
-  return patterns.some(pattern => pattern.test(content));
+
+  return patterns.some((pattern) => pattern.test(content));
 }
 
 /**
@@ -129,21 +132,21 @@ export function validateZipFile(file) {
   if (!file.name.toLowerCase().endsWith('.zip')) {
     return { valid: false, error: 'File must have .zip extension' };
   }
-  
+
   // Check file size (20MB limit for ZIP files)
   const maxSize = 20 * 1024 * 1024; // 20MB
   if (file.size > maxSize) {
-    return { 
-      valid: false, 
-      error: `ZIP file exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)` 
+    return {
+      valid: false,
+      error: `ZIP file exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
     };
   }
-  
+
   // Check for empty file
   if (file.size === 0) {
     return { valid: false, error: 'ZIP file is empty' };
   }
-  
+
   return { valid: true };
 }
 
@@ -155,16 +158,16 @@ export function validateZipFile(file) {
  */
 export function createFileTree(files, mainFile) {
   const fileList = Array.from(files.keys()).sort();
-  
-  const items = fileList.map(path => {
+
+  const items = fileList.map((path) => {
     const isMain = path === mainFile;
     const icon = path.endsWith('.scad') ? '📄' : '📎';
     const badge = isMain ? ' <span class="file-tree-badge">main</span>' : '';
     const className = isMain ? 'file-tree-item main' : 'file-tree-item';
-    
+
     return `<div class="${className}">${icon} ${path}${badge}</div>`;
   });
-  
+
   return `
     <div class="file-tree">
       <div class="file-tree-header">📦 ZIP Contents (${files.size} files)</div>
@@ -184,24 +187,24 @@ export function resolveIncludePath(statement, currentFile) {
   // Matches: include <path>, include "path", use <path>, use "path"
   const match = statement.match(/(?:include|use)\s*[<"]([^>"]+)[>"]/);
   if (!match) return null;
-  
+
   const includePath = match[1];
-  
+
   // If absolute path (starts with /), use as-is
   if (includePath.startsWith('/')) {
     return includePath.slice(1); // Remove leading slash
   }
-  
+
   // Resolve relative to current file's directory
-  const currentDir = currentFile.includes('/') 
+  const currentDir = currentFile.includes('/')
     ? currentFile.substring(0, currentFile.lastIndexOf('/'))
     : '';
-  
+
   if (!currentDir) {
     // Current file is in root, so relative path is the include path
     return includePath;
   }
-  
+
   // Join paths and normalize
   const resolved = currentDir + '/' + includePath;
   return normalizePath(resolved);
@@ -215,7 +218,7 @@ export function resolveIncludePath(statement, currentFile) {
 function normalizePath(path) {
   const parts = path.split('/');
   const result = [];
-  
+
   for (const part of parts) {
     if (part === '.' || part === '') continue;
     if (part === '..') {
@@ -224,7 +227,7 @@ function normalizePath(path) {
       result.push(part);
     }
   }
-  
+
   return result.join('/');
 }
 
@@ -248,17 +251,17 @@ export function getZipStats(files) {
   const scadFiles = [];
   const otherFiles = [];
   let totalSize = 0;
-  
+
   for (const [path, content] of files.entries()) {
     totalSize += content.length;
-    
+
     if (path.endsWith('.scad')) {
       scadFiles.push(path);
     } else {
       otherFiles.push(path);
     }
   }
-  
+
   return {
     totalFiles: files.size,
     scadFiles: scadFiles.length,

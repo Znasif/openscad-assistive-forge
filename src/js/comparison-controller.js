@@ -33,7 +33,12 @@ export class ComparisonController {
   /**
    * Set the current SCAD content and project files
    */
-  setProject(scadContent, projectFiles = null, mainFile = null, libraries = []) {
+  setProject(
+    scadContent,
+    projectFiles = null,
+    mainFile = null,
+    libraries = []
+  ) {
     this.scadContent = scadContent;
     this.projectFiles = projectFiles;
     this.mainFile = mainFile;

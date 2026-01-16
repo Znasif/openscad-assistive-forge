@@ -79,7 +79,8 @@ export function generateFilename(modelName, parameters, format = 'stl') {
  * @param {string} format - Output format (stl, obj, off, amf, 3mf)
  */
 export function downloadFile(arrayBuffer, filename, format = 'stl') {
-  const mimeType = OUTPUT_FORMATS[format]?.mimeType || 'application/octet-stream';
+  const mimeType =
+    OUTPUT_FORMATS[format]?.mimeType || 'application/octet-stream';
   const blob = new Blob([arrayBuffer], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

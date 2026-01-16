@@ -6,56 +6,48 @@
  * We use the 'openscad-wasm-prebuilt' npm package for WASM.
  */
 
-import { mkdir, writeFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { mkdir, writeFile, unlink, readdir, rename } from 'fs/promises';
+import { existsSync, createWriteStream, createReadStream } from 'fs';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
+import { createGunzip } from 'zlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Liberation Fonts - Required for OpenSCAD text() function
-const FONTS_TO_DOWNLOAD = [
-  {
-    name: 'LiberationSans-Regular.ttf',
-    url: 'https://github.com/liberationfonts/liberation-fonts/raw/devel/liberation-fonts-ttf-2.1.5/LiberationSans-Regular.ttf'
-  },
-  {
-    name: 'LiberationSans-Bold.ttf',
-    url: 'https://github.com/liberationfonts/liberation-fonts/raw/devel/liberation-fonts-ttf-2.1.5/LiberationSans-Bold.ttf'
-  },
-  {
-    name: 'LiberationSans-Italic.ttf',
-    url: 'https://github.com/liberationfonts/liberation-fonts/raw/devel/liberation-fonts-ttf-2.1.5/LiberationSans-Italic.ttf'
-  },
-  {
-    name: 'LiberationMono-Regular.ttf',
-    url: 'https://github.com/liberationfonts/liberation-fonts/raw/devel/liberation-fonts-ttf-2.1.5/LiberationMono-Regular.ttf'
-  }
+// Liberation Fonts release archive URL (attached to GitHub release)
+const FONTS_RELEASE_URL = 'https://github.com/liberationfonts/liberation-fonts/files/7261482/liberation-fonts-ttf-2.1.5.tar.gz';
+
+// Required fonts from the archive
+const REQUIRED_FONTS = [
+  'LiberationSans-Regular.ttf',
+  'LiberationSans-Bold.ttf',
+  'LiberationSans-Italic.ttf',
+  'LiberationMono-Regular.ttf'
 ];
 
 /**
- * Download a file from URL
+ * Download a file from URL to a destination
  * @param {string} url - URL to download from
  * @param {string} dest - Destination file path
  * @returns {Promise<void>}
  */
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
-    const file = require('fs').createWriteStream(dest);
+    const file = createWriteStream(dest);
     
-    https.get(url, (response) => {
+    const request = https.get(url, (response) => {
+      // Follow redirects
       if (response.statusCode === 302 || response.statusCode === 301) {
-        // Follow redirect
         file.close();
-        require('fs').unlinkSync(dest);
+        unlink(dest).catch(() => {});
         return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
       }
       
       if (response.statusCode !== 200) {
         file.close();
-        require('fs').unlinkSync(dest);
-        return reject(new Error(`Failed to download: ${response.statusCode}`));
+        unlink(dest).catch(() => {});
+        return reject(new Error(`Failed to download: HTTP ${response.statusCode}`));
       }
 
       response.pipe(file);
@@ -63,21 +55,104 @@ function downloadFile(url, dest) {
       file.on('finish', () => {
         file.close(resolve);
       });
-    }).on('error', (err) => {
-      require('fs').unlinkSync(dest);
+    });
+    
+    request.on('error', (err) => {
+      unlink(dest).catch(() => {});
       reject(err);
     });
 
     file.on('error', (err) => {
       file.close();
-      require('fs').unlinkSync(dest);
+      unlink(dest).catch(() => {});
       reject(err);
     });
   });
 }
 
 /**
- * Download Liberation fonts for OpenSCAD text() support
+ * Simple tar extraction - extracts .ttf files from a tar archive
+ * This is a minimal implementation that handles only what we need
+ * @param {string} tarPath - Path to the tar file
+ * @param {string} destDir - Destination directory
+ * @param {string[]} fileFilter - Only extract files with these names
+ * @returns {Promise<string[]>} - List of extracted file paths
+ */
+async function extractTar(tarPath, destDir, fileFilter) {
+  const { createReadStream: crs } = await import('fs');
+  const extracted = [];
+  
+  return new Promise((resolve, reject) => {
+    const stream = crs(tarPath);
+    let buffer = Buffer.alloc(0);
+    
+    stream.on('data', (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
+    });
+    
+    stream.on('end', async () => {
+      try {
+        let offset = 0;
+        
+        while (offset < buffer.length - 512) {
+          // Read tar header (512 bytes)
+          const header = buffer.slice(offset, offset + 512);
+          
+          // Check for end of archive (two zero blocks)
+          if (header.every(b => b === 0)) {
+            break;
+          }
+          
+          // Extract filename (first 100 bytes, null-terminated)
+          let filename = header.slice(0, 100).toString('ascii').replace(/\0.*$/, '');
+          
+          // Handle long filenames (GNU tar extension)
+          // Skip if filename is empty
+          if (!filename) {
+            offset += 512;
+            continue;
+          }
+          
+          // Get file size from header (octal, bytes 124-135)
+          const sizeStr = header.slice(124, 136).toString('ascii').replace(/\0.*$/, '').trim();
+          const fileSize = parseInt(sizeStr, 8) || 0;
+          
+          // Get file type (byte 156)
+          const fileType = header[156];
+          
+          // Move past header
+          offset += 512;
+          
+          // Only process regular files (type '0' or '\0')
+          if ((fileType === 48 || fileType === 0) && fileSize > 0) {
+            const baseName = basename(filename);
+            
+            // Check if this file matches our filter
+            if (fileFilter.includes(baseName)) {
+              const destPath = join(destDir, baseName);
+              const fileData = buffer.slice(offset, offset + fileSize);
+              await writeFile(destPath, fileData);
+              extracted.push(baseName);
+            }
+          }
+          
+          // Move to next file (512-byte aligned)
+          const blocks = Math.ceil(fileSize / 512);
+          offset += blocks * 512;
+        }
+        
+        resolve(extracted);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    
+    stream.on('error', reject);
+  });
+}
+
+/**
+ * Download and extract Liberation fonts for OpenSCAD text() support
  * @param {string} fontsDir - Fonts directory path
  * @returns {Promise<void>}
  */
@@ -85,31 +160,80 @@ async function downloadFonts(fontsDir) {
   console.log('Downloading Liberation Fonts...');
   console.log('--------------------------------');
 
-  let downloaded = 0;
-  let skipped = 0;
+  // Check if all fonts already exist
+  const missingFonts = REQUIRED_FONTS.filter(f => !existsSync(join(fontsDir, f)));
+  
+  if (missingFonts.length === 0) {
+    console.log('✓ All fonts already downloaded');
+    return;
+  }
 
-  for (const font of FONTS_TO_DOWNLOAD) {
-    const fontPath = join(fontsDir, font.name);
-
-    if (existsSync(fontPath)) {
-      console.log(`✓ ${font.name} already exists`);
-      skipped++;
-      continue;
+  const tempDir = join(__dirname, '..', '.temp-fonts');
+  const archivePath = join(tempDir, 'fonts.tar.gz');
+  const tarPath = join(tempDir, 'fonts.tar');
+  
+  try {
+    // Create temp directory
+    if (!existsSync(tempDir)) {
+      await mkdir(tempDir, { recursive: true });
     }
 
+    // Download the archive
+    console.log('  Downloading font archive...');
+    await downloadFile(FONTS_RELEASE_URL, archivePath);
+    console.log('✓ Downloaded font archive');
+
+    // Decompress gzip
+    console.log('  Extracting fonts...');
+    await new Promise((resolve, reject) => {
+      const input = createReadStream(archivePath);
+      const output = createWriteStream(tarPath);
+      const gunzip = createGunzip();
+      
+      input.pipe(gunzip).pipe(output);
+      
+      output.on('finish', resolve);
+      output.on('error', reject);
+      gunzip.on('error', reject);
+      input.on('error', reject);
+    });
+
+    // Extract TTF files from tar
+    const extracted = await extractTar(tarPath, fontsDir, REQUIRED_FONTS);
+    
+    console.log(`✓ Extracted ${extracted.length} fonts:`);
+    for (const font of extracted) {
+      console.log(`  - ${font}`);
+    }
+
+    // Check if any fonts are still missing
+    const stillMissing = REQUIRED_FONTS.filter(f => !existsSync(join(fontsDir, f)));
+    if (stillMissing.length > 0) {
+      console.warn(`⚠ Some fonts could not be extracted: ${stillMissing.join(', ')}`);
+    }
+
+  } catch (error) {
+    console.error('✗ Failed to download fonts:', error.message);
+    console.log('');
+    console.log('Fonts are optional but recommended for OpenSCAD text() support.');
+    console.log('You can manually download Liberation fonts from:');
+    console.log('https://github.com/liberationfonts/liberation-fonts/releases');
+  } finally {
+    // Cleanup temp files
     try {
-      console.log(`  Downloading ${font.name}...`);
-      await downloadFile(font.url, fontPath);
-      console.log(`✓ Downloaded ${font.name}`);
-      downloaded++;
-    } catch (error) {
-      console.error(`✗ Failed to download ${font.name}:`, error.message);
+      if (existsSync(archivePath)) await unlink(archivePath);
+      if (existsSync(tarPath)) await unlink(tarPath);
+      if (existsSync(tempDir)) {
+        const files = await readdir(tempDir);
+        if (files.length === 0) {
+          await unlink(tempDir).catch(() => {});
+        }
+      }
+    } catch {
+      // Ignore cleanup errors
     }
   }
 
-  console.log('');
-  console.log(`Font download complete: ${downloaded} downloaded, ${skipped} skipped`);
-  
   // Create README in fonts directory
   const readmePath = join(fontsDir, 'README.md');
   if (!existsSync(readmePath)) {
@@ -130,7 +254,7 @@ Liberation Fonts are licensed under the SIL Open Font License 1.1, which is comp
 
 ## Source
 
-Downloaded from: https://github.com/liberationfonts/liberation-fonts
+Downloaded from: https://github.com/liberationfonts/liberation-fonts/releases/tag/2.1.5
 
 ## Regeneration
 

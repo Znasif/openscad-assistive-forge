@@ -124,6 +124,77 @@ function validateSchema(webappPath) {
 }
 
 /**
+ * Detect template type from package.json
+ * @param {string} webappPath - Path to webapp directory
+ * @returns {string} Template name (vanilla|react|vue|svelte|angular|preact)
+ */
+function detectTemplate(webappPath) {
+  const packageJsonPath = join(webappPath, 'package.json');
+  
+  if (!existsSync(packageJsonPath)) {
+    return 'vanilla'; // Default to vanilla if no package.json
+  }
+  
+  try {
+    const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    
+    // Check for framework dependencies (order matters - check more specific first)
+    if (deps['@angular/core']) return 'angular';
+    if (deps['preact']) return 'preact';
+    if (deps['react']) return 'react';
+    if (deps['vue']) return 'vue';
+    if (deps['svelte']) return 'svelte';
+    
+    return 'vanilla';
+  } catch {
+    return 'vanilla';
+  }
+}
+
+/**
+ * Get expected files for a template
+ * @param {string} template - Template name
+ * @returns {Object} Required and optional files
+ */
+function getTemplateFiles(template) {
+  const TEMPLATE_FILES = {
+    vanilla: {
+      required: ['index.html', 'src/main.js', 'vite.config.js'],
+      css: 'src/styles/main.css',
+    },
+    react: {
+      required: ['index.html', 'src/main.jsx', 'vite.config.js'],
+      // React can have App.jsx or App.tsx
+      alternatives: [['src/App.jsx', 'src/App.tsx']],
+      css: 'src/App.css',
+    },
+    vue: {
+      required: ['index.html', 'src/main.js', 'vite.config.js'],
+      alternatives: [['src/App.vue']],
+      css: null, // Vue uses scoped styles
+    },
+    svelte: {
+      required: ['index.html', 'src/main.js', 'vite.config.js'],
+      alternatives: [['src/App.svelte']],
+      css: null, // Svelte uses scoped styles
+    },
+    angular: {
+      required: ['index.html', 'vite.config.js', 'tsconfig.json'],
+      alternatives: [['src/main.ts']],
+      css: null, // Angular uses component styles
+    },
+    preact: {
+      required: ['index.html', 'src/main.jsx', 'vite.config.js'],
+      alternatives: [['src/App.jsx', 'src/App.tsx']],
+      css: 'src/App.css',
+    },
+  };
+  
+  return TEMPLATE_FILES[template] || TEMPLATE_FILES.vanilla;
+}
+
+/**
  * Validate UI components
  * @param {string} webappPath - Path to webapp directory
  * @returns {Object} Validation result
@@ -131,38 +202,47 @@ function validateSchema(webappPath) {
 function validateUI(webappPath) {
   const errors = [];
   
-  // Check for required files
-  const requiredFiles = [
-    'index.html',
-    'src/main.js',
-    'src/js/parser.js',
-    'src/js/ui-generator.js',
-    'src/styles/main.css',
-  ];
+  // Detect template type
+  const template = detectTemplate(webappPath);
+  const templateFiles = getTemplateFiles(template);
   
-  for (const file of requiredFiles) {
+  // Check for required files
+  for (const file of templateFiles.required) {
     if (!existsSync(join(webappPath, file))) {
       errors.push(`Missing required file: ${file}`);
     }
   }
   
-  // Check for accessibility features in CSS
-  const cssPath = join(webappPath, 'src/styles/main.css');
-  if (existsSync(cssPath)) {
-    const css = readFileSync(cssPath, 'utf-8');
-    
-    if (!css.includes('focus-visible')) {
-      errors.push('CSS missing focus-visible styles for accessibility');
+  // Check for alternative files (at least one must exist)
+  if (templateFiles.alternatives) {
+    for (const altGroup of templateFiles.alternatives) {
+      const hasOne = altGroup.some(file => existsSync(join(webappPath, file)));
+      if (!hasOne) {
+        errors.push(`Missing required file: one of ${altGroup.join(' or ')}`);
+      }
     }
-    
-    if (!css.includes('prefers-reduced-motion')) {
-      errors.push('CSS missing prefers-reduced-motion media query');
+  }
+  
+  // Check for accessibility features in CSS (if applicable)
+  if (templateFiles.css) {
+    const cssPath = join(webappPath, templateFiles.css);
+    if (existsSync(cssPath)) {
+      const css = readFileSync(cssPath, 'utf-8');
+      
+      if (!css.includes('focus-visible')) {
+        errors.push('CSS missing focus-visible styles for accessibility');
+      }
+      
+      if (!css.includes('prefers-reduced-motion')) {
+        errors.push('CSS missing prefers-reduced-motion media query');
+      }
     }
   }
   
   return {
     valid: errors.length === 0,
     errors,
+    template, // Include detected template in result
   };
 }
 
@@ -326,8 +406,35 @@ function runTestCases(webappPath, testCases, options) {
  * @returns {string} Formatted output
  */
 function formatResults(results, format) {
+  // Calculate overall pass/fail status
+  const schemaValid = results.schema?.valid ?? true;
+  const uiValid = results.ui?.valid ?? true;
+  const testsPassed = results.testResults?.failed === 0;
+  const allPassed = schemaValid && uiValid && testsPassed;
+  
   if (format === 'json') {
-    return JSON.stringify(results, null, 2);
+    // Return structured JSON with top-level passed flag for CI integration
+    const jsonOutput = {
+      passed: allPassed,
+      summary: {
+        schemaValid,
+        uiValid,
+        template: results.ui?.template || 'vanilla',
+        testsRun: results.testResults?.total || 0,
+        testsPassed: results.testResults?.passed || 0,
+        testsFailed: results.testResults?.failed || 0,
+      },
+      results: {
+        schema: results.schema,
+        ui: results.ui,
+        testResults: results.testResults,
+      },
+      metadata: {
+        webapp: results.webapp,
+        timestamp: results.timestamp,
+      },
+    };
+    return JSON.stringify(jsonOutput, null, 2);
   }
   
   if (format === 'junit') {
@@ -372,6 +479,9 @@ function formatResults(results, format) {
   
   // UI validation
   output += chalk.cyan('UI Validation:') + '\n';
+  if (results.ui.template) {
+    output += chalk.gray(`  Template: ${results.ui.template}\n`);
+  }
   if (results.ui.valid) {
     output += chalk.green('  ✓ All required files present\n');
   } else {

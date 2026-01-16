@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { renderParameterUI } from '../../src/js/ui-generator.js'
+import { 
+  renderParameterUI, 
+  setLimitsUnlocked, 
+  areLimitsUnlocked, 
+  getAllDefaults, 
+  getDefaultValue,
+  resetParameter,
+  updateDependentParameters
+} from '../../src/js/ui-generator.js'
 
 const buildParams = ({ groups = null, params = [] }) => {
   const resolvedGroups = groups || [{ id: 'General', label: 'General', order: 0 }]
@@ -441,6 +449,326 @@ describe('UI Generator', () => {
       const textInput = container.querySelector('input[type="text"]')
       expect(slider.value).toBe('75')
       expect(textInput.value).toBe('custom')
+    })
+  })
+
+  describe('Limits Management', () => {
+    it('tracks unlock state via setLimitsUnlocked and areLimitsUnlocked', () => {
+      // Initially should be false (reset state)
+      setLimitsUnlocked(false)
+      expect(areLimitsUnlocked()).toBe(false)
+
+      setLimitsUnlocked(true)
+      expect(areLimitsUnlocked()).toBe(true)
+
+      setLimitsUnlocked(false)
+      expect(areLimitsUnlocked()).toBe(false)
+    })
+
+    it('unlocks slider limits when setLimitsUnlocked(true) is called', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'value',
+            type: 'number',
+            default: 50,
+            minimum: 10,
+            maximum: 100,
+            uiType: 'slider'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const slider = container.querySelector('input[type="range"]')
+      expect(slider.min).toBe('10')
+      expect(slider.max).toBe('100')
+
+      setLimitsUnlocked(true)
+
+      // Limits should be expanded
+      expect(parseFloat(slider.min)).toBeLessThan(10)
+      expect(parseFloat(slider.max)).toBeGreaterThan(100)
+
+      setLimitsUnlocked(false)
+
+      // Limits should be restored
+      expect(slider.min).toBe('10')
+      expect(slider.max).toBe('100')
+    })
+
+    it('clamps slider value when limits are restored', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'test_value',
+            type: 'number',
+            default: 50,
+            minimum: 10,
+            maximum: 100,
+            uiType: 'slider'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const slider = container.querySelector('input[type="range"]')
+      
+      // Unlock and set value outside normal range
+      setLimitsUnlocked(true)
+      slider.value = 150
+      
+      // Now restore limits - value should be clamped
+      setLimitsUnlocked(false)
+      expect(parseFloat(slider.value)).toBeLessThanOrEqual(100)
+    })
+
+    it('unlocks number input limits when setLimitsUnlocked(true) is called', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'count',
+            type: 'number',
+            default: 5,
+            minimum: 1,
+            maximum: 10,
+            uiType: 'input'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const numberInput = container.querySelector('input[type="number"]')
+      expect(numberInput.min).toBe('1')
+      expect(numberInput.max).toBe('10')
+
+      setLimitsUnlocked(true)
+
+      // Min/max should be removed
+      expect(numberInput.hasAttribute('min')).toBe(false)
+      expect(numberInput.hasAttribute('max')).toBe(false)
+
+      setLimitsUnlocked(false)
+
+      // Limits should be restored
+      expect(numberInput.min).toBe('1')
+      expect(numberInput.max).toBe('10')
+    })
+  })
+
+  describe('Default Values', () => {
+    it('stores and retrieves default values via getAllDefaults and getDefaultValue', () => {
+      const schema = buildParams({
+        params: [
+          { name: 'width', type: 'number', default: 100, uiType: 'input' },
+          { name: 'label', type: 'string', default: 'test', uiType: 'input' }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const defaults = getAllDefaults()
+      expect(defaults.width).toBe(100)
+      expect(defaults.label).toBe('test')
+
+      expect(getDefaultValue('width')).toBe(100)
+      expect(getDefaultValue('label')).toBe('test')
+      expect(getDefaultValue('nonexistent')).toBeUndefined()
+    })
+  })
+
+  describe('Parameter Reset', () => {
+    it('resets a slider parameter to its default value', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'height',
+            type: 'number',
+            default: 25,
+            minimum: 0,
+            maximum: 50,
+            uiType: 'slider'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, { height: 40 })
+
+      const slider = container.querySelector('input[type="range"]')
+      expect(slider.value).toBe('40')
+
+      const result = resetParameter('height', onChange)
+
+      expect(result).toBe(25)
+      expect(slider.value).toBe('25')
+    })
+
+    it('resets a select parameter to its default value', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'shape',
+            type: 'string',
+            default: 'circle',
+            enum: ['circle', 'square', 'triangle'],
+            uiType: 'select'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, { shape: 'square' })
+
+      const select = container.querySelector('select')
+      expect(select.value).toBe('square')
+
+      resetParameter('shape', onChange)
+
+      expect(select.value).toBe('circle')
+    })
+
+    it('returns undefined when resetting non-existent parameter', () => {
+      const schema = buildParams({
+        params: [{ name: 'width', type: 'number', default: 50, uiType: 'input' }]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const result = resetParameter('nonexistent', onChange)
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('Dependent Parameters', () => {
+    it('updates dependent parameter visibility when parent changes', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'mode',
+            type: 'string',
+            default: 'simple',
+            enum: ['simple', 'advanced'],
+            uiType: 'select'
+          },
+          {
+            name: 'detail_level',
+            type: 'number',
+            default: 5,
+            minimum: 1,
+            maximum: 10,
+            uiType: 'slider',
+            dependency: { parameter: 'mode', operator: '==', value: 'advanced' }
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const detailControl = container.querySelector('[data-param-name="detail_level"]')
+      
+      // Initially hidden (mode is 'simple')
+      expect(detailControl.style.display).toBe('none')
+
+      // Change mode to advanced
+      updateDependentParameters('mode', 'advanced')
+
+      // Should now be visible
+      expect(detailControl.style.display).toBe('')
+    })
+
+    it('handles != operator in dependencies', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'type',
+            type: 'string',
+            default: 'basic',
+            enum: ['basic', 'none'],
+            uiType: 'select'
+          },
+          {
+            name: 'options',
+            type: 'number',
+            default: 3,
+            uiType: 'input',
+            dependency: { parameter: 'type', operator: '!=', value: 'none' }
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      const optionsControl = container.querySelector('[data-param-name="options"]')
+      
+      // Initially visible (type != none)
+      expect(optionsControl.style.display).toBe('')
+
+      // Change type to 'none'
+      updateDependentParameters('type', 'none')
+
+      // Should now be hidden
+      expect(optionsControl.style.display).toBe('none')
+    })
+  })
+
+  describe('Unit Display', () => {
+    it('displays unit suffix in slider value when parameter has unit', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'width',
+            type: 'number',
+            default: 50,
+            minimum: 10,
+            maximum: 100,
+            uiType: 'slider',
+            unit: 'mm'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      // Unit is displayed within the slider-value output element
+      const valueDisplay = container.querySelector('.slider-value')
+      expect(valueDisplay).toBeTruthy()
+      expect(valueDisplay.textContent).toBe('50 mm')
+    })
+
+    it('displays degree symbol for angle parameters', () => {
+      const schema = buildParams({
+        params: [
+          {
+            name: 'rotation_angle',
+            type: 'number',
+            default: 45,
+            minimum: 0,
+            maximum: 360,
+            uiType: 'slider',
+            unit: '°'
+          }
+        ]
+      })
+      const onChange = vi.fn()
+
+      renderParameterUI(schema, container, onChange, {})
+
+      // Unit is displayed within the slider-value output element
+      const valueDisplay = container.querySelector('.slider-value')
+      expect(valueDisplay).toBeTruthy()
+      expect(valueDisplay.textContent).toBe('45 °')
     })
   })
 })

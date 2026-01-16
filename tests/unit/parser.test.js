@@ -463,4 +463,126 @@ describe('Parameter Parser', () => {
       expect(result.parameters.width).toBeDefined()
     })
   })
+
+  describe('Dependency Visibility', () => {
+    it('should parse @depends with == operator', () => {
+      const scad = `
+        /*[Features]*/
+        ventilation = "no"; // [yes, no]
+        // Hole count @depends(ventilation==yes)
+        hole_count = 3; // [1:10]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.hole_count).toBeDefined()
+      expect(result.parameters.hole_count.dependency).toBeDefined()
+      expect(result.parameters.hole_count.dependency.parameter).toBe('ventilation')
+      expect(result.parameters.hole_count.dependency.operator).toBe('==')
+      expect(result.parameters.hole_count.dependency.value).toBe('yes')
+    })
+
+    it('should parse @depends with != operator', () => {
+      const scad = `
+        /*[Features]*/
+        mode = "simple"; // [simple, advanced]
+        // Extra setting @depends(mode!=simple)
+        extra = 10; // [1:50]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.extra).toBeDefined()
+      expect(result.parameters.extra.dependency).toBeDefined()
+      expect(result.parameters.extra.dependency.parameter).toBe('mode')
+      expect(result.parameters.extra.dependency.operator).toBe('!=')
+      expect(result.parameters.extra.dependency.value).toBe('simple')
+    })
+
+    it('should parse @depends in inline comment', () => {
+      const scad = `
+        /*[Features]*/
+        ventilation = "no"; // [yes, no]
+        hole_count = 3; // [1:10] @depends(ventilation==yes)
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.hole_count).toBeDefined()
+      expect(result.parameters.hole_count.dependency).toBeDefined()
+      expect(result.parameters.hole_count.dependency.parameter).toBe('ventilation')
+      expect(result.parameters.hole_count.dependency.operator).toBe('==')
+      expect(result.parameters.hole_count.dependency.value).toBe('yes')
+    })
+
+    it('should handle parameters without dependencies', () => {
+      const scad = `
+        /*[Features]*/
+        ventilation = "no"; // [yes, no]
+        width = 50; // [10:100]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.ventilation).toBeDefined()
+      expect(result.parameters.ventilation.dependency).toBeUndefined()
+      expect(result.parameters.width).toBeDefined()
+      expect(result.parameters.width.dependency).toBeUndefined()
+    })
+
+    it('should parse @depends with $ prefix in parameter name', () => {
+      const scad = `
+        /*[Quality]*/
+        use_high_quality = "no"; // [yes, no]
+        // Resolution @depends(use_high_quality==yes)
+        $fn = 64; // [16:128]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.$fn).toBeDefined()
+      expect(result.parameters.$fn.dependency).toBeDefined()
+      expect(result.parameters.$fn.dependency.parameter).toBe('use_high_quality')
+      expect(result.parameters.$fn.dependency.value).toBe('yes')
+    })
+
+    it('should parse @depends with numeric value', () => {
+      const scad = `
+        /*[Options]*/
+        shape_type = 0; // [0, 1, 2]
+        // Only for circles @depends(shape_type==0)
+        radius = 10; // [5:50]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.radius).toBeDefined()
+      expect(result.parameters.radius.dependency).toBeDefined()
+      expect(result.parameters.radius.dependency.parameter).toBe('shape_type')
+      expect(result.parameters.radius.dependency.value).toBe('0')
+    })
+
+    it('should parse @depends case-insensitively', () => {
+      const scad = `
+        /*[Features]*/
+        ventilation = "no"; // [yes, no]
+        // Hole count @DEPENDS(ventilation==yes)
+        hole_count = 3; // [1:10]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.hole_count.dependency).toBeDefined()
+      expect(result.parameters.hole_count.dependency.parameter).toBe('ventilation')
+    })
+
+    it('should handle spaces in @depends syntax', () => {
+      const scad = `
+        /*[Features]*/
+        mode = "simple"; // [simple, advanced]
+        // Extra option @depends( mode == advanced )
+        extra = 10; // [1:50]
+      `
+      const result = extractParameters(scad)
+      
+      expect(result.parameters.extra).toBeDefined()
+      expect(result.parameters.extra.dependency).toBeDefined()
+      expect(result.parameters.extra.dependency.parameter).toBe('mode')
+      expect(result.parameters.extra.dependency.operator).toBe('==')
+      expect(result.parameters.extra.dependency.value).toBe('advanced')
+    })
+  })
 })

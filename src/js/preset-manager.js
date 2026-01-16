@@ -53,11 +53,17 @@ export class PresetManager {
     );
 
     const preset = {
-      id: existingIndex >= 0 ? this.presets[modelName][existingIndex].id : this.generateId(),
+      id:
+        existingIndex >= 0
+          ? this.presets[modelName][existingIndex].id
+          : this.generateId(),
       name: sanitized,
       parameters: { ...parameters },
       description: options.description || '',
-      created: existingIndex >= 0 ? this.presets[modelName][existingIndex].created : Date.now(),
+      created:
+        existingIndex >= 0
+          ? this.presets[modelName][existingIndex].created
+          : Date.now(),
       modified: Date.now(),
     };
 
@@ -83,7 +89,7 @@ export class PresetManager {
    */
   loadPreset(modelName, presetId) {
     if (!modelName || !presetId) return null;
-    
+
     const modelPresets = this.presets[modelName];
     if (!modelPresets) return null;
 
@@ -111,7 +117,7 @@ export class PresetManager {
     if (index < 0) return false;
 
     const deleted = modelPresets.splice(index, 1)[0];
-    
+
     // Clean up empty model entries
     if (modelPresets.length === 0) {
       delete this.presets[modelName];
@@ -283,7 +289,9 @@ export class PresetManager {
       if (!stored) return {};
 
       const data = JSON.parse(stored);
-      console.log(`Loaded ${Object.keys(data).length} model preset collections`);
+      console.log(
+        `Loaded ${Object.keys(data).length} model preset collections`
+      );
       return data;
     } catch (error) {
       console.error('Failed to load presets from localStorage:', error);

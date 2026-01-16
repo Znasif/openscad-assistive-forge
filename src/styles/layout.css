@@ -69,7 +69,7 @@ body {
 
 /* Contrast Toggle Button */
 .contrast-toggle {
-  background: rgba(0, 0, 0, 0.35);  /* Darker background for WCAG AA contrast */
+  background: rgba(0, 0, 0, 0.35); /* Darker background for WCAG AA contrast */
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: var(--border-radius-md);
   color: var(--color-accent-text);
@@ -100,13 +100,13 @@ body {
 }
 
 .contrast-label {
-  font-size: 0.875rem;  /* Larger text (14px) for better contrast ratio */
+  font-size: 0.875rem; /* Larger text (14px) for better contrast ratio */
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
 /* High contrast mode active state */
-:root[data-high-contrast="true"] .contrast-toggle {
+:root[data-high-contrast='true'] .contrast-toggle {
   background: rgba(255, 255, 255, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.5);
   font-weight: 700;
@@ -144,7 +144,9 @@ body {
 }
 
 .theme-icon {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 /* Hide sun icon by default (light mode), show moon */
@@ -157,21 +159,21 @@ body {
 }
 
 /* In dark mode, show sun icon (to switch to light), hide moon */
-:root[data-theme="dark"] .theme-icon-sun {
+:root[data-theme='dark'] .theme-icon-sun {
   display: none;
 }
 
-:root[data-theme="dark"] .theme-icon-moon {
+:root[data-theme='dark'] .theme-icon-moon {
   display: block;
 }
 
 /* Auto mode follows system preference */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-icon-sun {
+  :root:not([data-theme='light']) .theme-icon-sun {
     display: none;
   }
-  
-  :root:not([data-theme="light"]) .theme-icon-moon {
+
+  :root:not([data-theme='light']) .theme-icon-moon {
     display: block;
   }
 }
@@ -313,43 +315,45 @@ body {
 
 /* Dark mode scrollbar contrast (Firefox) */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .welcome-screen,
-  :root:not([data-theme="light"]) .param-panel,
-  :root:not([data-theme="light"]) .preview-content {
+  :root:not([data-theme='light']) .welcome-screen,
+  :root:not([data-theme='light']) .param-panel,
+  :root:not([data-theme='light']) .preview-content {
     scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
   }
 }
 
-:root[data-theme="dark"] .welcome-screen,
-:root[data-theme="dark"] .param-panel,
-:root[data-theme="dark"] .preview-content {
+:root[data-theme='dark'] .welcome-screen,
+:root[data-theme='dark'] .param-panel,
+:root[data-theme='dark'] .preview-content {
   scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
 }
 
 /* WebKit scrollbar dark mode contrast */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .welcome-screen::-webkit-scrollbar-thumb,
-  :root:not([data-theme="light"]) .param-panel::-webkit-scrollbar-thumb,
-  :root:not([data-theme="light"]) .preview-content::-webkit-scrollbar-thumb {
+  :root:not([data-theme='light']) .welcome-screen::-webkit-scrollbar-thumb,
+  :root:not([data-theme='light']) .param-panel::-webkit-scrollbar-thumb,
+  :root:not([data-theme='light']) .preview-content::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.35);
   }
 
-  :root:not([data-theme="light"]) .welcome-screen::-webkit-scrollbar-thumb:hover,
-  :root:not([data-theme="light"]) .param-panel::-webkit-scrollbar-thumb:hover,
-  :root:not([data-theme="light"]) .preview-content::-webkit-scrollbar-thumb:hover {
+  :root:not([data-theme='light'])
+    .welcome-screen::-webkit-scrollbar-thumb:hover,
+  :root:not([data-theme='light']) .param-panel::-webkit-scrollbar-thumb:hover,
+  :root:not([data-theme='light'])
+    .preview-content::-webkit-scrollbar-thumb:hover {
     background-color: rgba(255, 255, 255, 0.5);
   }
 }
 
-:root[data-theme="dark"] .welcome-screen::-webkit-scrollbar-thumb,
-:root[data-theme="dark"] .param-panel::-webkit-scrollbar-thumb,
-:root[data-theme="dark"] .preview-content::-webkit-scrollbar-thumb {
+:root[data-theme='dark'] .welcome-screen::-webkit-scrollbar-thumb,
+:root[data-theme='dark'] .param-panel::-webkit-scrollbar-thumb,
+:root[data-theme='dark'] .preview-content::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.35);
 }
 
-:root[data-theme="dark"] .welcome-screen::-webkit-scrollbar-thumb:hover,
-:root[data-theme="dark"] .param-panel::-webkit-scrollbar-thumb:hover,
-:root[data-theme="dark"] .preview-content::-webkit-scrollbar-thumb:hover {
+:root[data-theme='dark'] .welcome-screen::-webkit-scrollbar-thumb:hover,
+:root[data-theme='dark'] .param-panel::-webkit-scrollbar-thumb:hover,
+:root[data-theme='dark'] .preview-content::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.5);
 }
 
@@ -374,7 +378,7 @@ body {
   .main-interface {
     flex-direction: row;
   }
-  
+
   .param-panel {
     width: 40%;
     min-width: 320px;
@@ -382,7 +386,7 @@ body {
     max-height: none;
     border-right: 1px solid var(--color-border);
   }
-  
+
   .preview-panel {
     flex: 1;
     min-height: 0; /* Ensure flexbox scrolling works */
@@ -465,17 +469,17 @@ body {
   .preview-panel {
     min-height: 400px;
   }
-  
+
   .preview-content {
     flex: 1 1 auto;
   }
-  
+
   .preview-panel .actions {
     padding: var(--space-sm);
     gap: var(--space-sm);
     padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
   }
-  
+
   /* Compact buttons on mobile */
   .preview-panel .actions .btn {
     flex: 1 1 auto;
@@ -483,7 +487,7 @@ body {
     font-size: var(--font-size-sm);
     padding: var(--space-sm);
   }
-  
+
   .preview-panel .actions .btn-large {
     flex: 1 1 100%;
   }
@@ -491,17 +495,17 @@ body {
 
 /* Dark mode shadow adjustment */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .preview-panel .actions {
+  :root:not([data-theme='light']) .preview-panel .actions {
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
-:root[data-theme="dark"] .preview-panel .actions {
+:root[data-theme='dark'] .preview-panel .actions {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* High contrast mode */
-:root[data-high-contrast="true"] .preview-panel .actions {
+:root[data-high-contrast='true'] .preview-panel .actions {
   border-top: 3px solid var(--color-border);
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }

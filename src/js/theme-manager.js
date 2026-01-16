@@ -81,7 +81,7 @@ export class ThemeManager {
    */
   applyTheme(theme) {
     const root = document.documentElement;
-    
+
     if (theme === THEMES.AUTO) {
       // Remove data-theme attribute to let system preference take over
       root.removeAttribute('data-theme');
@@ -89,13 +89,13 @@ export class ThemeManager {
       // Set explicit theme
       root.setAttribute('data-theme', theme);
     }
-    
+
     this.currentTheme = theme;
     this.saveTheme(theme);
-    
+
     // Notify listeners
     this.notifyListeners();
-    
+
     console.log(`[Theme] Applied: ${theme}`);
   }
 
@@ -105,19 +105,19 @@ export class ThemeManager {
    */
   applyHighContrast(enabled) {
     const root = document.documentElement;
-    
+
     if (enabled) {
       root.setAttribute('data-high-contrast', 'true');
     } else {
       root.removeAttribute('data-high-contrast');
     }
-    
+
     this.highContrast = enabled;
     this.saveHighContrast(enabled);
-    
+
     // Notify listeners
     this.notifyListeners();
-    
+
     console.log(`[Theme] High Contrast: ${enabled ? 'ON' : 'OFF'}`);
   }
 
@@ -138,8 +138,8 @@ export class ThemeManager {
   getActiveTheme() {
     if (this.currentTheme === THEMES.AUTO) {
       // Check system preference
-      return window.matchMedia('(prefers-color-scheme: dark)').matches 
-        ? THEMES.DARK 
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? THEMES.DARK
         : THEMES.LIGHT;
     }
     return this.currentTheme;
@@ -153,16 +153,16 @@ export class ThemeManager {
     const currentIndex = sequence.indexOf(this.currentTheme);
     const nextIndex = (currentIndex + 1) % sequence.length;
     const nextTheme = sequence[nextIndex];
-    
+
     this.applyTheme(nextTheme);
-    
+
     // Return user-friendly message
     const messages = {
       [THEMES.AUTO]: 'Theme: Auto (follows system)',
       [THEMES.LIGHT]: 'Theme: Light',
       [THEMES.DARK]: 'Theme: Dark',
     };
-    
+
     return messages[nextTheme];
   }
 
@@ -174,7 +174,7 @@ export class ThemeManager {
   addListener(callback) {
     this.listeners.push(callback);
     return () => {
-      this.listeners = this.listeners.filter(cb => cb !== callback);
+      this.listeners = this.listeners.filter((cb) => cb !== callback);
     };
   }
 
@@ -183,7 +183,7 @@ export class ThemeManager {
    * @param {Function} callback - Listener to remove
    */
   removeListener(callback) {
-    this.listeners = this.listeners.filter(cb => cb !== callback);
+    this.listeners = this.listeners.filter((cb) => cb !== callback);
   }
 
   /**
@@ -191,7 +191,7 @@ export class ThemeManager {
    */
   notifyListeners() {
     const activeTheme = this.getActiveTheme();
-    this.listeners.forEach(callback => {
+    this.listeners.forEach((callback) => {
       try {
         callback(this.currentTheme, activeTheme, this.highContrast);
       } catch (error) {
@@ -206,15 +206,19 @@ export class ThemeManager {
   init() {
     this.applyTheme(this.currentTheme);
     this.applyHighContrast(this.highContrast);
-    
+
     // Listen for system theme changes when in auto mode
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (this.currentTheme === THEMES.AUTO) {
-        console.log(`[Theme] System preference changed to ${e.matches ? 'dark' : 'light'}`);
-        this.notifyListeners();
-      }
-    });
-    
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', (e) => {
+        if (this.currentTheme === THEMES.AUTO) {
+          console.log(
+            `[Theme] System preference changed to ${e.matches ? 'dark' : 'light'}`
+          );
+          this.notifyListeners();
+        }
+      });
+
     return this;
   }
 
@@ -243,26 +247,29 @@ export const themeManager = new ThemeManager();
  */
 export function initThemeToggle(buttonId, onToggle = null) {
   const button = document.getElementById(buttonId);
-  
+
   if (!button) {
     console.warn(`[Theme] Toggle button #${buttonId} not found`);
     return;
   }
-  
+
   // Handle click
   button.addEventListener('click', () => {
     const message = themeManager.cycleTheme();
-    
+
     // Update ARIA label
     const activeTheme = themeManager.getActiveTheme();
-    button.setAttribute('aria-label', `Current theme: ${activeTheme}. Click to cycle themes.`);
-    
+    button.setAttribute(
+      'aria-label',
+      `Current theme: ${activeTheme}. Click to cycle themes.`
+    );
+
     // Optional callback
     if (onToggle) {
       onToggle(themeManager.currentTheme, activeTheme, message);
     }
   });
-  
+
   // Handle keyboard (Enter/Space)
   button.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -270,10 +277,13 @@ export function initThemeToggle(buttonId, onToggle = null) {
       button.click();
     }
   });
-  
+
   // Set initial ARIA label
   const activeTheme = themeManager.getActiveTheme();
-  button.setAttribute('aria-label', `Current theme: ${activeTheme}. Click to cycle themes.`);
-  
+  button.setAttribute(
+    'aria-label',
+    `Current theme: ${activeTheme}. Click to cycle themes.`
+  );
+
   console.log('[Theme] Toggle button initialized');
 }

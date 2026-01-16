@@ -3,6 +3,105 @@
  * @license GPL-3.0-or-later
  */
 
+/**
+ * Parameter History Manager for Undo/Redo functionality
+ * Uses a past/present/future pattern for state management
+ */
+export class ParameterHistory {
+  constructor(maxSize = 50) {
+    this.maxSize = maxSize;
+    this.history = [];
+    this.currentIndex = -1;
+  }
+
+  /**
+   * Push a new state to history
+   * @param {Object} state - Parameter state to save
+   */
+  push(state) {
+    // Remove any future states if we're not at the end
+    this.history = this.history.slice(0, this.currentIndex + 1);
+
+    // Add new state
+    this.history.push(this.cloneState(state));
+    this.currentIndex++;
+
+    // Trim history if it exceeds max size
+    if (this.history.length > this.maxSize) {
+      this.history.shift();
+      this.currentIndex--;
+    }
+  }
+
+  /**
+   * Undo - go back to previous state
+   * @returns {Object|null} Previous state or null if at beginning
+   */
+  undo() {
+    if (!this.canUndo()) return null;
+
+    this.currentIndex--;
+    return this.cloneState(this.history[this.currentIndex]);
+  }
+
+  /**
+   * Redo - go forward to next state
+   * @returns {Object|null} Next state or null if at end
+   */
+  redo() {
+    if (!this.canRedo()) return null;
+
+    this.currentIndex++;
+    return this.cloneState(this.history[this.currentIndex]);
+  }
+
+  /**
+   * Check if undo is possible
+   * @returns {boolean}
+   */
+  canUndo() {
+    return this.currentIndex > 0;
+  }
+
+  /**
+   * Check if redo is possible
+   * @returns {boolean}
+   */
+  canRedo() {
+    return this.currentIndex < this.history.length - 1;
+  }
+
+  /**
+   * Clear all history
+   */
+  clear() {
+    this.history = [];
+    this.currentIndex = -1;
+  }
+
+  /**
+   * Get statistics about history
+   * @returns {Object}
+   */
+  getStats() {
+    return {
+      total: this.history.length,
+      current: this.currentIndex,
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo(),
+    };
+  }
+
+  /**
+   * Deep clone a state object
+   * @param {Object} state - State to clone
+   * @returns {Object} Cloned state
+   */
+  cloneState(state) {
+    return JSON.parse(JSON.stringify(state));
+  }
+}
+
 export class StateManager {
   constructor(initialState) {
     this.state = initialState;
@@ -10,6 +109,9 @@ export class StateManager {
     this.syncTimeout = null;
     this.saveTimeout = null;
     this.localStorageKey = 'openscad-customizer-draft';
+    this.history = new ParameterHistory();
+    this.isUndoRedo = false; // Flag to prevent recording during undo/redo
+    this.historyEnabled = true; // Flag to disable during rendering
   }
 
   subscribe(callback) {
@@ -58,7 +160,7 @@ export class StateManager {
 
     // Build URL hash
     const hash = serializeURLParams(nonDefaultParams);
-    
+
     // Update URL without triggering page reload
     if (hash !== window.location.hash) {
       window.history.replaceState(null, '', hash);
@@ -70,7 +172,7 @@ export class StateManager {
     if (params && Object.keys(params).length > 0) {
       // Merge URL params with current parameters
       this.setState({
-        parameters: { ...this.state.parameters, ...params }
+        parameters: { ...this.state.parameters, ...params },
       });
       return params;
     }
@@ -127,11 +229,11 @@ export class StateManager {
       if (!stored) return null;
 
       const draft = JSON.parse(stored);
-      
+
       // Check if draft is recent (within 7 days)
       const age = Date.now() - draft.timestamp;
       const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-      
+
       if (age > maxAge) {
         console.log('Draft is too old, ignoring');
         this.clearLocalStorage();
@@ -156,6 +258,190 @@ export class StateManager {
       console.log('Draft cleared from localStorage');
     } catch (error) {
       console.error('Failed to clear localStorage:', error);
+    }
+  }
+
+  /**
+   * Record current parameter state to history
+   * Call this before making parameter changes
+   */
+  recordParameterState() {
+    if (this.isUndoRedo || !this.historyEnabled) return;
+
+    if (
+      this.state.parameters &&
+      Object.keys(this.state.parameters).length > 0
+    ) {
+      this.history.push(this.state.parameters);
+    }
+  }
+
+  /**
+   * Update a single parameter value with history tracking
+   * @param {string} name - Parameter name
+   * @param {*} value - New value
+   */
+  updateParameter(name, value) {
+    // Record current state before change (unless during undo/redo)
+    if (!this.isUndoRedo && this.historyEnabled) {
+      this.recordParameterState();
+    }
+
+    const newParameters = { ...this.state.parameters, [name]: value };
+    this.setState({ parameters: newParameters });
+    this.updateUndoRedoButtons();
+  }
+
+  /**
+   * Undo last parameter change
+   * @returns {Object|null} Previous parameters or null
+   */
+  undo() {
+    const previousState = this.history.undo();
+    if (!previousState) return null;
+
+    this.isUndoRedo = true;
+
+    const prevParams = { ...this.state.parameters };
+    this.setState({ parameters: previousState });
+
+    // Find what changed for screen reader announcement
+    const changedParam = this.findChangedParameter(prevParams, previousState);
+    if (changedParam) {
+      this.announceChange(
+        `Undid: ${changedParam.name.replace(/_/g, ' ')} → ${changedParam.value}`
+      );
+    }
+
+    this.updateUndoRedoButtons();
+    this.isUndoRedo = false;
+
+    return previousState;
+  }
+
+  /**
+   * Redo previously undone parameter change
+   * @returns {Object|null} Next parameters or null
+   */
+  redo() {
+    const nextState = this.history.redo();
+    if (!nextState) return null;
+
+    this.isUndoRedo = true;
+
+    const prevParams = { ...this.state.parameters };
+    this.setState({ parameters: nextState });
+
+    // Find what changed for screen reader announcement
+    const changedParam = this.findChangedParameter(prevParams, nextState);
+    if (changedParam) {
+      this.announceChange(
+        `Redid: ${changedParam.name.replace(/_/g, ' ')} → ${changedParam.value}`
+      );
+    }
+
+    this.updateUndoRedoButtons();
+    this.isUndoRedo = false;
+
+    return nextState;
+  }
+
+  /**
+   * Check if undo is available
+   * @returns {boolean}
+   */
+  canUndo() {
+    return this.history.canUndo();
+  }
+
+  /**
+   * Check if redo is available
+   * @returns {boolean}
+   */
+  canRedo() {
+    return this.history.canRedo();
+  }
+
+  /**
+   * Clear undo/redo history (e.g., on new file upload)
+   */
+  clearHistory() {
+    this.history.clear();
+    this.updateUndoRedoButtons();
+  }
+
+  /**
+   * Enable/disable history recording (disable during rendering)
+   * @param {boolean} enabled
+   */
+  setHistoryEnabled(enabled) {
+    this.historyEnabled = enabled;
+    this.updateUndoRedoButtons();
+  }
+
+  /**
+   * Get history statistics
+   * @returns {Object}
+   */
+  getHistoryStats() {
+    return this.history.getStats();
+  }
+
+  /**
+   * Find which parameter changed between two states
+   * @param {Object} prevState - Previous parameters
+   * @param {Object} newState - New parameters
+   * @returns {Object|null} Changed parameter { name, value }
+   */
+  findChangedParameter(prevState, newState) {
+    for (const [key, value] of Object.entries(newState)) {
+      if (prevState[key] !== value) {
+        return { name: key, value };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Update undo/redo button states
+   */
+  updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    if (undoBtn) {
+      undoBtn.disabled = !this.canUndo() || !this.historyEnabled;
+      undoBtn.setAttribute(
+        'aria-disabled',
+        String(!this.canUndo() || !this.historyEnabled)
+      );
+    }
+
+    if (redoBtn) {
+      redoBtn.disabled = !this.canRedo() || !this.historyEnabled;
+      redoBtn.setAttribute(
+        'aria-disabled',
+        String(!this.canRedo() || !this.historyEnabled)
+      );
+    }
+  }
+
+  /**
+   * Announce changes to screen readers via live region
+   * @param {string} message
+   */
+  announceChange(message) {
+    const statusArea = document.getElementById('statusArea');
+    if (statusArea) {
+      const originalText = statusArea.textContent;
+      statusArea.textContent = message;
+
+      // Restore original text after announcement
+      setTimeout(() => {
+        if (statusArea.textContent === message) {
+          statusArea.textContent = originalText;
+        }
+      }, 2000);
     }
   }
 }
@@ -249,7 +535,7 @@ const initialState = {
   activeVariantId: null,
   // Libraries
   detectedLibraries: [], // Libraries detected in current .scad file
-  enabledLibraries: [],  // Libraries currently enabled
+  enabledLibraries: [], // Libraries currently enabled
 };
 
 export const stateManager = new StateManager(initialState);

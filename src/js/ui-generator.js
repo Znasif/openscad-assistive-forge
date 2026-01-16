@@ -3,6 +3,268 @@
  * @license GPL-3.0-or-later
  */
 
+// Store current parameter values for dependency checking
+let currentParameterValues = {};
+
+// Store default values for reset functionality
+let defaultParameterValues = {};
+
+// Store original schema limits for unlock functionality
+let originalParameterLimits = {};
+
+// Track if limits are unlocked
+let limitsUnlocked = false;
+
+/**
+ * Set whether parameter limits are unlocked
+ * @param {boolean} unlocked - Whether limits should be unlocked
+ */
+export function setLimitsUnlocked(unlocked) {
+  limitsUnlocked = unlocked;
+
+  // Update all numeric inputs to reflect the new state
+  document.querySelectorAll('.param-control').forEach((control) => {
+    const paramName = control.dataset.paramName;
+    if (!paramName) return;
+
+    const limits = originalParameterLimits[paramName];
+    if (!limits) return;
+
+    // Update range inputs
+    const rangeInput = control.querySelector('input[type="range"]');
+    if (rangeInput) {
+      if (unlocked) {
+        // Expand limits significantly
+        const range = limits.max - limits.min;
+        rangeInput.min = limits.min - range;
+        rangeInput.max = limits.max + range;
+        control.classList.add('limits-unlocked');
+      } else {
+        // Restore original limits
+        rangeInput.min = limits.min;
+        rangeInput.max = limits.max;
+        control.classList.remove('limits-unlocked');
+
+        // Clamp value if out of range
+        const currentValue = parseFloat(rangeInput.value);
+        if (currentValue < limits.min) {
+          rangeInput.value = limits.min;
+          rangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (currentValue > limits.max) {
+          rangeInput.value = limits.max;
+          rangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    }
+
+    // Update number inputs
+    const numberInput = control.querySelector('input[type="number"]');
+    if (numberInput) {
+      if (unlocked) {
+        numberInput.removeAttribute('min');
+        numberInput.removeAttribute('max');
+        control.classList.add('limits-unlocked');
+      } else {
+        if (limits.min !== undefined) numberInput.min = limits.min;
+        if (limits.max !== undefined) numberInput.max = limits.max;
+        control.classList.remove('limits-unlocked');
+      }
+    }
+  });
+}
+
+/**
+ * Check if limits are currently unlocked
+ * @returns {boolean}
+ */
+export function areLimitsUnlocked() {
+  return limitsUnlocked;
+}
+
+/**
+ * Get default value for a parameter
+ * @param {string} paramName - Parameter name
+ * @returns {*} Default value or undefined
+ */
+export function getDefaultValue(paramName) {
+  return defaultParameterValues[paramName];
+}
+
+/**
+ * Get all default values
+ * @returns {Object} Map of parameter names to default values
+ */
+export function getAllDefaults() {
+  return { ...defaultParameterValues };
+}
+
+/**
+ * Reset a single parameter to its default value
+ * @param {string} paramName - Parameter name to reset
+ * @param {Function} onChange - Callback to notify of change
+ * @returns {*} The default value, or undefined if not found
+ */
+export function resetParameter(paramName, onChange) {
+  const defaultValue = defaultParameterValues[paramName];
+  if (defaultValue === undefined) return undefined;
+
+  // Find the control and update it
+  const control = document.querySelector(
+    `.param-control[data-param-name="${paramName}"]`
+  );
+  if (!control) return defaultValue;
+
+  // Update the input element
+  const input = control.querySelector('input, select');
+  if (input) {
+    if (input.type === 'checkbox') {
+      input.checked = defaultValue.toLowerCase() === 'yes';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (input.type === 'range') {
+      input.value = defaultValue;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      input.value = defaultValue;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  // Update current values
+  currentParameterValues[paramName] = defaultValue;
+
+  // Notify onChange
+  if (onChange) {
+    onChange({ ...currentParameterValues });
+  }
+
+  return defaultValue;
+}
+
+/**
+ * Check if a dependency condition is met
+ * @param {Object} dependency - Dependency object with parameter, operator, value
+ * @param {Object} currentParams - Current parameter values
+ * @returns {boolean} True if dependency is met (parameter should be visible)
+ */
+function checkDependency(dependency, currentParams) {
+  if (!dependency) return true;
+
+  const actualValue = String(currentParams[dependency.parameter] ?? '');
+  const expectedValue = dependency.value;
+
+  if (dependency.operator === '==') {
+    return actualValue === expectedValue;
+  } else if (dependency.operator === '!=') {
+    return actualValue !== expectedValue;
+  }
+
+  return true;
+}
+
+/**
+ * Update visibility of dependent parameters
+ * @param {string} changedParam - Name of the parameter that changed
+ * @param {*} newValue - New value of the changed parameter
+ */
+export function updateDependentParameters(changedParam, newValue) {
+  // Update stored values
+  currentParameterValues[changedParam] = newValue;
+
+  // Find all parameters that depend on changedParam
+  const allControls = document.querySelectorAll('.param-control[data-depends]');
+
+  allControls.forEach((control) => {
+    const dependsOn = control.dataset.depends;
+
+    if (dependsOn === changedParam) {
+      const operator = control.dataset.dependsOperator;
+      const expectedValue = control.dataset.dependsValue;
+      const actualValue = String(newValue);
+
+      let shouldShow = false;
+      if (operator === '==') {
+        shouldShow = actualValue === expectedValue;
+      } else if (operator === '!=') {
+        shouldShow = actualValue !== expectedValue;
+      }
+
+      const paramName = control.dataset.paramName;
+
+      if (shouldShow) {
+        control.style.display = '';
+        control.setAttribute('aria-hidden', 'false');
+
+        // Re-enable inputs for accessibility
+        const inputs = control.querySelectorAll('input, select, textarea');
+        inputs.forEach((input) => input.removeAttribute('tabindex'));
+
+        // Announce to screen readers
+        announceChange(`${paramName.replace(/_/g, ' ')} is now visible`);
+      } else {
+        control.style.display = 'none';
+        control.setAttribute('aria-hidden', 'true');
+
+        // Remove from tab order when hidden
+        const inputs = control.querySelectorAll('input, select, textarea');
+        inputs.forEach((input) => input.setAttribute('tabindex', '-1'));
+
+        announceChange(`${paramName.replace(/_/g, ' ')} is now hidden`);
+      }
+    }
+  });
+}
+
+/**
+ * Announce changes to screen readers via live region
+ * @param {string} message - Message to announce
+ */
+function announceChange(message) {
+  // Debounce announcements to avoid spamming
+  if (announceChange._timeout) {
+    clearTimeout(announceChange._timeout);
+  }
+
+  announceChange._timeout = setTimeout(() => {
+    const liveRegion = document.getElementById('statusArea');
+    if (liveRegion) {
+      const originalText = liveRegion.textContent;
+      liveRegion.textContent = message;
+
+      // Restore original text after announcement
+      setTimeout(() => {
+        if (liveRegion.textContent === message) {
+          liveRegion.textContent = originalText;
+        }
+      }, 1500);
+    }
+  }, 100);
+}
+
+/**
+ * Apply dependency attributes and initial visibility to a parameter control
+ * @param {HTMLElement} container - The parameter control container
+ * @param {Object} param - Parameter definition with optional dependency
+ * @param {Object} currentParams - Current parameter values for dependency checking
+ */
+function applyDependency(container, param, currentParams) {
+  if (!param.dependency) return;
+
+  container.dataset.paramName = param.name;
+  container.dataset.depends = param.dependency.parameter;
+  container.dataset.dependsOperator = param.dependency.operator;
+  container.dataset.dependsValue = param.dependency.value;
+
+  // Check if dependency is met and set initial visibility
+  if (!checkDependency(param.dependency, currentParams)) {
+    container.style.display = 'none';
+    container.setAttribute('aria-hidden', 'true');
+
+    // Remove from tab order when hidden
+    const inputs = container.querySelectorAll('input, select, textarea');
+    inputs.forEach((input) => input.setAttribute('tabindex', '-1'));
+  }
+}
+
 /**
  * Create a help tooltip button
  * @param {Object} param - Parameter definition
@@ -36,10 +298,10 @@ function createHelpTooltip(param) {
     const isVisible = tooltip.style.display === 'block';
 
     // Hide all other tooltips
-    document.querySelectorAll('.param-tooltip').forEach(t => {
+    document.querySelectorAll('.param-tooltip').forEach((t) => {
       t.style.display = 'none';
     });
-    document.querySelectorAll('.param-help-button').forEach(b => {
+    document.querySelectorAll('.param-help-button').forEach((b) => {
       b.setAttribute('aria-expanded', 'false');
     });
 
@@ -66,12 +328,29 @@ function createHelpTooltip(param) {
 // Close all tooltips when clicking outside
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.param-help-wrapper')) {
-    document.querySelectorAll('.param-tooltip').forEach(t => {
+    document.querySelectorAll('.param-tooltip').forEach((t) => {
       t.style.display = 'none';
     });
-    document.querySelectorAll('.param-help-button').forEach(b => {
+    document.querySelectorAll('.param-help-button').forEach((b) => {
       b.setAttribute('aria-expanded', 'false');
     });
+  }
+});
+
+// Global Escape key handler to close all tooltips
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const visibleTooltips = document.querySelectorAll(
+      '.param-tooltip[style*="display: block"]'
+    );
+    if (visibleTooltips.length > 0) {
+      document.querySelectorAll('.param-tooltip').forEach((t) => {
+        t.style.display = 'none';
+      });
+      document.querySelectorAll('.param-help-button').forEach((b) => {
+        b.setAttribute('aria-expanded', 'false');
+      });
+    }
   }
 });
 
@@ -84,8 +363,16 @@ document.addEventListener('click', (e) => {
 function createSliderControl(param, onChange) {
   const container = document.createElement('div');
   container.className = 'param-control';
+  container.dataset.paramName = param.name;
 
-  // Label container with help tooltip
+  // Store original limits for unlock functionality
+  originalParameterLimits[param.name] = {
+    min: param.minimum,
+    max: param.maximum,
+    step: param.step || 1,
+  };
+
+  // Label container with help tooltip and reset button
   const labelContainer = document.createElement('div');
   labelContainer.className = 'param-label-container';
 
@@ -102,6 +389,10 @@ function createSliderControl(param, onChange) {
     labelContainer.appendChild(helpTooltip);
   }
 
+  // Add individual reset button
+  const resetBtn = createParameterResetButton(param, onChange);
+  labelContainer.appendChild(resetBtn);
+
   container.appendChild(labelContainer);
 
   const sliderContainer = document.createElement('div');
@@ -110,25 +401,55 @@ function createSliderControl(param, onChange) {
   const input = document.createElement('input');
   input.type = 'range';
   input.id = `param-${param.name}`;
-  input.min = param.minimum;
-  input.max = param.maximum;
+  input.min = limitsUnlocked
+    ? param.minimum - (param.maximum - param.minimum)
+    : param.minimum;
+  input.max = limitsUnlocked
+    ? param.maximum + (param.maximum - param.minimum)
+    : param.maximum;
   input.step = param.step || 1;
   input.value = param.default;
   input.setAttribute('aria-valuemin', param.minimum);
   input.setAttribute('aria-valuemax', param.maximum);
   input.setAttribute('aria-valuenow', param.default);
-  input.setAttribute('aria-label', `${param.name.replace(/_/g, ' ')}: ${param.default}`);
+  input.setAttribute(
+    'aria-label',
+    `${param.name.replace(/_/g, ' ')}: ${param.default}${param.unit ? ' ' + param.unit : ''}`
+  );
 
   const output = document.createElement('output');
   output.htmlFor = `param-${param.name}`;
   output.className = 'slider-value';
-  output.textContent = param.default;
+
+  // Display value with unit if available
+  const formatValueWithUnit = (val) => {
+    return param.unit ? `${val} ${param.unit}` : val;
+  };
+  output.textContent = formatValueWithUnit(param.default);
 
   input.addEventListener('input', (e) => {
-    const value = param.type === 'integer' ? parseInt(e.target.value) : parseFloat(e.target.value);
-    output.textContent = value;
+    const value =
+      param.type === 'integer'
+        ? parseInt(e.target.value)
+        : parseFloat(e.target.value);
+    output.textContent = formatValueWithUnit(value);
     input.setAttribute('aria-valuenow', value);
-    input.setAttribute('aria-label', `${param.name.replace(/_/g, ' ')}: ${value}`);
+    input.setAttribute(
+      'aria-label',
+      `${param.name.replace(/_/g, ' ')}: ${value}${param.unit ? ' ' + param.unit : ''}`
+    );
+
+    // Check if value is out of original range
+    const limits = originalParameterLimits[param.name];
+    if (limits && (value < limits.min || value > limits.max)) {
+      container.classList.add('out-of-range');
+    } else {
+      container.classList.remove('out-of-range');
+    }
+
+    // Update reset button state
+    updateResetButtonState(param.name, value);
+
     onChange(param.name, value);
   });
 
@@ -137,7 +458,57 @@ function createSliderControl(param, onChange) {
 
   container.appendChild(sliderContainer);
 
+  // Apply limits-unlocked class if needed
+  if (limitsUnlocked) {
+    container.classList.add('limits-unlocked');
+  }
+
   return container;
+}
+
+/**
+ * Create a parameter reset button
+ * @param {Object} param - Parameter definition
+ * @param {Function} onChange - Change handler
+ * @returns {HTMLElement} Reset button element
+ */
+function createParameterResetButton(param, onChange) {
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.className = 'param-reset-btn';
+  resetBtn.textContent = '↩';
+  resetBtn.title = `Reset ${param.name.replace(/_/g, ' ')} to default`;
+  resetBtn.setAttribute(
+    'aria-label',
+    `Reset ${param.name.replace(/_/g, ' ')} to default value`
+  );
+  resetBtn.dataset.paramName = param.name;
+
+  resetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resetParameter(param.name, onChange);
+  });
+
+  return resetBtn;
+}
+
+/**
+ * Update reset button state based on current value
+ * @param {string} paramName - Parameter name
+ * @param {*} currentValue - Current value
+ */
+function updateResetButtonState(paramName, currentValue) {
+  const defaultValue = defaultParameterValues[paramName];
+  const resetBtn = document.querySelector(
+    `.param-reset-btn[data-param-name="${paramName}"]`
+  );
+
+  if (resetBtn) {
+    // Compare values (handle type coercion)
+    const isModified = String(currentValue) !== String(defaultValue);
+    resetBtn.classList.toggle('modified', isModified);
+  }
 }
 
 /**
@@ -149,8 +520,18 @@ function createSliderControl(param, onChange) {
 function createNumberInput(param, onChange) {
   const container = document.createElement('div');
   container.className = 'param-control';
+  container.dataset.paramName = param.name;
 
-  // Label container with help tooltip
+  // Store original limits for unlock functionality
+  if (param.minimum !== undefined || param.maximum !== undefined) {
+    originalParameterLimits[param.name] = {
+      min: param.minimum,
+      max: param.maximum,
+      step: param.step,
+    };
+  }
+
+  // Label container with help tooltip and reset button
   const labelContainer = document.createElement('div');
   labelContainer.className = 'param-label-container';
 
@@ -166,30 +547,82 @@ function createNumberInput(param, onChange) {
     labelContainer.appendChild(helpTooltip);
   }
 
+  // Add individual reset button
+  const resetBtn = createParameterResetButton(param, onChange);
+  labelContainer.appendChild(resetBtn);
+
   container.appendChild(labelContainer);
+
+  // Create wrapper for input + unit
+  const inputContainer = document.createElement('div');
+  inputContainer.className = 'number-input-container';
 
   const input = document.createElement('input');
   input.type = 'number';
   input.id = `param-${param.name}`;
   input.value = param.default;
-  input.setAttribute('aria-label', `Enter ${param.name.replace(/_/g, ' ')}`);
-  
-  if (param.minimum !== undefined) {
-    input.min = param.minimum;
-    input.setAttribute('aria-valuemin', param.minimum);
-  }
-  if (param.maximum !== undefined) {
-    input.max = param.maximum;
-    input.setAttribute('aria-valuemax', param.maximum);
+  input.setAttribute(
+    'aria-label',
+    `Enter ${param.name.replace(/_/g, ' ')}${param.unit ? ' in ' + param.unit : ''}`
+  );
+
+  // Only apply limits if not unlocked
+  if (!limitsUnlocked) {
+    if (param.minimum !== undefined) {
+      input.min = param.minimum;
+      input.setAttribute('aria-valuemin', param.minimum);
+    }
+    if (param.maximum !== undefined) {
+      input.max = param.maximum;
+      input.setAttribute('aria-valuemax', param.maximum);
+    }
   }
   if (param.step !== undefined) input.step = param.step;
 
   input.addEventListener('change', (e) => {
-    const value = param.type === 'integer' ? parseInt(e.target.value) : parseFloat(e.target.value);
+    const value =
+      param.type === 'integer'
+        ? parseInt(e.target.value)
+        : parseFloat(e.target.value);
+
+    // Check if value is out of original range
+    const limits = originalParameterLimits[param.name];
+    if (
+      limits &&
+      ((limits.min !== undefined && value < limits.min) ||
+        (limits.max !== undefined && value > limits.max))
+    ) {
+      container.classList.add('out-of-range');
+    } else {
+      container.classList.remove('out-of-range');
+    }
+
+    // Update reset button state
+    updateResetButtonState(param.name, value);
+
     onChange(param.name, value);
   });
 
-  container.appendChild(input);
+  inputContainer.appendChild(input);
+
+  // Add unit label if present
+  if (param.unit) {
+    const unitLabel = document.createElement('span');
+    unitLabel.className = 'unit-label';
+    unitLabel.textContent = param.unit;
+    unitLabel.setAttribute('aria-hidden', 'true'); // Decorative, already in aria-label
+    inputContainer.appendChild(unitLabel);
+  }
+
+  container.appendChild(inputContainer);
+
+  // Apply limits-unlocked class if needed
+  if (
+    limitsUnlocked &&
+    (param.minimum !== undefined || param.maximum !== undefined)
+  ) {
+    container.classList.add('limits-unlocked');
+  }
 
   return container;
 }
@@ -203,6 +636,7 @@ function createNumberInput(param, onChange) {
 function createSelectControl(param, onChange) {
   const container = document.createElement('div');
   container.className = 'param-control';
+  container.dataset.paramName = param.name;
 
   // Label container with help tooltip
   const labelContainer = document.createElement('div');
@@ -254,6 +688,7 @@ function createSelectControl(param, onChange) {
 function createToggleControl(param, onChange) {
   const container = document.createElement('div');
   container.className = 'param-control';
+  container.dataset.paramName = param.name;
 
   // Label container with help tooltip
   const labelContainer = document.createElement('div');
@@ -311,6 +746,7 @@ function createToggleControl(param, onChange) {
 function createTextInput(param, onChange) {
   const container = document.createElement('div');
   container.className = 'param-control';
+  container.dataset.paramName = param.name;
 
   // Label container with help tooltip
   const labelContainer = document.createElement('div');
@@ -383,7 +819,14 @@ function createColorControl(param, onChange) {
   // Ensure it's 6 digits
   if (hexValue.length === 4) {
     // Convert #RGB to #RRGGBB
-    hexValue = '#' + hexValue[1] + hexValue[1] + hexValue[2] + hexValue[2] + hexValue[3] + hexValue[3];
+    hexValue =
+      '#' +
+      hexValue[1] +
+      hexValue[1] +
+      hexValue[2] +
+      hexValue[2] +
+      hexValue[3] +
+      hexValue[3];
   }
 
   const colorInput = document.createElement('input');
@@ -391,7 +834,10 @@ function createColorControl(param, onChange) {
   colorInput.id = `param-${param.name}`;
   colorInput.value = hexValue;
   colorInput.className = 'color-picker';
-  colorInput.setAttribute('aria-label', `Select color for ${param.name.replace(/_/g, ' ')}`);
+  colorInput.setAttribute(
+    'aria-label',
+    `Select color for ${param.name.replace(/_/g, ' ')}`
+  );
 
   const hexInput = document.createElement('input');
   hexInput.type = 'text';
@@ -399,7 +845,10 @@ function createColorControl(param, onChange) {
   hexInput.value = hexValue.substring(1).toUpperCase(); // Remove # for display
   hexInput.placeholder = 'RRGGBB';
   hexInput.maxLength = 6;
-  hexInput.setAttribute('aria-label', `Hex color code for ${param.name.replace(/_/g, ' ')}`);
+  hexInput.setAttribute(
+    'aria-label',
+    `Hex color code for ${param.name.replace(/_/g, ' ')}`
+  );
 
   const preview = document.createElement('div');
   preview.className = 'color-preview';
@@ -420,7 +869,7 @@ function createColorControl(param, onChange) {
   hexInput.addEventListener('input', (e) => {
     let hex = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
     hexInput.value = hex;
-    
+
     if (hex.length === 6) {
       const fullHex = '#' + hex;
       colorInput.value = fullHex;
@@ -474,18 +923,26 @@ function createFileControl(param, onChange) {
   fileInput.type = 'file';
   fileInput.id = `param-${param.name}`;
   fileInput.className = 'file-input';
-  fileInput.setAttribute('aria-label', `Upload file for ${param.name.replace(/_/g, ' ')}`);
-  
+  fileInput.setAttribute(
+    'aria-label',
+    `Upload file for ${param.name.replace(/_/g, ' ')}`
+  );
+
   // Set accepted file types if specified
   if (param.acceptedExtensions && param.acceptedExtensions.length > 0) {
-    fileInput.accept = param.acceptedExtensions.map(ext => `.${ext}`).join(',');
+    fileInput.accept = param.acceptedExtensions
+      .map((ext) => `.${ext}`)
+      .join(',');
   }
 
   const fileButton = document.createElement('button');
   fileButton.type = 'button';
   fileButton.className = 'file-upload-button';
   fileButton.textContent = '📁 Choose File';
-  fileButton.setAttribute('aria-label', `Choose file for ${param.name.replace(/_/g, ' ')}`);
+  fileButton.setAttribute(
+    'aria-label',
+    `Choose file for ${param.name.replace(/_/g, ' ')}`
+  );
 
   const fileInfo = document.createElement('div');
   fileInfo.className = 'file-info';
@@ -498,7 +955,10 @@ function createFileControl(param, onChange) {
   clearButton.className = 'file-clear-button';
   clearButton.textContent = '✕';
   clearButton.title = 'Clear file';
-  clearButton.setAttribute('aria-label', `Clear file for ${param.name.replace(/_/g, ' ')}`);
+  clearButton.setAttribute(
+    'aria-label',
+    `Clear file for ${param.name.replace(/_/g, ' ')}`
+  );
   clearButton.style.display = 'none';
 
   // Button triggers file input
@@ -518,13 +978,13 @@ function createFileControl(param, onChange) {
           fileInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
           fileInfo.title = file.name;
           clearButton.style.display = 'inline-block';
-          
+
           // Pass file data to onChange
           onChange(param.name, {
             name: file.name,
             size: file.size,
             type: file.type,
-            data: dataUrl
+            data: dataUrl,
           });
         };
         reader.onerror = () => {
@@ -580,11 +1040,19 @@ function formatFileSize(bytes) {
  * @param {Object} [initialValues] - Optional initial values to override defaults
  * @returns {Object} Current parameter values
  */
-export function renderParameterUI(extractedParams, container, onChange, initialValues = null) {
+export function renderParameterUI(
+  extractedParams,
+  container,
+  onChange,
+  initialValues = null
+) {
   container.innerHTML = '';
 
   const { groups, parameters } = extractedParams;
   const currentValues = {};
+
+  // Reset stored limits when re-rendering
+  originalParameterLimits = {};
 
   // Group parameters by group
   const paramsByGroup = {};
@@ -593,14 +1061,21 @@ export function renderParameterUI(extractedParams, container, onChange, initialV
       paramsByGroup[param.group] = [];
     }
     // Use initialValues if provided, otherwise use default
-    const effectiveDefault = initialValues && initialValues[param.name] !== undefined 
-      ? initialValues[param.name] 
-      : param.default;
+    const effectiveDefault =
+      initialValues && initialValues[param.name] !== undefined
+        ? initialValues[param.name]
+        : param.default;
     // Create a copy of param with the effective default
     const paramWithValue = { ...param, default: effectiveDefault };
     paramsByGroup[param.group].push(paramWithValue);
     currentValues[param.name] = effectiveDefault;
+
+    // Store the original default value (from schema, not initialValues)
+    defaultParameterValues[param.name] = param.default;
   });
+
+  // Store current values for dependency checking
+  currentParameterValues = { ...currentValues };
 
   // Sort groups by order
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
@@ -624,57 +1099,48 @@ export function renderParameterUI(extractedParams, container, onChange, initialV
     groupParams.forEach((param) => {
       let control;
 
+      // Create onChange handler that also updates dependent parameters
+      const handleChange = (name, value) => {
+        currentValues[name] = value;
+        currentParameterValues[name] = value;
+        // Update dependent parameters visibility
+        updateDependentParameters(name, value);
+        onChange(currentValues);
+      };
+
       switch (param.uiType) {
         case 'slider':
-          control = createSliderControl(param, (name, value) => {
-            currentValues[name] = value;
-            onChange(currentValues);
-          });
+          control = createSliderControl(param, handleChange);
           break;
 
         case 'select':
-          control = createSelectControl(param, (name, value) => {
-            currentValues[name] = value;
-            onChange(currentValues);
-          });
+          control = createSelectControl(param, handleChange);
           break;
 
         case 'toggle':
-          control = createToggleControl(param, (name, value) => {
-            currentValues[name] = value;
-            onChange(currentValues);
-          });
+          control = createToggleControl(param, handleChange);
           break;
 
         case 'color':
-          control = createColorControl(param, (name, value) => {
-            currentValues[name] = value;
-            onChange(currentValues);
-          });
+          control = createColorControl(param, handleChange);
           break;
 
         case 'file':
-          control = createFileControl(param, (name, value) => {
-            currentValues[name] = value;
-            onChange(currentValues);
-          });
+          control = createFileControl(param, handleChange);
           break;
 
         case 'input':
         default:
           if (param.type === 'integer' || param.type === 'number') {
-            control = createNumberInput(param, (name, value) => {
-              currentValues[name] = value;
-              onChange(currentValues);
-            });
+            control = createNumberInput(param, handleChange);
           } else {
-            control = createTextInput(param, (name, value) => {
-              currentValues[name] = value;
-              onChange(currentValues);
-            });
+            control = createTextInput(param, handleChange);
           }
           break;
       }
+
+      // Apply dependency attributes and initial visibility
+      applyDependency(control, param, currentValues);
 
       details.appendChild(control);
     });

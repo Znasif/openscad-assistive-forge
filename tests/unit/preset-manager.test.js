@@ -463,4 +463,115 @@ describe('Preset Manager', () => {
       consoleWarnSpy.mockRestore()
     })
   })
+
+  describe('Listener Notifications', () => {
+    it('should notify listeners on save', () => {
+      const listener = vi.fn()
+      presetManager.subscribe(listener)
+      
+      presetManager.savePreset(modelName, 'Test', { width: 100 })
+      
+      expect(listener).toHaveBeenCalledWith(
+        'save',
+        expect.objectContaining({ name: 'Test' }),
+        modelName
+      )
+    })
+
+    it('should notify listeners on delete', () => {
+      const preset = presetManager.savePreset(modelName, 'Test', { width: 100 })
+      const listener = vi.fn()
+      presetManager.subscribe(listener)
+      
+      presetManager.deletePreset(modelName, preset.id)
+      
+      expect(listener).toHaveBeenCalledWith(
+        'delete',
+        expect.objectContaining({ id: preset.id }),
+        modelName
+      )
+    })
+
+    it('should handle listener errors gracefully', () => {
+      const errorListener = vi.fn(() => { throw new Error('Listener error') })
+      const goodListener = vi.fn()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      presetManager.subscribe(errorListener)
+      presetManager.subscribe(goodListener)
+      
+      presetManager.savePreset(modelName, 'Test', { width: 100 })
+      
+      expect(consoleSpy).toHaveBeenCalled()
+      expect(goodListener).toHaveBeenCalled()
+      
+      consoleSpy.mockRestore()
+    })
+
+    it('should allow unsubscribing', () => {
+      const listener = vi.fn()
+      const unsubscribe = presetManager.subscribe(listener)
+      
+      unsubscribe()
+      presetManager.savePreset(modelName, 'Test', { width: 100 })
+      
+      expect(listener).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Statistics', () => {
+    it('should return correct stats', () => {
+      presetManager.savePreset('model-1', 'Preset 1', { width: 100 })
+      presetManager.savePreset('model-1', 'Preset 2', { width: 200 })
+      presetManager.savePreset('model-2', 'Preset 1', { width: 300 })
+      
+      const stats = presetManager.getStats()
+      
+      expect(stats.modelCount).toBe(2)
+      expect(stats.totalPresets).toBe(3)
+      expect(stats.models).toContain('model-1')
+      expect(stats.models).toContain('model-2')
+    })
+
+    it('should return empty stats when no presets', () => {
+      // Create a fresh PresetManager with empty state
+      const freshManager = new PresetManager()
+      freshManager.presets = {}
+      
+      const stats = freshManager.getStats()
+      
+      expect(stats.modelCount).toBe(0)
+      expect(stats.totalPresets).toBe(0)
+      expect(stats.models).toHaveLength(0)
+    })
+  })
+
+  describe('Storage Availability', () => {
+    it('should detect storage availability', () => {
+      expect(presetManager.isStorageAvailable()).toBe(true)
+    })
+
+    it('should handle storage unavailability', () => {
+      const originalSetItem = localStorage.setItem
+      const originalRemoveItem = localStorage.removeItem
+      
+      localStorage.setItem = vi.fn(() => { throw new Error('Storage error') })
+      localStorage.removeItem = vi.fn()
+      
+      expect(presetManager.isStorageAvailable()).toBe(false)
+      
+      localStorage.setItem = originalSetItem
+      localStorage.removeItem = originalRemoveItem
+    })
+  })
+
+  describe('ID Generation', () => {
+    it('should generate unique IDs', () => {
+      const id1 = presetManager.generateId()
+      const id2 = presetManager.generateId()
+      
+      expect(id1).not.toBe(id2)
+      expect(id1).toMatch(/^preset-\d+-[a-z0-9]+$/)
+    })
+  })
 })

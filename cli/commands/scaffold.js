@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync } from 'fs';
 import { resolve, join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
+import { generateThemeCSS, THEME_PRESETS } from './theme.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -403,6 +404,37 @@ export async function scaffoldCommand(options) {
       console.log(chalk.green('✓ Copied .gitignore'));
     }
     
+    // Generate theme CSS if --theme is provided
+    if (options.theme && options.theme !== 'blue') {
+      const preset = THEME_PRESETS[options.theme];
+      if (preset) {
+        const themeCSS = generateThemeCSS(preset.colors, preset.name);
+        const themeCSSPath = join(outDir, 'src', 'styles', 'theme.css');
+        
+        // Ensure styles directory exists
+        mkdirSync(join(outDir, 'src', 'styles'), { recursive: true });
+        writeFileSync(themeCSSPath, themeCSS, 'utf-8');
+        console.log(chalk.green(`✓ Generated ${options.theme} theme CSS`));
+        
+        // Update index.html to include theme.css
+        const indexPath = join(outDir, 'index.html');
+        if (existsSync(indexPath)) {
+          let html = readFileSync(indexPath, 'utf-8');
+          // Add theme CSS import before </head>
+          const headClose = html.indexOf('</head>');
+          if (headClose !== -1) {
+            const themeLink = '    <link rel="stylesheet" href="/src/styles/theme.css" />\n  ';
+            html = html.slice(0, headClose) + themeLink + html.slice(headClose);
+            writeFileSync(indexPath, html, 'utf-8');
+            console.log(chalk.green('✓ Updated index.html with theme reference'));
+          }
+        }
+      } else {
+        console.log(chalk.yellow(`⚠ Unknown theme "${options.theme}", using default`));
+        console.log(chalk.gray(`  Available themes: ${Object.keys(THEME_PRESETS).join(', ')}`));
+      }
+    }
+    
     // Copy tsconfig.json for Angular
     if (options.template === 'angular') {
       const tsconfigTemplate = readFileSync(
@@ -418,6 +450,9 @@ export async function scaffoldCommand(options) {
     console.log(chalk.gray(`  Project: ${packageJson.name}`));
     console.log(chalk.gray(`  Parameters: ${Object.keys(schema.properties || {}).length}`));
     console.log(chalk.gray(`  Template: ${options.template}`));
+    if (options.theme && options.theme !== 'blue' && THEME_PRESETS[options.theme]) {
+      console.log(chalk.gray(`  Theme: ${options.theme}`));
+    }
     console.log(chalk.gray(`  Output: ${outDir}`));
     
     console.log(chalk.green('\n✓ Scaffolding complete!'));

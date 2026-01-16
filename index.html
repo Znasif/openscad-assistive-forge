@@ -101,6 +101,12 @@
             <div class="panel-header">
               <h2 id="parameters-heading">Parameters</h2>
               <div class="param-header-actions">
+                <button id="undoBtn" class="btn btn-sm btn-outline" aria-label="Undo last parameter change (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled>
+                  ↩️ Undo
+                </button>
+                <button id="redoBtn" class="btn btn-sm btn-outline" aria-label="Redo parameter change (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)" disabled>
+                  ↪️ Redo
+                </button>
                 <button id="resetBtn" class="btn btn-sm" aria-label="Reset all parameters to default values">Reset</button>
               </div>
             </div>
@@ -146,12 +152,72 @@
             <div id="parametersContainer" class="parameters-container" aria-labelledby="parameters-heading">
               <!-- Parameters will be dynamically generated here -->
             </div>
+            
+            <!-- Advanced Menu -->
+            <details class="advanced-menu" id="advancedMenu">
+              <summary class="advanced-menu-summary">
+                <span class="advanced-icon">⚙️</span>
+                Advanced
+              </summary>
+              <div class="advanced-menu-content">
+                <!-- View SCAD Source -->
+                <div class="advanced-section">
+                  <button id="viewSourceBtn" class="btn btn-sm btn-outline advanced-btn" aria-label="View OpenSCAD source code">
+                    📄 View Source
+                  </button>
+                  <button id="copySourceBtn" class="btn btn-sm btn-outline advanced-btn" aria-label="Copy source code to clipboard">
+                    📋 Copy Source
+                  </button>
+                </div>
+                
+                <!-- Parameter Limits Override -->
+                <div class="advanced-section">
+                  <label class="advanced-toggle">
+                    <input type="checkbox" id="unlockLimitsToggle" />
+                    <span>🔓 Unlock Parameter Limits</span>
+                  </label>
+                  <p class="advanced-hint">Allow values outside parsed min/max ranges</p>
+                </div>
+                
+                <!-- Reset Tools -->
+                <div class="advanced-section">
+                  <h4 class="advanced-section-title">Reset Tools</h4>
+                  <div class="reset-tools">
+                    <button id="resetAllBtn" class="btn btn-sm btn-outline" aria-label="Reset all parameters to defaults">
+                      ↩️ Reset All
+                    </button>
+                    <button id="resetGroupBtn" class="btn btn-sm btn-outline" aria-label="Reset current group to defaults">
+                      📁 Reset Group
+                    </button>
+                  </div>
+                  <div class="reset-group-selector hidden" id="resetGroupSelector">
+                    <label for="resetGroupSelect">Select group:</label>
+                    <select id="resetGroupSelect" class="reset-group-select">
+                      <!-- Groups will be populated dynamically -->
+                    </select>
+                    <button id="confirmResetGroupBtn" class="btn btn-sm btn-primary">Reset</button>
+                  </div>
+                </div>
+                
+                <!-- Raw Parameter JSON -->
+                <div class="advanced-section">
+                  <button id="viewParamsJsonBtn" class="btn btn-sm btn-outline advanced-btn" aria-label="View current parameters as JSON">
+                    { } View Params JSON
+                  </button>
+                </div>
+              </div>
+            </details>
           </div>
           
           <div class="preview-panel" role="region" aria-label="3D preview and actions">
             <div class="panel-header">
               <h2 id="preview-heading">Preview</h2>
-              <div class="file-info" id="fileInfo" aria-live="polite"></div>
+              <div class="file-info-wrapper">
+                <div class="file-info" id="fileInfo" aria-live="polite"></div>
+                <button id="clearFileBtn" class="btn btn-sm btn-outline hidden" aria-label="Clear file and return to welcome screen" title="Clear file">
+                  ✕ Clear
+                </button>
+              </div>
             </div>
             
             <!-- Scrollable content wrapper -->
@@ -310,6 +376,57 @@
     
     <!-- Hidden file input for queue import -->
     <input type="file" id="queueImportInput" accept=".json" style="display: none;" aria-hidden="true" />
+    
+    <!-- Source Code Viewer Modal -->
+    <div class="modal hidden" id="sourceViewerModal" role="dialog" aria-labelledby="sourceViewerTitle" aria-modal="true">
+      <div class="modal-overlay" id="sourceViewerOverlay"></div>
+      <div class="modal-content modal-large modal-source">
+        <div class="modal-header">
+          <h2 id="sourceViewerTitle">OpenSCAD Source</h2>
+          <div class="source-viewer-actions">
+            <button class="btn btn-sm btn-outline" id="sourceViewerCopy" aria-label="Copy source code">
+              📋 Copy
+            </button>
+            <button class="modal-close" id="sourceViewerClose" aria-label="Close source viewer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="modal-body source-viewer-body">
+          <textarea id="sourceViewerContent" class="source-viewer-textarea" readonly aria-label="OpenSCAD source code" spellcheck="false"></textarea>
+          <div class="source-viewer-info" id="sourceViewerInfo">
+            <!-- File info will be displayed here -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Parameters JSON Viewer Modal -->
+    <div class="modal hidden" id="paramsJsonModal" role="dialog" aria-labelledby="paramsJsonTitle" aria-modal="true">
+      <div class="modal-overlay" id="paramsJsonOverlay"></div>
+      <div class="modal-content modal-medium">
+        <div class="modal-header">
+          <h2 id="paramsJsonTitle">Current Parameters (JSON)</h2>
+          <div class="params-json-actions">
+            <button class="btn btn-sm btn-outline" id="paramsJsonCopy" aria-label="Copy parameters JSON">
+              📋 Copy
+            </button>
+            <button class="modal-close" id="paramsJsonClose" aria-label="Close parameters viewer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <textarea id="paramsJsonContent" class="params-json-textarea" readonly aria-label="Parameters JSON" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
     
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -29,6 +29,7 @@ function detectIssues(webappPath) {
         severity: 'warning',
         file: 'package.json',
         message: 'three.js version is outdated',
+        packageName: 'three', // Correct npm package name
         currentValue: deps['three'],
         suggestedValue: '^0.160.0',
         autoFixable: true,
@@ -41,6 +42,7 @@ function detectIssues(webappPath) {
         severity: 'warning',
         file: 'package.json',
         message: 'ajv version is outdated',
+        packageName: 'ajv',
         currentValue: deps['ajv'],
         suggestedValue: '^8.12.0',
         autoFixable: true,
@@ -53,6 +55,7 @@ function detectIssues(webappPath) {
         severity: 'info',
         file: 'package.json',
         message: 'vite version is outdated',
+        packageName: 'vite',
         currentValue: deps['vite'],
         suggestedValue: '^5.0.0',
         autoFixable: true,
@@ -256,7 +259,8 @@ function applyFix(webappPath, issue) {
     switch (issue.type) {
       case 'outdated-dependency': {
         const packageJson = JSON.parse(readFileSync(filePath, 'utf-8'));
-        const depName = issue.message.split(' ')[0];
+        // Use packageName from issue object, or fall back to extracting from message
+        const depName = issue.packageName || issue.message.split(' ')[0];
         
         if (packageJson.dependencies?.[depName]) {
           packageJson.dependencies[depName] = issue.suggestedValue;

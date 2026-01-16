@@ -36,7 +36,12 @@ export class RenderQueue {
   /**
    * Set the current SCAD content and project files
    */
-  setProject(scadContent, projectFiles = null, mainFile = null, libraries = []) {
+  setProject(
+    scadContent,
+    projectFiles = null,
+    mainFile = null,
+    libraries = []
+  ) {
     this.scadContent = scadContent;
     this.projectFiles = projectFiles;
     this.mainFile = mainFile;
@@ -269,7 +274,7 @@ export class RenderQueue {
     }
 
     this.isProcessing = false;
-    
+
     // Cancel render controller if a job is currently rendering
     if (this.currentJobId) {
       this.renderController.cancel();
@@ -329,7 +334,10 @@ export class RenderQueue {
    */
   clearCompleted() {
     const completed = Array.from(this.jobs.values()).filter(
-      (job) => job.state === 'complete' || job.state === 'error' || job.state === 'cancelled'
+      (job) =>
+        job.state === 'complete' ||
+        job.state === 'error' ||
+        job.state === 'cancelled'
     );
 
     for (const job of completed) {
@@ -439,7 +447,9 @@ export class RenderQueue {
       averageRenderTime: (() => {
         const completed = jobs.filter((j) => j.renderTime);
         if (completed.length === 0) return 0;
-        return completed.reduce((sum, j) => sum + j.renderTime, 0) / completed.length;
+        return (
+          completed.reduce((sum, j) => sum + j.renderTime, 0) / completed.length
+        );
       })(),
     };
   }
