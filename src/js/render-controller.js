@@ -361,7 +361,10 @@ export class RenderController {
           this.currentRequest &&
           payload.requestId === this.currentRequest.id
         ) {
-          this.currentRequest.reject(new Error(payload.message));
+          const error = new Error(payload.message);
+          error.code = payload.code;
+          error.details = payload.details;
+          this.currentRequest.reject(error);
           this.currentRequest = null;
         } else if (payload.requestId === 'init' && this.readyReject) {
           this.readyReject(new Error(payload.message));
@@ -526,8 +529,14 @@ export class RenderController {
 
       const shouldRetryOnce = (err) => {
         const msg = err?.message || String(err);
+        const code = err?.code;
+        const details = err?.details;
         // Pattern we see in logs: "Failed to render model: 1101176" (numeric code, no stack)
-        return /^Failed to render model:\s*\d+/.test(msg);
+        if (/^Failed to render model:\s*\d+/.test(msg)) return true;
+        // Worker translates numeric callMain errors to INTERNAL_ERROR with raw numeric details.
+        if (code === 'INTERNAL_ERROR') return true;
+        if (typeof details === 'string' && /\b\d{6,}\b/.test(details)) return true;
+        return false;
       };
 
       const renderOnce = async () => {
@@ -572,7 +581,8 @@ export class RenderController {
       try {
         return await renderOnce();
       } catch (err) {
-        if (!shouldRetryOnce(err)) {
+        const shouldRetry = shouldRetryOnce(err);
+        if (!shouldRetry) {
           throw err;
         }
         await this.restart();

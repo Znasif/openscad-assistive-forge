@@ -5,6 +5,15 @@ All notable changes to the OpenSCAD Web Customizer Forge project are documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.1] - 2026-01-18
+
+### Fixed
+
+- Prevented generate actions from cancelling in-progress previews, which could leave the UI stuck when generating before preview completion.
+- Improved internal render retry detection for numeric OpenSCAD error codes to recover cleanly without user intervention.
+
+---
+
 ## [2.10.0] - 2026-01-17
 
 ### Added - Enhanced Accessibility & Layout

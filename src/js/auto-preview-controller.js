@@ -511,7 +511,7 @@ export class AutoPreviewController {
   }
 
   /**
-   * Cancel any pending preview render
+   * Cancel any pending preview render (debounce/queued only)
    */
   cancelPending() {
     if (this.debounceTimer) {
@@ -521,9 +521,6 @@ export class AutoPreviewController {
 
     this.pendingParameters = null;
     this.pendingParamHash = null;
-
-    // Cancel in-progress render
-    this.renderController.cancel();
   }
 
   /**
