@@ -463,10 +463,12 @@ describe('AutoPreviewController', () => {
       expect(controller.debounceTimer).toBeNull()
     })
 
-    it('calls render controller cancel', () => {
+    it('does not call render controller cancel (debounce/queued only)', () => {
+      // cancelPending() only clears debounce timers and pending parameters
+      // It does NOT cancel in-progress renders (OpenSCAD WASM is blocking)
       controller.cancelPending()
       
-      expect(renderController.cancel).toHaveBeenCalled()
+      expect(renderController.cancel).not.toHaveBeenCalled()
     })
   })
 
