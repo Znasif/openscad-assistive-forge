@@ -211,9 +211,8 @@ function sanitizeUrlParams(extracted, urlParams) {
             newWorker.state === 'installed' &&
             navigator.serviceWorker.controller
           ) {
-            // New version available
-            console.log('[PWA] New version available');
-            showUpdateNotification(registration);
+            // New version available - silent background update
+            console.log('[PWA] New version available - will activate on next reload');
           }
         });
       });
@@ -232,25 +231,13 @@ function sanitizeUrlParams(extracted, urlParams) {
     console.log('[PWA] Service Worker disabled (dev) or not supported');
   }
 
-  // Handle install prompt
-  let deferredInstallPrompt = null;
+  // Note: App is installable via browser-native prompts (Chrome address bar, iOS Share menu)
+  // No custom install UI needed
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('[PWA] Install prompt available');
-    e.preventDefault();
-    deferredInstallPrompt = e;
-
-    // Show install button
-    showInstallButton(deferredInstallPrompt);
-  });
-
-  // Handle successful installation
+  // Show success message for native installation
   window.addEventListener('appinstalled', () => {
-    console.log('[PWA] App installed successfully');
-    deferredInstallPrompt = null;
-    hideInstallButton();
+    console.log('[PWA] App installed successfully via browser');
 
-    // Show success message
     const statusArea = document.getElementById('statusArea');
     if (statusArea) {
       const originalText = statusArea.textContent;
@@ -4327,109 +4314,6 @@ function sanitizeUrlParams(extracted, urlParams) {
   });
 
   updateStatus('Ready - Upload a file to begin');
-}
-
-// PWA Install Button Helper
-function showInstallButton(deferredPrompt) {
-  // Check if install button already exists
-  let installBtn = document.getElementById('pwaInstallBtn');
-
-  if (!installBtn) {
-    // Create install button
-    installBtn = document.createElement('button');
-    installBtn.id = 'pwaInstallBtn';
-    installBtn.className = 'btn btn-outline pwa-install-btn';
-    installBtn.innerHTML = '📲 Install App';
-    installBtn.setAttribute('aria-label', 'Install this app for offline use');
-    installBtn.setAttribute('title', 'Install for offline use');
-
-    // Add to header controls
-    const headerControls = document.querySelector('.header-controls');
-    if (headerControls) {
-      headerControls.insertBefore(installBtn, headerControls.firstChild);
-    }
-  }
-
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) {
-      console.warn('[PWA] Install prompt not available');
-      return;
-    }
-
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user's response
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`[PWA] User response to install prompt: ${outcome}`);
-
-    if (outcome === 'accepted') {
-      console.log('[PWA] User accepted the install prompt');
-    } else {
-      console.log('[PWA] User dismissed the install prompt');
-    }
-
-    // Clear the prompt (can only be used once)
-    deferredPrompt = null;
-  });
-}
-
-function hideInstallButton() {
-  const installBtn = document.getElementById('pwaInstallBtn');
-  if (installBtn) {
-    installBtn.remove();
-  }
-}
-
-// PWA Update Notification Helper
-function showUpdateNotification(registration) {
-  // Create update notification
-  const notification = document.createElement('div');
-  notification.className = 'pwa-update-notification';
-  notification.setAttribute('role', 'alert');
-  notification.innerHTML = `
-    <div class="pwa-update-content">
-      <span class="pwa-update-icon">🔄</span>
-      <div class="pwa-update-text">
-        <strong>Update Available</strong>
-        <p>A new version of the app is ready to install.</p>
-      </div>
-      <div class="pwa-update-actions">
-        <button class="btn btn-sm btn-primary" id="pwaUpdateBtn">Update Now</button>
-        <button class="btn btn-sm btn-outline" id="pwaUpdateDismiss">Later</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(notification);
-
-  // Handle update button
-  const updateBtn = notification.querySelector('#pwaUpdateBtn');
-  updateBtn.addEventListener('click', () => {
-    const waiting = registration.waiting;
-    if (waiting) {
-      // Tell the service worker to skip waiting
-      waiting.postMessage({ type: 'SKIP_WAITING' });
-
-      // Reload the page when the new service worker takes control
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-    }
-  });
-
-  // Handle dismiss button
-  const dismissBtn = notification.querySelector('#pwaUpdateDismiss');
-  dismissBtn.addEventListener('click', () => {
-    notification.remove();
-  });
-
-  // Auto-dismiss after 30 seconds
-  setTimeout(() => {
-    if (notification.parentElement) {
-      notification.remove();
-    }
-  }, 30000);
 }
 
 // Library UI Rendering

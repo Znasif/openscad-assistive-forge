@@ -160,9 +160,9 @@ The OpenSCAD Web Customizer Forge is a **fully functional, production-ready web 
 ||---------|--------|----------------|
 || Service Worker | ✅ Complete | Offline-first caching strategies |
 || Offline Functionality | ✅ Complete | Full app works without internet |
-|| Install Prompt | ✅ Complete | Native install on mobile & desktop |
+|| Install Support | ✅ Complete | Browser-native install (Chrome address bar, iOS Share menu) |
 || PWA Manifest | ✅ Complete | App metadata, icons, theme colors |
-|| Update Notifications | ✅ Complete | Auto-check with user control |
+|| Update Handling | ✅ Complete | Silent background updates with console logging |
 || Cache Management | ✅ Complete | Automatic versioning and cleanup |
 || iOS Support | ✅ Complete | Add to Home Screen |
 || Android Support | ✅ Complete | Native install prompt |

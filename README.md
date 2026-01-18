@@ -27,6 +27,7 @@ If you find an accessibility barrier, please report it. Accessibility issues are
 ## Try it
 
 - **Live demo (Cloudflare Pages)**: `https://openscad-web-customizer-forge.pages.dev/`
+- **Install as app**: Use your browser's built-in install option (Chrome address bar ⊕ icon, iOS Share menu, etc.)
 - **Run locally**:
 
 ```bash
@@ -53,7 +54,7 @@ Then open `http://localhost:5173`.
 - **Presets** (save/load/import/export parameter sets)
 - **ZIP multi-file support** with a virtual filesystem (`include` / `use`)
 - **Library bundles & library manager** (auto-detection + user controls)
-- **PWA**: installable + offline-friendly
+- **Offline-first**: works without internet after first visit, with automatic background updates
 - **Themes**: light/dark/auto + high-contrast mode
 
 For release-by-release detail, see [CHANGELOG.md](CHANGELOG.md).

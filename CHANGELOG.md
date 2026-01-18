@@ -428,22 +428,20 @@ This is the first **major stable release** for production deployment on Cloudfla
 
 ### Added - Progressive Web App (PWA) Support
 - **Offline Functionality**: Full app works without internet after first load
-- **Install Prompt**: Native "Install App" button with one-click installation
+- **Install Support**: Browser-native install via address bar icon (Chrome/Edge) or Share menu (iOS/Android)
 - **Service Worker**: Smart caching for instant load times and offline support
-- **Auto-Updates**: Background update checks with user-friendly notifications
+- **Auto-Updates**: Silent background cache updates with console logging for developers
 - **PWA Manifest**: Complete app metadata with icons, theme colors, and shortcuts
 - **Cache Management**: Automatic versioning and cleanup of old caches
 - **iOS Support**: Add to Home Screen with full-screen mode and custom splash
 - **Android Support**: Native install prompt with app drawer icon
 - **Desktop Support**: Install as standalone desktop app
-- **Update Notifications**: Non-intrusive toast with "Update Now" or "Later" options
+- **Update Handling**: Background updates activate on next reload
 
 ### Technical
 - New service worker (`public/sw.js`) with cache-first strategies
 - PWA manifest (`public/manifest.json`) with 8 icon sizes
-- Install prompt handling in `main.js` (+82 lines)
-- Update notification system with auto-dismiss
-- New PWA styles in `components.css` (+140 lines)
+- Service worker registration and update detection in `main.js`
 - Cache strategies: app shell, static assets, WASM, examples
 - Total cache size: ~18-33 MB (WASM + assets)
 - Build time: 3.05s (14% faster than v1.8!)

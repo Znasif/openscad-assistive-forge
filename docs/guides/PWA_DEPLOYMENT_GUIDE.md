@@ -169,8 +169,8 @@ npm run preview
    - Upload file, generate STL (should work)
 
 5. **Test install prompt** (Chrome):
-   - Look for "📲 Install App" button in header
-   - Click button
+   - Look for install icon (⊕) in address bar
+   - Click the icon
    - Verify native install dialog appears
    - Install app
    - Verify app opens in standalone window
@@ -261,22 +261,21 @@ lighthouse https://your-app.vercel.app --view
 ### Android (Chrome)
 
 1. **Open** production URL in Chrome
-2. **Look for** "📲 Install App" button
-3. **Tap button** (or menu > "Add to Home Screen")
-4. **Tap "Install"**
-5. **Find app** in app drawer
-6. **Open app** (should be standalone)
-7. **Test offline**:
+2. **Tap** menu (⋮) > "Add to Home Screen" or "Install app"
+3. **Tap "Install"** in the prompt
+4. **Find app** in app drawer
+5. **Open app** (should be standalone)
+6. **Test offline**:
    - Enable Airplane Mode
    - Open app (should still work)
    - Upload file, generate STL
-8. **Disable Airplane Mode**
+7. **Disable Airplane Mode**
 
 ### Desktop (Chrome/Edge)
 
 1. **Open** production URL
-2. **Look for** "📲 Install App" button in header
-3. **OR**: Click install icon (⊕) in address bar
+2. **Click** install icon (⊕) in address bar
+3. **OR**: Menu (⋮) > "Install OpenSCAD Web Customizer Forge"
 4. **Click "Install"**
 5. **App opens** in standalone window
 6. **Find app** in Start Menu/Applications
@@ -317,12 +316,12 @@ When deploying a new version:
    vercel --prod
    ```
 
-3. **Verify update notification**:
+3. **Verify update handling**:
    - Open app in browser (with old version cached)
    - Wait ~1 minute (auto-check)
-   - Update notification should appear
-   - Click "Update Now"
-   - Page reloads with new version
+   - Check console for "[PWA] New version available" message
+   - Reload page to activate new version
+   - Updates happen silently in background
 
 4. **Clear old caches** (automatic):
    - Service worker removes old cache versions
@@ -331,11 +330,12 @@ When deploying a new version:
 
 ### Troubleshooting
 
-**Install button not appearing**:
+**Browser install prompt not appearing**:
 - Check icons are accessible (no 404s)
 - Verify manifest is valid (DevTools > Application > Manifest)
 - Check PWA criteria (Lighthouse audit)
 - Try different browser (Chrome/Edge have best support)
+- Ensure HTTPS is enabled (localhost is OK)
 
 **Offline mode not working**:
 - Check service worker is activated (DevTools)
@@ -343,11 +343,12 @@ When deploying a new version:
 - Check COOP/COEP headers (Network tab)
 - Clear cache and try again
 
-**Update notification not showing**:
+**Updates not applying**:
 - Check service worker is checking for updates
 - Verify new version deployed (check Network tab)
 - Force update: DevTools > Application > Service Workers > Update
-- Check console for errors
+- Check console for "[PWA]" log messages
+- Updates activate on next page reload
 
 ---
 
@@ -359,11 +360,11 @@ When deploying a new version:
 - [ ] Service worker registered and activated
 - [ ] PWA manifest accessible (`/manifest.json`)
 - [ ] All icons loading (check Network tab, no 404s)
-- [ ] Install button appears (Chrome/Edge)
+- [ ] Browser install prompt available (Chrome/Edge address bar icon)
 - [ ] App can be installed on desktop
 - [ ] App can be installed on mobile (iOS/Android)
 - [ ] Offline mode works (uploads, STL generation)
-- [ ] Update notification system functional
+- [ ] Update handling functional (check console logs)
 - [ ] Lighthouse PWA score: 100/100
 - [ ] Lighthouse Accessibility: 100/100
 - [ ] No console errors on load
@@ -405,7 +406,7 @@ Your PWA deployment is successful when:
 
 ## 🐛 Common Issues & Solutions
 
-### Issue: "Install button not showing"
+### Issue: "Browser install prompt not showing"
 
 **Solution**:
 1. Verify all icons exist and are accessible
@@ -413,6 +414,7 @@ Your PWA deployment is successful when:
 3. Ensure HTTPS is enabled (localhost is OK)
 4. Try in Chrome/Edge (best PWA support)
 5. Check Lighthouse audit for issues
+6. Look for install icon (⊕) in address bar or browser menu
 
 ### Issue: "Offline mode not working"
 
@@ -432,14 +434,15 @@ Your PWA deployment is successful when:
 4. Try generating icons with different tool
 5. Check Vercel deployment includes icons directory
 
-### Issue: "Update notification not appearing"
+### Issue: "Updates not applying"
 
 **Solution**:
 1. Check service worker update check interval (default: 1 hour)
 2. Force update: DevTools > Service Workers > Update
 3. Verify new version is deployed (check sw.js version)
-4. Check console for errors in update detection
-5. Clear cache and reload
+4. Check console for "[PWA] New version available" message
+5. Reload page to activate new version
+6. Clear cache if issue persists
 
 ---
 
