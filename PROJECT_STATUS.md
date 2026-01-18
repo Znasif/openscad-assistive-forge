@@ -154,19 +154,17 @@ The OpenSCAD Web Customizer Forge is a **fully functional, production-ready web 
 || Measurements Toggle | ✅ Complete | Persistent preference |
 || Theme-Aware Colors | ✅ Complete | Light/dark/high contrast support |
 
-### v1.9: PWA Support ✅ COMPLETE
+### v1.9: Comparison View ✅ COMPLETE
 
 || Feature | Status | Implementation |
 ||---------|--------|----------------|
-|| Service Worker | ✅ Complete | Offline-first caching strategies |
-|| Offline Functionality | ✅ Complete | Full app works without internet |
-|| Install Support | ✅ Complete | Browser-native install (Chrome address bar, iOS Share menu) |
-|| PWA Manifest | ✅ Complete | App metadata, icons, theme colors |
-|| Update Handling | ✅ Complete | Silent background updates with console logging |
-|| Cache Management | ✅ Complete | Automatic versioning and cleanup |
-|| iOS Support | ✅ Complete | Add to Home Screen |
-|| Android Support | ✅ Complete | Native install prompt |
-|| Desktop Support | ✅ Complete | Standalone app mode |
+|| Multi-Variant Comparison | ✅ Complete | Compare up to 4 parameter variants |
+|| Independent 3D Previews | ✅ Complete | Each variant has own interactive preview |
+|| Batch Rendering | ✅ Complete | Sequential render with progress tracking |
+|| Variant Management | ✅ Complete | Add, rename, edit, delete variants |
+|| Export/Import | ✅ Complete | Share comparison sets as JSON |
+|| State Tracking | ✅ Complete | pending, rendering, complete, error states |
+|| Responsive Layout | ✅ Complete | Grid adapts 4 → 2 → 1 columns |
 
 ### v1.10: Library Bundles ✅ COMPLETE
 
@@ -223,6 +221,9 @@ openscad-web-customizer-forge/
 ├── public/
 │   ├── examples/                   # Example .scad files
 │   ├── fonts/                      # Liberation fonts
+│   ├── icons/                      # PWA app icons (SVG)
+│   ├── sw.js                       # Service worker (offline caching)
+│   ├── manifest.json               # PWA manifest
 │   └── wasm/                       # OpenSCAD WASM binaries
 ├── docs/
 │   ├── BUILD_PLAN_NEW.md           # Development roadmap

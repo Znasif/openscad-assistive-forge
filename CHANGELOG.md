@@ -426,32 +426,26 @@ This is the first **major stable release** for production deployment on Cloudfla
 
 ## [1.9.0] - 2026-01-14
 
-### Added - Progressive Web App (PWA) Support
-- **Offline Functionality**: Full app works without internet after first load
-- **Install Support**: Browser-native install via address bar icon (Chrome/Edge) or Share menu (iOS/Android)
-- **Service Worker**: Smart caching for instant load times and offline support
-- **Auto-Updates**: Silent background cache updates with console logging for developers
-- **PWA Manifest**: Complete app metadata with icons, theme colors, and shortcuts
-- **Cache Management**: Automatic versioning and cleanup of old caches
-- **iOS Support**: Add to Home Screen with full-screen mode and custom splash
-- **Android Support**: Native install prompt with app drawer icon
-- **Desktop Support**: Install as standalone desktop app
-- **Update Handling**: Background updates activate on next reload
+### Added - Comparison View
+
+Multi-variant comparison system for side-by-side parameter testing.
+
+- **Multi-Variant Comparison**: Compare up to 4 parameter variants side-by-side
+- **Independent 3D Previews**: Each variant has its own interactive preview
+- **Batch Rendering**: Render all variants sequentially with progress tracking
+- **Variant Management**: Add, rename, edit, and delete variants
+- **Export/Import**: Share comparison sets as JSON files
+- **State Tracking**: Visual indicators for pending, rendering, complete, error states
+- **Responsive Layout**: Grid adapts from 4 → 2 → 1 columns based on screen size
 
 ### Technical
-- New service worker (`public/sw.js`) with cache-first strategies
-- PWA manifest (`public/manifest.json`) with 8 icon sizes
-- Service worker registration and update detection in `main.js`
-- Cache strategies: app shell, static assets, WASM, examples
-- Total cache size: ~18-33 MB (WASM + assets)
-- Build time: 3.05s (14% faster than v1.8!)
-- Bundle size: 180.31 KB (gzipped: 55.35 KB)
-- Lighthouse PWA score: 100/100 ✅
-
-### Notes
-- **Icons Required**: Placeholder directory created, icons needed before production
-- **Screenshots Optional**: Can be added for enhanced install experience
-- **Full Documentation**: See [docs/changelogs/CHANGELOG_v1.9.md](docs/changelogs/CHANGELOG_v1.9.md)
+- New `ComparisonController` class (273 lines) for variant state management
+- New `ComparisonView` class (557 lines) for UI rendering
+- State integration with `comparisonMode` and `activeVariantId` properties
+- Theme-aware styling (light/dark/high-contrast)
+- WCAG 2.1 AA compliant accessibility
+- Build time: 3.15s
+- Bundle size: +14.4KB gzipped
 
 See [docs/changelogs/CHANGELOG_v1.9.md](docs/changelogs/CHANGELOG_v1.9.md) for complete details.
 
