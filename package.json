@@ -1,6 +1,6 @@
 {
   "name": "openscad-web-customizer-forge",
-  "version": "2.10.1",
+  "version": "3.0.0",
   "description": "Web-based OpenSCAD customizer with client-side WASM rendering and developer toolchain",
   "type": "module",
   "bin": {

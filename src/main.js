@@ -28,7 +28,6 @@ import {
   getAdaptiveQualityConfig,
   getQualityPreset,
   COMPLEXITY_TIER,
-  formatPresetDescription,
 } from './js/quality-tiers.js';
 import { PreviewManager } from './js/preview.js';
 import {
@@ -793,6 +792,64 @@ function sanitizeUrlParams(extracted, urlParams) {
     });
   }
 
+  // Wire model color picker
+  const modelColorPicker = document.getElementById('modelColorPicker');
+  const modelColorReset = document.getElementById('modelColorReset');
+  
+  // Load saved model color from localStorage
+  const savedModelColor = localStorage.getItem('openscad-customizer-model-color');
+  if (savedModelColor && modelColorPicker) {
+    modelColorPicker.value = savedModelColor;
+  }
+
+  if (modelColorPicker) {
+    modelColorPicker.addEventListener('input', () => {
+      const color = modelColorPicker.value;
+      if (previewManager) {
+        previewManager.setColorOverride(color);
+      }
+      // Save to localStorage
+      localStorage.setItem('openscad-customizer-model-color', color);
+      console.log(`[App] Model color changed to ${color}`);
+    });
+  }
+
+  if (modelColorReset) {
+    modelColorReset.addEventListener('click', () => {
+      if (previewManager) {
+        previewManager.setColorOverride(null);
+      }
+      // Reset picker to theme default and clear localStorage
+      if (modelColorPicker) {
+        // Get the theme default color
+        const themeDefault = getThemeDefaultColor();
+        modelColorPicker.value = themeDefault;
+      }
+      localStorage.removeItem('openscad-customizer-model-color');
+      console.log('[App] Model color reset to theme default');
+    });
+  }
+
+  /**
+   * Get the theme default model color
+   */
+  function getThemeDefaultColor() {
+    const activeTheme = themeManager.getActiveTheme();
+    const highContrast = themeManager.isHighContrastEnabled();
+    const themeKey = highContrast ? `${activeTheme}-hc` : activeTheme;
+    
+    // Match PREVIEW_COLORS from preview.js
+    const PREVIEW_COLORS = {
+      light: 0x2196f3,
+      dark: 0x4d9fff,
+      'light-hc': 0x0052cc,
+      'dark-hc': 0x66b3ff,
+    };
+    
+    const colorHex = PREVIEW_COLORS[themeKey] || PREVIEW_COLORS.light;
+    return '#' + colorHex.toString(16).padStart(6, '0');
+  }
+
   /**
    * Update the dimensions display panel
    */
@@ -1506,10 +1563,31 @@ function sanitizeUrlParams(extracted, urlParams) {
           gridToggle.checked = previewManager.gridEnabled;
         }
 
+        // Apply saved model color if exists
+        const savedModelColor = localStorage.getItem('openscad-customizer-model-color');
+        if (savedModelColor) {
+          previewManager.setColorOverride(savedModelColor);
+        }
+
         // Listen for theme changes and update preview
         themeManager.addListener((theme, activeTheme, highContrast) => {
           if (previewManager) {
             previewManager.updateTheme(activeTheme, highContrast);
+            
+            // Update color picker to show theme default when no custom color is set
+            const modelColorPicker = document.getElementById('modelColorPicker');
+            const hasSavedColor = localStorage.getItem('openscad-customizer-model-color');
+            if (modelColorPicker && !hasSavedColor) {
+              const themeKey = highContrast ? `${activeTheme}-hc` : activeTheme;
+              const PREVIEW_COLORS = {
+                light: 0x2196f3,
+                dark: 0x4d9fff,
+                'light-hc': 0x0052cc,
+                'dark-hc': 0x66b3ff,
+              };
+              const colorHex = PREVIEW_COLORS[themeKey] || PREVIEW_COLORS.light;
+              modelColorPicker.value = '#' + colorHex.toString(16).padStart(6, '0');
+            }
           }
         });
 
@@ -4053,6 +4131,11 @@ function sanitizeUrlParams(extracted, urlParams) {
     }
   }
   
+  // Expose openFeaturesGuide to window for module-level functions
+  if (typeof window !== 'undefined') {
+    window.openFeaturesGuide = openFeaturesGuide;
+  }
+  
   // Close Features Guide modal
   function closeFeaturesGuide() {
     const featuresGuideModal = document.getElementById('featuresGuideModal');
@@ -4107,7 +4190,7 @@ function sanitizeUrlParams(extracted, urlParams) {
   
   // Tab keyboard navigation
   const featuresTabs = document.querySelectorAll('.features-tab');
-  featuresTabs.forEach((tab, index) => {
+  featuresTabs.forEach((tab, _index) => {
     // Click to activate tab
     tab.addEventListener('click', () => {
       switchFeaturesTab(tab.id);
@@ -4459,7 +4542,7 @@ function renderLibraryUI(detectedLibraries) {
 }
 
 // Feature Hints Rendering
-function renderFeatureHints(schema, fileContent) {
+function renderFeatureHints(schema, _fileContent) {
   const hints = [];
   const parameters = schema?.parameters || {};
   
@@ -4538,7 +4621,9 @@ function renderHintsUI(hints) {
       button.textContent = 'Learn more';
       button.setAttribute('aria-label', `Learn more about ${hint.title}`);
       button.addEventListener('click', () => {
-        openFeaturesGuide({ tab: hint.action.tab });
+        if (window.openFeaturesGuide) {
+          window.openFeaturesGuide({ tab: hint.action.tab });
+        }
       });
       content.appendChild(button);
     }

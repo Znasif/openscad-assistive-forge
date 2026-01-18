@@ -198,4 +198,4 @@ When adding new documentation:
 ---
 
 **Last Updated**: January 17, 2026  
-**Documentation Version**: 2.10.1
+**Documentation Version**: 3.0.0

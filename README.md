@@ -5,7 +5,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![OpenSCAD](https://img.shields.io/badge/OpenSCAD-WASM-orange.svg)](https://openscad.org/)
 [![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
-[![Version](https://img.shields.io/badge/version-2.10.1-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.0.0-brightgreen.svg)](CHANGELOG.md)
 [![PWA](https://img.shields.io/badge/PWA-enabled-blue.svg)](https://web.dev/progressive-web-apps/)
 [![Deploy](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020.svg)](https://openscad-web-customizer-forge.pages.dev/)
 
@@ -55,9 +55,20 @@ Then open http://localhost:5173 in your browser.
 
 ## ✨ Features
 
-### Current Release: v2.10.0 — Enhanced Accessibility & Layout ♿
+### Current Release: v3.0.0 — Cloudflare Stable Deployment 🚀
 
-A major accessibility and usability release with advanced layout features:
+The first major stable release for production deployment on Cloudflare Pages:
+
+|| Feature | Description |
+||---------|-------------|
+|| ☁️ **Cloudflare Primary** | Unlimited bandwidth hosting on global CDN |
+|| ✅ **Clean CI Builds** | All ESLint errors resolved |
+|| 📚 **Docs Cleanup** | Complete documentation organization |
+|| 🎛️ **Collapsible Panels** | Desktop parameter panel collapse/expand |
+|| ↔️ **Resizable Layout** | Drag-to-resize split panels with keyboard support |
+|| 🎯 **Focus Mode** | Maximize preview area with F key shortcut |
+
+### Previous Release: v2.10.0 — Enhanced Accessibility & Layout ♿
 
 || Feature | Description |
 ||---------|-------------|
@@ -65,8 +76,6 @@ A major accessibility and usability release with advanced layout features:
 || ↔️ **Resizable Layout** | Drag-to-resize split panels with keyboard support |
 || 🎯 **Focus Mode** | Maximize preview area with keyboard shortcut (F) |
 || ♿ **Enhanced A11y** | Comprehensive ARIA attributes and focus management |
-|| 📱 **Responsive Design** | Desktop features auto-disable on mobile viewports |
-|| ⌨️ **Keyboard Navigation** | Full keyboard control with arrow keys and shortcuts |
 
 ### Previous Release: v2.9.0 — WASM Progress & Mobile Enhancements 📱
 
@@ -633,7 +642,7 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 
 ## 📊 Project Status
 
-**Current Version**: v2.10.0
+**Current Version**: v3.0.0
 
 || Phase | Description | Status |
 ||-------|-------------|--------|
@@ -664,6 +673,7 @@ See [TEST_REPORT.md](TEST_REPORT.md) for detailed results.
 || **v2.3** | **Audit & polish release** | ✅ Complete |
 || **v2.4-v2.9** | **Testing, performance, mobile enhancements** | ✅ Complete |
 || **v2.10** | **Enhanced accessibility & layout** | ✅ Complete |
+|| **v3.0** | **Cloudflare stable deployment** | ✅ Complete |
 
 ## ⚖️ Licensing
 
@@ -727,11 +737,19 @@ openscad-forge --help
 openscad-forge extract examples/simple-box/simple_box.scad
 ```
 
-## 🎉 What's New in v2.10.0
+## 🎉 What's New in v3.0.0
 
-### Enhanced Accessibility & Layout
+### Cloudflare Stable Deployment
 
-v2.10.0 brings major improvements to accessibility and user interface flexibility.
+v3.0.0 marks the first major stable release for production deployment on Cloudflare Pages.
+
+**Key Highlights:**
+- **Cloudflare Primary**: Production hosting on Cloudflare Pages with unlimited bandwidth
+- **Clean CI Builds**: All ESLint errors resolved for passing CI pipelines
+- **Documentation Complete**: Comprehensive docs cleanup and organization
+- **Feature Complete**: 25+ releases culminating in stable v3.0
+
+**v2.10 (included):**
 
 **Layout Enhancements:**
 - 🎛️ **Collapsible Parameter Panel** — Desktop-only collapse/expand with smooth animations and persistent state
@@ -759,7 +777,7 @@ v2.10.0 brings major improvements to accessibility and user interface flexibilit
 - WCAG 2.1 AA compliance maintained
 - Full keyboard support with new shortcuts
 
-See [docs/changelogs/CHANGELOG_v2.10.md](docs/changelogs/CHANGELOG_v2.10.md) for complete details.
+See [CHANGELOG.md](CHANGELOG.md) for complete details.
 
 ---
 

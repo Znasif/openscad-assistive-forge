@@ -5,6 +5,39 @@ All notable changes to the OpenSCAD Web Customizer Forge project are documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-01-18
+
+### Major Milestone - Cloudflare Stable Deployment
+
+This is the first **major stable release** for production deployment on Cloudflare Pages.
+
+**Highlights:**
+- Production-ready deployment on Cloudflare Pages (unlimited bandwidth)
+- All ESLint errors resolved for clean CI builds
+- Comprehensive documentation cleanup and organization
+- Complete feature set across 25+ releases now stable
+
+**Infrastructure:**
+- Primary hosting: Cloudflare Pages (https://openscad-web-customizer-forge.pages.dev/)
+- COOP/COEP headers pre-configured for WASM threading compatibility
+- Global CDN for fast worldwide delivery
+- Automatic deployments from Git
+
+**Documentation:**
+- Updated all references from Vercel to Cloudflare as primary platform
+- Marked all completed build plans as done
+- Cleaned up PROJECT_STATUS.md with accurate metrics
+- Updated README with Cloudflare deployment badge and links
+
+### Fixed
+
+- Resolved `openFeaturesGuide` scope error that caused lint failures
+- Fixed unused variable warnings (`formatPresetDescription`, `index`, `fileContent`)
+- Prevented generate actions from cancelling in-progress previews
+- Improved internal render retry detection for numeric OpenSCAD error codes
+
+---
+
 ## [2.10.1] - 2026-01-18
 
 ### Fixed
@@ -658,7 +691,7 @@ We follow [Semantic Versioning](https://semver.org/):
 ## Links
 
 - **Repository**: [GitHub](https://github.com/YOUR_ORG/openscad-web-customizer-forge)
-- **Live Demo**: [Vercel](https://openscad-web-customizer-forge-gutg7h11z.vercel.app)
+- **Live Demo**: [Cloudflare Pages](https://openscad-web-customizer-forge.pages.dev/)
 - **Documentation**: [docs/](docs/)
 - **Version Changelogs**: [docs/changelogs/](docs/changelogs/)
 - **License**: GPL-3.0-or-later
