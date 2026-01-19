@@ -15,6 +15,12 @@ let originalParameterLimits = {};
 // Track if limits are unlocked
 let limitsUnlocked = false;
 
+// Store parameter metadata for search
+let parameterMetadata = {};
+
+// Track current search filter
+let currentSearchFilter = '';
+
 /**
  * Set whether parameter limits are unlocked
  * @param {boolean} unlocked - Whether limits should be unlocked
@@ -215,29 +221,39 @@ export function updateDependentParameters(changedParam, newValue) {
 }
 
 /**
- * Announce changes to screen readers via live region
+ * Announce changes to screen readers via dedicated live region
+ * Separate from visible status to avoid flickering
  * @param {string} message - Message to announce
  */
 function announceChange(message) {
-  // Debounce announcements to avoid spamming
+  const srAnnouncer = document.getElementById('srAnnouncer');
+  if (!srAnnouncer) return;
+
+  // Debounce announcements to avoid spamming (e.g., slider changes)
   if (announceChange._timeout) {
     clearTimeout(announceChange._timeout);
   }
 
-  announceChange._timeout = setTimeout(() => {
-    const liveRegion = document.getElementById('statusArea');
-    if (liveRegion) {
-      const originalText = liveRegion.textContent;
-      liveRegion.textContent = message;
+  // Cancel pending clear (avoid clearing a newer message written elsewhere)
+  if (announceChange._clearTimeout) {
+    clearTimeout(announceChange._clearTimeout);
+  }
 
-      // Restore original text after announcement
-      setTimeout(() => {
-        if (liveRegion.textContent === message) {
-          liveRegion.textContent = originalText;
+  announceChange._timeout = window.setTimeout(() => {
+    // Clear first so repeated strings are re-announced reliably
+    srAnnouncer.textContent = '';
+
+    requestAnimationFrame(() => {
+      srAnnouncer.textContent = message;
+
+      // Clear after a short delay, but only if unchanged
+      announceChange._clearTimeout = window.setTimeout(() => {
+        if (srAnnouncer.textContent === message) {
+          srAnnouncer.textContent = '';
         }
       }, 1500);
-    }
-  }, 100);
+    });
+  }, 350);
 }
 
 /**
@@ -267,6 +283,8 @@ function applyDependency(container, param, currentParams) {
 
 /**
  * Create a help tooltip button
+ * WCAG 2.2 compliant: aria-describedby links trigger to tooltip,
+ * tooltip shows on focus as well as click
  * @param {Object} param - Parameter definition
  * @returns {HTMLElement|null} Help button element with tooltip
  */
@@ -276,19 +294,49 @@ function createHelpTooltip(param) {
   const wrapper = document.createElement('div');
   wrapper.className = 'param-help-wrapper';
 
+  const tooltipId = `tooltip-${param.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
   const button = document.createElement('button');
   button.className = 'param-help-button';
   button.type = 'button';
-  button.setAttribute('aria-label', `Help for ${param.name}`);
+  button.setAttribute('aria-label', `Help for ${param.name.replace(/_/g, ' ')}`);
   button.setAttribute('aria-expanded', 'false');
+  // WCAG: Link trigger to tooltip content for SR announcement
+  button.setAttribute('aria-describedby', tooltipId);
   button.innerHTML = '?';
 
   const tooltip = document.createElement('div');
   tooltip.className = 'param-tooltip';
   tooltip.setAttribute('role', 'tooltip');
-  tooltip.id = `tooltip-${param.name}`;
+  tooltip.id = tooltipId;
   tooltip.textContent = param.description;
   tooltip.style.display = 'none';
+  // Ensure tooltip is not in tab order
+  tooltip.setAttribute('tabindex', '-1');
+
+  // Show tooltip helper
+  const showTooltip = () => {
+    // Hide all other tooltips first
+    document.querySelectorAll('.param-tooltip').forEach((t) => {
+      if (t !== tooltip) {
+        t.style.display = 'none';
+      }
+    });
+    document.querySelectorAll('.param-help-button').forEach((b) => {
+      if (b !== button) {
+        b.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    tooltip.style.display = 'block';
+    button.setAttribute('aria-expanded', 'true');
+  };
+
+  // Hide tooltip helper
+  const hideTooltip = () => {
+    tooltip.style.display = 'none';
+    button.setAttribute('aria-expanded', 'false');
+  };
 
   // Toggle tooltip on click
   button.addEventListener('click', (e) => {
@@ -296,25 +344,32 @@ function createHelpTooltip(param) {
     e.stopPropagation();
 
     const isVisible = tooltip.style.display === 'block';
+    if (isVisible) {
+      hideTooltip();
+    } else {
+      showTooltip();
+    }
+  });
 
-    // Hide all other tooltips
-    document.querySelectorAll('.param-tooltip').forEach((t) => {
-      t.style.display = 'none';
-    });
-    document.querySelectorAll('.param-help-button').forEach((b) => {
-      b.setAttribute('aria-expanded', 'false');
-    });
+  // Show tooltip on focus (WCAG: keyboard accessible)
+  button.addEventListener('focus', () => {
+    showTooltip();
+  });
 
-    // Toggle this tooltip
-    tooltip.style.display = isVisible ? 'none' : 'block';
-    button.setAttribute('aria-expanded', !isVisible);
+  // Hide tooltip on blur
+  button.addEventListener('blur', () => {
+    // Small delay to allow click on tooltip if needed
+    setTimeout(() => {
+      if (!wrapper.contains(document.activeElement)) {
+        hideTooltip();
+      }
+    }, 100);
   });
 
   // Keyboard support: Escape to close
   button.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && tooltip.style.display === 'block') {
-      tooltip.style.display = 'none';
-      button.setAttribute('aria-expanded', 'false');
+      hideTooltip();
       button.focus();
     }
   });
@@ -353,6 +408,174 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+/**
+ * Initialize parameter search functionality
+ * Call this after rendering the parameter UI
+ */
+export function initParameterSearch() {
+  const searchInput = document.getElementById('paramSearchInput');
+  const clearBtn = document.getElementById('clearParamSearchBtn');
+  const jumpSelect = document.getElementById('paramJumpSelect');
+  const filterStats = document.getElementById('paramFilterStats');
+  const showAllBtn = document.getElementById('showAllParamsBtn');
+
+  if (!searchInput) return;
+
+  // Search input handler
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim().toLowerCase();
+    currentSearchFilter = query;
+    filterParameters(query);
+    
+    // Show/hide clear button
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', !query);
+    }
+  });
+
+  // Clear button handler
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      currentSearchFilter = '';
+      filterParameters('');
+      clearBtn.classList.add('hidden');
+      searchInput.focus();
+    });
+  }
+
+  // Jump to group handler
+  if (jumpSelect) {
+    jumpSelect.addEventListener('change', (e) => {
+      const groupId = e.target.value;
+      if (!groupId) return;
+
+      const groupElement = document.querySelector(`.param-group[data-group-id="${groupId}"]`);
+      if (groupElement) {
+        // Expand the group if collapsed
+        groupElement.open = true;
+        // Scroll into view
+        groupElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focus the group summary
+        const summary = groupElement.querySelector('summary');
+        if (summary) summary.focus();
+        // Announce for screen readers
+        announceChange(`Jumped to ${groupElement.querySelector('summary')?.textContent || groupId} group`);
+      }
+      // Reset select
+      jumpSelect.value = '';
+    });
+  }
+
+  // Show all button handler
+  if (showAllBtn) {
+    showAllBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      currentSearchFilter = '';
+      filterParameters('');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      searchInput.focus();
+    });
+  }
+}
+
+/**
+ * Filter parameters by search query
+ * @param {string} query - Search query (lowercase)
+ */
+function filterParameters(query) {
+  const paramControls = document.querySelectorAll('.param-control[data-param-name]');
+  const paramGroups = document.querySelectorAll('.param-group');
+  const filterStats = document.getElementById('paramFilterStats');
+  const filterCount = document.getElementById('paramFilterCount');
+
+  let visibleCount = 0;
+  const totalCount = paramControls.length;
+
+  paramControls.forEach((control) => {
+    const paramName = control.dataset.paramName;
+    const metadata = parameterMetadata[paramName] || {};
+    
+    // Skip if already hidden by dependency
+    const isHiddenByDependency = control.getAttribute('aria-hidden') === 'true';
+    
+    if (!query) {
+      // No search - show all (unless hidden by dependency)
+      control.classList.remove('search-hidden');
+      if (!isHiddenByDependency) visibleCount++;
+    } else {
+      // Check if parameter matches search
+      const searchableText = [
+        paramName.toLowerCase().replace(/_/g, ' '),
+        (metadata.label || '').toLowerCase(),
+        (metadata.description || '').toLowerCase(),
+        (metadata.group || '').toLowerCase()
+      ].join(' ');
+
+      const matches = searchableText.includes(query);
+      control.classList.toggle('search-hidden', !matches);
+      
+      if (matches && !isHiddenByDependency) visibleCount++;
+    }
+  });
+
+  // Update group visibility based on whether they have visible parameters
+  paramGroups.forEach((group) => {
+    const visibleParams = group.querySelectorAll('.param-control:not(.search-hidden):not([aria-hidden="true"])');
+    group.classList.toggle('search-empty', visibleParams.length === 0);
+    
+    // Auto-expand groups with matches when searching
+    if (query && visibleParams.length > 0) {
+      group.open = true;
+    }
+  });
+
+  // Update filter stats display
+  if (filterStats && filterCount) {
+    if (query) {
+      filterStats.classList.remove('hidden');
+      filterCount.textContent = visibleCount;
+      announceChange(`${visibleCount} of ${totalCount} parameters shown`);
+    } else {
+      filterStats.classList.add('hidden');
+    }
+  }
+}
+
+/**
+ * Populate the jump-to-group dropdown
+ * @param {Array} groups - Array of group definitions
+ */
+export function populateGroupJumpSelect(groups) {
+  const jumpSelect = document.getElementById('paramJumpSelect');
+  if (!jumpSelect) return;
+
+  // Clear existing options (keep placeholder)
+  jumpSelect.innerHTML = '<option value="">Jump to group...</option>';
+
+  // Add options for each group
+  groups.forEach((group) => {
+    const option = document.createElement('option');
+    option.value = group.id;
+    option.textContent = group.label;
+    jumpSelect.appendChild(option);
+  });
+}
+
+/**
+ * Get count of modified parameters (different from defaults)
+ * @returns {number} Count of modified parameters
+ */
+export function getModifiedParameterCount() {
+  let count = 0;
+  for (const [name, value] of Object.entries(currentParameterValues)) {
+    if (String(value) !== String(defaultParameterValues[name])) {
+      count++;
+    }
+  }
+  return count;
+}
 
 /**
  * Create a range slider control
@@ -455,6 +678,17 @@ function createSliderControl(param, onChange) {
 
   sliderContainer.appendChild(input);
   sliderContainer.appendChild(output);
+
+  // Show original default value hint (COGA: reduce memory load)
+  // Use stored original default, not the current/effective value
+  const originalDefault = defaultParameterValues[param.name];
+  if (originalDefault !== undefined) {
+    const defaultHint = document.createElement('span');
+    defaultHint.className = 'param-default-value';
+    defaultHint.textContent = formatValueWithUnit(originalDefault);
+    defaultHint.setAttribute('title', `Default: ${formatValueWithUnit(originalDefault)}`);
+    sliderContainer.appendChild(defaultHint);
+  }
 
   container.appendChild(sliderContainer);
 
@@ -612,6 +846,16 @@ function createNumberInput(param, onChange) {
     unitLabel.textContent = param.unit;
     unitLabel.setAttribute('aria-hidden', 'true'); // Decorative, already in aria-label
     inputContainer.appendChild(unitLabel);
+  }
+
+  // Show original default value hint (COGA: reduce memory load)
+  const originalDefault = defaultParameterValues[param.name];
+  if (originalDefault !== undefined) {
+    const defaultHint = document.createElement('span');
+    defaultHint.className = 'param-default-value';
+    defaultHint.textContent = param.unit ? `${originalDefault} ${param.unit}` : String(originalDefault);
+    defaultHint.setAttribute('title', `Default: ${originalDefault}${param.unit ? ' ' + param.unit : ''}`);
+    inputContainer.appendChild(defaultHint);
   }
 
   container.appendChild(inputContainer);
@@ -1051,8 +1295,9 @@ export function renderParameterUI(
   const { groups, parameters } = extractedParams;
   const currentValues = {};
 
-  // Reset stored limits when re-rendering
+  // Reset stored limits and metadata when re-rendering
   originalParameterLimits = {};
+  parameterMetadata = {};
 
   // Group parameters by group
   const paramsByGroup = {};
@@ -1072,6 +1317,15 @@ export function renderParameterUI(
 
     // Store the original default value (from schema, not initialValues)
     defaultParameterValues[param.name] = param.default;
+
+    // Store metadata for search functionality
+    parameterMetadata[param.name] = {
+      label: param.name.replace(/_/g, ' '),
+      description: param.description || '',
+      group: param.group,
+      type: param.type,
+      uiType: param.uiType
+    };
   });
 
   // Store current values for dependency checking
@@ -1079,6 +1333,9 @@ export function renderParameterUI(
 
   // Sort groups by order
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+
+  // Populate the jump-to-group dropdown
+  populateGroupJumpSelect(sortedGroups);
 
   // Render each group
   sortedGroups.forEach((group) => {
@@ -1091,6 +1348,8 @@ export function renderParameterUI(
     const details = document.createElement('details');
     details.className = 'param-group';
     details.open = true;
+    // Add data attribute for jump-to navigation
+    details.dataset.groupId = group.id;
 
     const summary = document.createElement('summary');
     summary.textContent = group.label;
@@ -1147,6 +1406,9 @@ export function renderParameterUI(
 
     container.appendChild(details);
   });
+
+  // Initialize parameter search after rendering
+  initParameterSearch();
 
   return currentValues;
 }

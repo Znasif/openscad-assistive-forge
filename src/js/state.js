@@ -112,6 +112,8 @@ export class StateManager {
     this.history = new ParameterHistory();
     this.isUndoRedo = false; // Flag to prevent recording during undo/redo
     this.historyEnabled = true; // Flag to disable during rendering
+    this._announceTimeout = null;
+    this._announceClearTimeout = null;
   }
 
   subscribe(callback) {
@@ -427,21 +429,45 @@ export class StateManager {
   }
 
   /**
-   * Announce changes to screen readers via live region
+   * Announce changes to screen readers via dedicated live region
+   * Separate from visible status to avoid flickering
    * @param {string} message
+   * @param {boolean} debounce - Whether to debounce (for rapid updates like sliders)
    */
-  announceChange(message) {
-    const statusArea = document.getElementById('statusArea');
-    if (statusArea) {
-      const originalText = statusArea.textContent;
-      statusArea.textContent = message;
+  announceChange(message, debounce = false) {
+    const srAnnouncer = document.getElementById('srAnnouncer');
+    if (!srAnnouncer) return;
 
-      // Restore original text after announcement
-      setTimeout(() => {
-        if (statusArea.textContent === message) {
-          statusArea.textContent = originalText;
-        }
-      }, 2000);
+    // Cancel pending announce
+    if (this._announceTimeout) clearTimeout(this._announceTimeout);
+    this._announceTimeout = null;
+
+    // Cancel pending clear (avoid clearing someone else's newer message)
+    if (this._announceClearTimeout) clearTimeout(this._announceClearTimeout);
+    this._announceClearTimeout = null;
+
+    const write = () => {
+      // Clear first so AT will re-announce repeated strings reliably
+      srAnnouncer.textContent = '';
+
+      // Next frame: write message
+      requestAnimationFrame(() => {
+        srAnnouncer.textContent = message;
+
+        // Clear after a short delay, but only if unchanged
+        this._announceClearTimeout = window.setTimeout(() => {
+          if (srAnnouncer.textContent === message) {
+            srAnnouncer.textContent = '';
+          }
+        }, 1500);
+      });
+    };
+
+    if (debounce) {
+      // Debounce rapid announcements (e.g., slider changes, progress updates)
+      this._announceTimeout = window.setTimeout(write, 350);
+    } else {
+      write();
     }
   }
 }

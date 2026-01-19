@@ -22,7 +22,12 @@ body {
 
 img,
 picture,
-video,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 canvas,
 svg {
   display: block;
@@ -55,6 +60,11 @@ button {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Hidden attribute support (WCAG 2.2 SC 4.1.2) */
+[hidden] {
+  display: none !important;
 }
 
 /* Screen reader only utility */

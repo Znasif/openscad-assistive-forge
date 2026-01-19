@@ -1,63 +1,35 @@
 # PWA Icons
 
-This directory should contain app icons in various sizes for Progressive Web App support.
+This directory contains app icons for Progressive Web App support.
 
-## Required Icons
+## Current Logo
 
-The following icon sizes are needed:
+The project uses the custom **OpenSCAD Assistive Web Forge Logo**:
 
-- `icon-16x16.png` - Favicon
-- `icon-32x32.png` - Favicon
-- `icon-72x72.png` - iOS/Android
-- `icon-96x96.png` - Android
-- `icon-128x128.png` - Android/Chrome
-- `icon-144x144.png` - Windows tile
-- `icon-152x152.png` - iOS
-- `icon-192x192.png` - Android/Chrome (standard)
-- `icon-384x384.png` - Android splash screen
-- `icon-512x512.png` - Android/Chrome (high-res)
+- `logo.svg` - SVG version (scalable, used for favicons and PWA icons)
+- `logo.png` - PNG version (used for Apple touch icons and Windows tiles)
 
-## Icon Design Guidelines
+The logo features the accessibility symbol overlaid on a 3D model sphere, representing the project's focus on making OpenSCAD accessible to all users.
 
-- **Background**: Use the app's primary color (#0066cc) or white
-- **Logo**: Simple, recognizable OpenSCAD-related symbol
-- **Format**: PNG with transparency where appropriate
-- **Maskable**: Icons should work with Android's masked icon format (safe zone in center 80%)
+## Icon Usage
 
-## Generating Icons
+| File | Used For |
+|------|----------|
+| `logo.svg` | Favicon, PWA icons (all sizes), shortcuts |
+| `logo.png` | Apple touch icon, Windows tile, maskable icon |
 
-You can use tools like:
-- **Favicon.io**: https://favicon.io/
-- **RealFaviconGenerator**: https://realfavicongenerator.net/
-- **PWA Asset Generator**: `npx @pwa/asset-generator`
+## Generating Additional Sizes (Optional)
 
-Example command:
+If specific PNG sizes are needed for certain platforms, you can generate them from the SVG:
+
 ```bash
+# Using ImageMagick to create specific sizes from the logo
 npx @pwa/asset-generator logo.svg ./public/icons --icon-only --path-override /icons
 ```
 
-## Temporary Placeholder
-
-For development, you can create simple placeholder icons using ImageMagick:
-
-```bash
-# Create a simple colored square (requires ImageMagick)
-for size in 16 32 72 96 128 144 152 192 384 512; do
-  convert -size ${size}x${size} xc:#0066cc \
-    -gravity center -pointsize $((size/3)) -fill white \
-    -annotate +0+0 "OS" \
-    public/icons/icon-${size}x${size}.png
-done
-```
-
-Or use a single color PNG:
-```bash
-# Create solid color placeholders
-for size in 16 32 72 96 128 144 152 192 384 512; do
-  convert -size ${size}x${size} xc:#0066cc \
-    public/icons/icon-${size}x${size}.png
-done
-```
+Or use online tools:
+- **Favicon.io**: https://favicon.io/
+- **RealFaviconGenerator**: https://realfavicongenerator.net/
 
 ## Screenshots
 

@@ -9,6 +9,8 @@ import {
   renderParameterUI,
   setLimitsUnlocked,
   getAllDefaults,
+  getModifiedParameterCount,
+  initParameterSearch,
 } from './js/ui-generator.js';
 import { stateManager, getShareableURL } from './js/state.js';
 import {
@@ -46,14 +48,30 @@ import { ComparisonController } from './js/comparison-controller.js';
 import { ComparisonView } from './js/comparison-view.js';
 import { libraryManager, LIBRARY_DEFINITIONS } from './js/library-manager.js';
 import { RenderQueue } from './js/render-queue.js';
+import {
+  openModal,
+  closeModal,
+  setupModalCloseHandlers,
+  initStaticModals,
+} from './js/modal-manager.js';
+import {
+  translateError,
+  showFriendlyError,
+  clearFriendlyError,
+} from './js/error-translator.js';
+import {
+  initWorkflowProgress,
+  showWorkflowProgress,
+  hideWorkflowProgress,
+  setWorkflowStep,
+  completeWorkflowStep,
+  resetWorkflowProgress,
+} from './js/workflow-progress.js';
+import { startTutorial, closeTutorial } from './js/tutorial-sandbox.js';
 import Split from 'split.js';
 
 // Example definitions (used by welcome screen and Features Guide)
 const EXAMPLE_DEFINITIONS = {
-  'braille-embosser': {
-    path: '/examples/braille-embosser/braille_embosser.scad',
-    name: 'braille_embosser.scad',
-  },
   'simple-box': {
     path: '/examples/simple-box/simple_box.scad',
     name: 'simple_box.scad',
@@ -114,6 +132,81 @@ let autoPreviewController = null;
 let comparisonController = null;
 let comparisonView = null;
 let renderQueue = null;
+
+/**
+ * Show an accessible confirmation dialog (WCAG COGA compliant)
+ * Prevents accidental destructive actions by requiring explicit confirmation
+ * @param {string} message - Confirmation message
+ * @param {string} [title='Confirm Action'] - Dialog title
+ * @param {string} [confirmLabel='Confirm'] - Label for confirm button
+ * @param {string} [cancelLabel='Cancel'] - Label for cancel button
+ * @returns {Promise<boolean>} True if confirmed, false if cancelled
+ */
+function showConfirmDialog(message, title = 'Confirm Action', confirmLabel = 'Confirm', cancelLabel = 'Cancel') {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'preset-modal confirm-modal';
+    modal.setAttribute('role', 'alertdialog');
+    modal.setAttribute('aria-labelledby', 'confirmDialogTitle');
+    modal.setAttribute('aria-describedby', 'confirmDialogMessage');
+    modal.setAttribute('aria-modal', 'true');
+
+    modal.innerHTML = `
+      <div class="preset-modal-content confirm-modal-content">
+        <div class="preset-modal-header">
+          <h3 id="confirmDialogTitle" class="preset-modal-title">${title}</h3>
+        </div>
+        <div class="confirm-modal-body">
+          <p id="confirmDialogMessage">${message}</p>
+        </div>
+        <div class="preset-form-actions">
+          <button type="button" class="btn btn-secondary" data-action="cancel">${cancelLabel}</button>
+          <button type="button" class="btn btn-primary" data-action="confirm">${confirmLabel}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const cleanup = (result) => {
+      closeModal(modal);
+      document.body.removeChild(modal);
+      resolve(result);
+    };
+
+    // Handle button clicks
+    modal.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+
+      if (btn.dataset.action === 'confirm') {
+        cleanup(true);
+      } else if (btn.dataset.action === 'cancel') {
+        cleanup(false);
+      }
+    });
+
+    // Close on backdrop click (cancel)
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        cleanup(false);
+      }
+    });
+
+    // Escape closes (cancel) for consistent keyboard behavior
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cleanup(false);
+      }
+    });
+
+    // Open modal with focus management
+    openModal(modal, {
+      focusTarget: modal.querySelector('[data-action="cancel"]'),
+    });
+  });
+}
 
 // Sanitize URL parameters against extracted schema
 function sanitizeUrlParams(extracted, urlParams) {
@@ -250,6 +343,9 @@ function sanitizeUrlParams(extracted, urlParams) {
 
   // Initialize theme (before any UI rendering)
   themeManager.init();
+
+  // Initialize static modal focus management (WCAG 2.2 SC 2.4.11 Focus Not Obscured)
+  initStaticModals();
 
   // Initialize theme toggle button
   initThemeToggle('themeToggle', (theme, activeTheme, message) => {
@@ -1167,6 +1263,11 @@ function sanitizeUrlParams(extracted, urlParams) {
   function updateStatus(message) {
     if (!statusArea) return;
     statusArea.textContent = message;
+
+    // Announce status changes via dedicated SR live region.
+    // Debounce progress-style updates (percent text) to avoid announcement spam.
+    const shouldDebounce = /\d+%/.test(message);
+    stateManager.announceChange(message, shouldDebounce);
     
     // Add/remove idle class for auto-hide when status is "Ready"
     if (message === 'Ready' || message === '') {
@@ -1174,6 +1275,14 @@ function sanitizeUrlParams(extracted, urlParams) {
     } else {
       statusArea.classList.remove('idle');
     }
+  }
+
+  /**
+   * Announce message to screen readers (for Welcome screen example loading, etc.)
+   * @param {string} message - Message to announce
+   */
+  function announceToScreenReader(message) {
+    stateManager.announceChange(message);
   }
 
   /**
@@ -1346,6 +1455,11 @@ function sanitizeUrlParams(extracted, urlParams) {
       // Show main interface
       welcomeScreen.classList.add('hidden');
       mainInterface.classList.remove('hidden');
+
+      // Update workflow progress (C3: COGA breadcrumbs)
+      showWorkflowProgress();
+      completeWorkflowStep('upload');
+      setWorkflowStep('customize');
 
       // Detect include/use statements for single-file uploads
       let includeUseWarning = '';
@@ -1670,6 +1784,10 @@ function sanitizeUrlParams(extracted, urlParams) {
         mainInterface.classList.add('hidden');
         welcomeScreen.classList.remove('hidden');
 
+        // Reset and hide workflow progress
+        resetWorkflowProgress();
+        hideWorkflowProgress();
+
         // Hide clear button
         clearFileBtn.classList.add('hidden');
         
@@ -1766,6 +1884,14 @@ function sanitizeUrlParams(extracted, urlParams) {
       return;
     }
 
+    // If a tutorial is open, close it before switching context.
+    // This prevents stale highlights/listeners from referencing the previous UI state.
+    try {
+      closeTutorial();
+    } catch {
+      // ignore (tutorial module may not be initialized)
+    }
+
     // Confirm before replacing if file already uploaded
     const state = stateManager.getState();
     if (state.uploadedFile) {
@@ -1806,11 +1932,36 @@ function sanitizeUrlParams(extracted, urlParams) {
   }
 
   // Load examples - unified handler
-  const exampleButtons = document.querySelectorAll('[data-example]');
+  // IMPORTANT: Keep this as the single click handler for all example buttons.
+  // Having multiple click handlers (e.g. role-specific + unified) causes duplicate example loads,
+  // which can interrupt auto-preview and leave the preview in a pending/blank state.
+  // NOTE: Exclude Features Guide example buttons (`data-feature-example`) because the
+  // Features Guide has its own click handler that loads examples and closes the modal.
+  // If we attach here too, the same example loads twice and can interrupt preview.
+  const exampleButtons = document.querySelectorAll(
+    '[data-example]:not([data-feature-example])'
+  );
   exampleButtons.forEach((button) => {
     button.addEventListener('click', async () => {
       const exampleType = button.dataset.example;
+      const tutorialId = button.dataset.tutorial;
+      
+      // Load the example first
       await loadExampleByKey(exampleType);
+      
+      if (exampleType) {
+        // Screen reader confirmation that an example was loaded
+        announceToScreenReader(
+          `${EXAMPLE_DEFINITIONS[exampleType]?.name || 'Example'} loaded and ready to customize`
+        );
+      }
+      
+      // Launch tutorial if specified (after a short delay to let example load)
+      if (tutorialId) {
+        setTimeout(() => {
+          startTutorial(tutorialId, { triggerEl: button });
+        }, 500);
+      }
     });
   });
 
@@ -1884,9 +2035,8 @@ function sanitizeUrlParams(extracted, urlParams) {
     }
   });
 
-  // Reset button
-  const resetBtn = document.getElementById('resetBtn');
-  resetBtn.addEventListener('click', () => {
+  // Reset button - performs the actual reset (used internally)
+  const performReset = () => {
     const state = stateManager.getState();
     if (state.defaults) {
       // Record current state before reset for undo
@@ -1922,6 +2072,32 @@ function sanitizeUrlParams(extracted, urlParams) {
       // Update button state after reset
       updatePrimaryActionButton();
     }
+  };
+
+  // Reset button - with COGA-compliant confirmation dialog
+  const resetBtn = document.getElementById('resetBtn');
+  resetBtn.addEventListener('click', async () => {
+    const state = stateManager.getState();
+    if (!state.defaults) return;
+
+    // Check if there are unsaved changes (parameters differ from defaults)
+    const hasChanges = Object.keys(state.parameters).some(
+      (key) => state.parameters[key] !== state.defaults[key]
+    );
+
+    if (hasChanges) {
+      // Show confirmation dialog for COGA compliance
+      const confirmed = await showConfirmDialog(
+        'This will reset all parameters to their default values. Any unsaved changes will be lost. You can undo this action.',
+        'Reset All Parameters?',
+        'Reset',
+        'Keep Changes'
+      );
+
+      if (!confirmed) return;
+    }
+
+    performReset();
   });
 
   // Collapsible Parameter Panel (Desktop only)
@@ -2547,6 +2723,8 @@ function sanitizeUrlParams(extracted, urlParams) {
         );
         downloadFile(fullSTL.stl, filename, outputFormat);
         updateStatus(`Downloaded: ${filename}`);
+        // Mark workflow download step as complete
+        completeWorkflowStep('download');
         return;
       }
 
@@ -2564,6 +2742,8 @@ function sanitizeUrlParams(extracted, urlParams) {
 
       downloadFile(state.stl, filename, outputFormat);
       updateStatus(`Downloaded: ${filename}`);
+      // Mark workflow download step as complete
+      completeWorkflowStep('download');
       return;
     }
 
@@ -2597,6 +2777,9 @@ function sanitizeUrlParams(extracted, urlParams) {
       if (autoPreviewController) {
         autoPreviewController.cancelPending();
       }
+
+      // Update workflow progress to render step
+      setWorkflowStep('render');
 
       // Show render time estimate for complex models
       const estimate = estimateRenderTime(
@@ -2670,6 +2853,10 @@ function sanitizeUrlParams(extracted, urlParams) {
 
       console.log('Full render complete:', result.stats);
 
+      // Update workflow progress to render complete
+      completeWorkflowStep('render');
+      setWorkflowStep('download');
+
       // Do NOT auto-download. User must explicitly click Download.
       updateStatus(
         `${formatName} generated successfully in ${duration}s (click Download to save)`
@@ -2682,21 +2869,13 @@ function sanitizeUrlParams(extracted, urlParams) {
       });
     } catch (error) {
       console.error('Generation failed:', error);
-      updateStatus('Error: ' + error.message);
+      
+      // Use COGA-compliant friendly error translation
+      const friendlyError = translateError(error.message);
+      updateStatus(`Error: ${friendlyError.title}`);
 
-      // Show user-friendly error message
-      let userMessage = 'Failed to generate STL:\n\n';
-      if (error.message.includes('timeout')) {
-        userMessage += 'The model is taking too long to render.\n\nTry:\n';
-        userMessage += '• Simplifying the model\n';
-        userMessage += '• Reducing $fn value\n';
-        userMessage += '• Decreasing parameter values';
-      } else if (error.message.includes('syntax')) {
-        userMessage += 'OpenSCAD syntax error in the model.\n\n';
-        userMessage += 'Check the .scad file for errors.';
-      } else {
-        userMessage += error.message;
-      }
+      // Show user-friendly error in alert (using translated message)
+      const userMessage = `${friendlyError.title}\n\n${friendlyError.explanation}\n\nTry: ${friendlyError.suggestion}`;
 
       alert(userMessage);
     } finally {
@@ -2739,6 +2918,8 @@ function sanitizeUrlParams(extracted, urlParams) {
 
     downloadSTL(state.stl, filename);
     updateStatus(`Downloaded (previous STL): ${filename}`);
+    // Mark workflow download step as complete
+    completeWorkflowStep('download');
   });
 
   // Copy Share Link button
@@ -3455,10 +3636,11 @@ function sanitizeUrlParams(extracted, urlParams) {
 
     document.body.appendChild(modal);
 
-    // Focus first input
-    setTimeout(() => {
-      modal.querySelector('#presetName').focus();
-    }, 100);
+    // Close handler for dynamic modal
+    const closeSavePresetModal = () => {
+      closeModal(modal);
+      document.body.removeChild(modal);
+    };
 
     // Handle form submission
     const form = modal.querySelector('#savePresetForm');
@@ -3485,7 +3667,7 @@ function sanitizeUrlParams(extracted, urlParams) {
 
         updateStatus(`Preset "${name}" saved`);
         updatePresetDropdown();
-        document.body.removeChild(modal);
+        closeSavePresetModal();
       } catch (error) {
         alert(`Failed to save preset: ${error.message}`);
       }
@@ -3493,26 +3675,20 @@ function sanitizeUrlParams(extracted, urlParams) {
 
     // Handle close buttons
     modal.querySelectorAll('[data-action="close"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.body.removeChild(modal);
-      });
+      btn.addEventListener('click', closeSavePresetModal);
     });
 
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        document.body.removeChild(modal);
+        closeSavePresetModal();
       }
     });
 
-    // Close on Escape key
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        document.body.removeChild(modal);
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
+    // Open modal with focus management (WCAG 2.2 focus trapping)
+    openModal(modal, {
+      focusTarget: modal.querySelector('#presetName'),
+    });
   }
 
   // Show manage presets modal
@@ -3590,6 +3766,12 @@ function sanitizeUrlParams(extracted, urlParams) {
 
     document.body.appendChild(modal);
 
+    // Close handler for dynamic modal
+    const closeManagePresetsModalHandler = () => {
+      closeModal(modal);
+      document.body.removeChild(modal);
+    };
+
     // Handle actions
     modal.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-action]');
@@ -3599,7 +3781,7 @@ function sanitizeUrlParams(extracted, urlParams) {
       const presetId = btn.dataset.presetId;
 
       if (action === 'close') {
-        document.body.removeChild(modal);
+        closeManagePresetsModalHandler();
       } else if (action === 'load') {
         const preset = presetManager.loadPreset(modelName, presetId);
         if (preset) {
@@ -3648,14 +3830,14 @@ function sanitizeUrlParams(extracted, urlParams) {
           isLoadingPreset = false;
 
           updateStatus(`Loaded preset: ${preset.name}`);
-          document.body.removeChild(modal);
+          closeManagePresetsModalHandler();
         }
       } else if (action === 'delete') {
         if (confirm('Are you sure you want to delete this preset?')) {
           presetManager.deletePreset(modelName, presetId);
           updatePresetDropdown();
           // Refresh the modal
-          document.body.removeChild(modal);
+          closeManagePresetsModalHandler();
           showManagePresetsModal();
         }
       } else if (action === 'export') {
@@ -3704,7 +3886,7 @@ function sanitizeUrlParams(extracted, urlParams) {
               );
               updatePresetDropdown();
               // Refresh the modal
-              document.body.removeChild(modal);
+              closeManagePresetsModalHandler();
               showManagePresetsModal();
             } else {
               alert(`Import failed: ${result.error}`);
@@ -3720,18 +3902,14 @@ function sanitizeUrlParams(extracted, urlParams) {
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        document.body.removeChild(modal);
+        closeManagePresetsModalHandler();
       }
     });
 
-    // Close on Escape key
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        document.body.removeChild(modal);
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
+    // Open modal with focus management (WCAG 2.2 focus trapping)
+    openModal(modal, {
+      focusTarget: modal.querySelector('.preset-modal-close'),
+    });
   }
 
   // Preset button handlers
@@ -3750,13 +3928,38 @@ function sanitizeUrlParams(extracted, urlParams) {
     });
   }
 
-  // Welcome screen "Learn more" button
-  const learnMoreFeaturesBtn = document.getElementById('learnMoreFeaturesBtn');
-  if (learnMoreFeaturesBtn) {
-    learnMoreFeaturesBtn.addEventListener('click', () => {
-      openFeaturesGuide();
+  // Welcome screen role path "Learn More" buttons
+  const roleLearnButtons = document.querySelectorAll('.btn-role-learn');
+  roleLearnButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      // Check what type of action to take
+      if (btn.dataset.featureTab) {
+        // Open Features Guide to specific tab
+        openFeaturesGuide({ tab: btn.dataset.featureTab });
+      } else if (btn.dataset.tour) {
+        // Open guided tour
+        openGuidedTour(btn.dataset.tour);
+      } else if (btn.dataset.doc) {
+        // Open documentation (for now, just open Features Guide)
+        openFeaturesGuide();
+      }
     });
-  }
+  });
+
+  // Accessibility spotlight links
+  const spotlightLinks = document.querySelectorAll('.spotlight-link');
+  spotlightLinks.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      if (link.dataset.featureTab) {
+        openFeaturesGuide({ tab: link.dataset.featureTab });
+      } else if (link.dataset.doc) {
+        // For now, open Features Guide; in future could show docs
+        openFeaturesGuide();
+      }
+    });
+  });
 
   // Handle preset selection
   presetSelect.addEventListener('change', (e) => {
@@ -4092,6 +4295,22 @@ function sanitizeUrlParams(extracted, urlParams) {
   });
 
   // ========== END ADVANCED MENU ==========
+
+  // ========== GUIDED TOURS ==========
+  
+  /**
+   * Open a minimal guided tour modal (for Welcome screen role paths)
+   * Tours are skippable, focus-safe, and respect prefers-reduced-motion
+   * @param {string} tourType - Type of tour ('screen-reader', 'voice-input', 'educators')
+   */
+  function openGuidedTour(tourType) {
+    // TODO: Implement guided tours in a separate task
+    // For now, fall back to opening the Features Guide
+    console.log('[Guided Tours] Tour requested:', tourType);
+    openFeaturesGuide();
+  }
+  
+  // ========== END GUIDED TOURS ==========
 
   // ========== FEATURES GUIDE MODAL ==========
   

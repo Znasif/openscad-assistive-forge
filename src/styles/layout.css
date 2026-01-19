@@ -42,16 +42,35 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-lg);
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .header-branding {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.header-logo {
+  width: 44px;
+  height: auto;
+  max-height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header-branding-text {
+  min-width: 0;
 }
 
 .app-header h1 {
-  font-size: var(--font-size-xl);
+  font-size: clamp(1.125rem, 2.4vw, var(--font-size-xl));
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .app-tagline {
@@ -65,6 +84,15 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+@media (min-width: 320px) {
+  .header-content {
+    gap: var(--space-md);
+  }
 }
 
 /* Contrast Toggle Button */
@@ -110,6 +138,61 @@ body {
   background: rgba(255, 255, 255, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.5);
   font-weight: 700;
+}
+
+/* GitHub Link */
+.github-link {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--border-radius-md);
+  color: var(--color-accent-text);
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.github-link:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+  color: var(--color-accent-text);
+  text-decoration: none;
+}
+
+.github-link:focus {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
+.github-link:active {
+  transform: scale(0.95);
+}
+
+.github-icon {
+  flex-shrink: 0;
+}
+
+.github-label {
+  /* Hide text on very small screens, show icon only */
+}
+
+@media (max-width: 480px) {
+  .github-label {
+    display: none;
+  }
+  
+  .github-link {
+    width: 40px;
+    padding: var(--space-sm);
+  }
 }
 
 /* Theme Toggle Button */
@@ -195,11 +278,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-xl);
-  padding-top: calc(var(--space-xl) + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
-  padding-left: calc(var(--space-xl) + env(safe-area-inset-left, 0px));
-  padding-right: calc(var(--space-xl) + env(safe-area-inset-right, 0px));
+  padding: var(--space-lg);
+  padding-top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--space-lg) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--space-lg) + env(safe-area-inset-right, 0px));
   overflow-y: auto;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -471,6 +554,36 @@ body {
 
 /* Tablet and up: side-by-side layout */
 @media (min-width: 768px) {
+  .header-content {
+    flex-wrap: nowrap;
+    gap: var(--space-lg);
+  }
+
+  .header-controls {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .welcome-screen {
+    padding: var(--space-xl);
+    padding-top: calc(var(--space-xl) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(var(--space-xl) + env(safe-area-inset-left, 0px));
+    padding-right: calc(var(--space-xl) + env(safe-area-inset-right, 0px));
+  }
+
+  .welcome-content {
+    max-width: 640px;
+  }
+
+  .preview-panel .panel-header {
+    flex-wrap: nowrap;
+  }
+
+  .preview-panel .file-info-wrapper {
+    flex-basis: auto;
+  }
+
   .main-interface {
     flex-direction: row;
   }
@@ -599,6 +712,10 @@ body {
   background-color: var(--color-bg-secondary);
   flex-wrap: wrap;
   gap: var(--space-sm);
+  /* Sticky panel headers */
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .panel-header-left {
@@ -627,6 +744,49 @@ body {
 
 .parameters-container {
   padding: var(--space-md);
+}
+
+/* ============================================================================
+   WCAG 2.2 Focus Appearance (SC 2.4.11, SC 2.4.13)
+   ============================================================================
+   Ensure focused elements are not obscured by sticky UI elements
+   and that focus indicators meet minimum size and contrast requirements.
+   ============================================================================ */
+
+/* Add scroll-margin to all focusable elements to prevent sticky header overlap */
+*:focus,
+*:focus-visible,
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus,
+details summary:focus,
+[tabindex]:focus {
+  scroll-margin-top: 60px;
+  scroll-margin-bottom: 60px;
+}
+
+/* Additional scroll-margin for elements within scrollable panels */
+.param-control,
+.preset-item,
+.library-item,
+.queue-item,
+.variant-card,
+.feature-card,
+.hint-item {
+  scroll-margin-top: 80px;
+  scroll-margin-bottom: 80px;
+}
+
+/* Ensure scrollable containers respect scroll-padding */
+.param-panel,
+.preview-content,
+.preview-info-section,
+.preset-modal-content,
+.comparison-grid {
+  scroll-padding-top: 20px;
+  scroll-padding-bottom: 20px;
 }
 
 .preview-container {
@@ -882,6 +1042,18 @@ body {
   }
 }
 
+@media (min-width: 1024px) {
+  .welcome-content {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .welcome-content {
+    max-width: 840px;
+  }
+}
+
 /* Dark mode shadow adjustment */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .preview-panel .actions {
@@ -904,11 +1076,132 @@ body {
   color: var(--color-text-secondary);
 }
 
+/* ============================================================================
+   Forced Colors Mode Adjustments for Layout
+   ============================================================================
+   Layout-specific overrides for Windows High Contrast and other
+   OS-enforced color schemes.
+   ============================================================================ */
+
+@media (forced-colors: active) {
+  /* App header */
+  .app-header {
+    background: Canvas;
+    color: CanvasText;
+    border-bottom: 3px solid CanvasText;
+  }
+
+  /* Header controls */
+  .theme-toggle,
+  .contrast-toggle,
+  .github-link {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 2px solid ButtonText !important;
+  }
+
+  .theme-toggle:hover,
+  .contrast-toggle:hover,
+  .github-link:hover {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight !important;
+  }
+
+  /* Panel headers */
+  .panel-header {
+    background: Canvas;
+    border-bottom: 2px solid CanvasText !important;
+  }
+
+  /* Main panels */
+  .param-panel,
+  .preview-panel {
+    background: Canvas;
+    border: 2px solid CanvasText !important;
+  }
+
+  /* Gutter/splitter */
+  .gutter {
+    background: CanvasText !important;
+  }
+
+  .gutter:hover,
+  .gutter:focus {
+    background: Highlight !important;
+    outline: 3px solid Highlight !important;
+  }
+
+  /* Preview container */
+  .preview-container {
+    background: Field;
+    border: 2px solid ButtonText;
+  }
+
+  /* Status area */
+  .status-area {
+    background: Canvas;
+    border-bottom: 2px solid CanvasText !important;
+  }
+
+  /* Actions bar */
+  .actions {
+    background: Canvas;
+    border-top: 2px solid CanvasText !important;
+  }
+
+  /* Welcome screen */
+  .welcome-screen {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .welcome-content {
+    background: Canvas;
+  }
+
+  /* Error messages */
+  .error-message {
+    background: Canvas;
+    color: CanvasText;
+    border: 3px solid CanvasText !important;
+  }
+
+  /* Comparison view */
+  .comparison-container {
+    background: Canvas;
+  }
+
+  /* File info */
+  .file-info {
+    background: Field;
+    color: FieldText;
+    border: 2px solid ButtonText !important;
+  }
+
+  /* Ensure all text is readable */
+  body,
+  #app {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  /* Remove box-shadow effects that don't work in forced-colors */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Ensure sticky elements have borders */
+  .preview-panel .actions {
+    border-top: 3px solid CanvasText !important;
+  }
+}
+
 /* Compact preview panel header */
 .preview-panel .panel-header {
   padding: var(--space-xs) var(--space-md);
   gap: var(--space-xs);
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-height: auto;
 }
 
@@ -930,6 +1223,7 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   order: 2;
+  flex-basis: 100%;
 }
 
 /* Compact file info in preview panel */

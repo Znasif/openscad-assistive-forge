@@ -180,6 +180,11 @@ export class PreviewManager {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.container.appendChild(this.renderer.domElement);
+    this.renderer.domElement.setAttribute('tabindex', '0');
+    this.renderer.domElement.setAttribute('aria-label', '3D preview canvas');
+    this.renderer.domElement.addEventListener('click', () => {
+      this.renderer.domElement.focus();
+    });
 
     // Add lights (store references for potential theme updates)
     this.ambientLight = new THREE.AmbientLight(colors.ambientLight, 0.6);
@@ -214,6 +219,10 @@ export class PreviewManager {
     this.controls.screenSpacePanning = false;
     this.controls.minDistance = 10;
     this.controls.maxDistance = 1000;
+
+    // WCAG 2.2 SC 2.5.7: Add keyboard controls for camera (non-drag alternatives)
+    this.setupKeyboardControls();
+    this.setupCameraControls();
 
     // Handle window resize
     this.handleResize = () => {
@@ -342,6 +351,438 @@ export class PreviewManager {
   }
 
   /**
+   * Setup keyboard controls for camera manipulation (WCAG 2.2 SC 2.5.7)
+   * Provides non-drag alternatives for orbit/pan/zoom operations
+   */
+  setupKeyboardControls() {
+    const rotationSpeed = 0.05;
+    const panSpeed = 5;
+    const zoomSpeed = 10;
+
+    this.keyboardHandler = (event) => {
+      // Ignore if focus is in an input field
+      if (
+        event.target.tagName === 'INPUT' ||
+        event.target.tagName === 'TEXTAREA' ||
+        event.target.tagName === 'SELECT' ||
+        event.target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Check if preview container or canvas has focus
+      if (
+        !this.container.contains(document.activeElement) &&
+        document.activeElement !== this.renderer.domElement
+      ) {
+        return;
+      }
+
+      let handled = false;
+
+      // Rotation (arrow keys without modifiers)
+      if (!event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        switch (event.key) {
+          case 'ArrowLeft':
+            this.controls.object.position.applyAxisAngle(
+              new THREE.Vector3(0, 0, 1),
+              rotationSpeed
+            );
+            this.controls.update();
+            handled = true;
+            break;
+          case 'ArrowRight':
+            this.controls.object.position.applyAxisAngle(
+              new THREE.Vector3(0, 0, 1),
+              -rotationSpeed
+            );
+            this.controls.update();
+            handled = true;
+            break;
+          case 'ArrowUp': {
+            // Orbit vertically
+            const currentDist = this.controls.object.position.length();
+            const horizontalAngle = Math.atan2(
+              this.controls.object.position.y,
+              this.controls.object.position.x
+            );
+            const verticalAngle = Math.asin(
+              this.controls.object.position.z / currentDist
+            );
+            const newVerticalAngle = verticalAngle + rotationSpeed;
+
+            this.controls.object.position.x =
+              currentDist * Math.cos(newVerticalAngle) * Math.cos(horizontalAngle);
+            this.controls.object.position.y =
+              currentDist * Math.cos(newVerticalAngle) * Math.sin(horizontalAngle);
+            this.controls.object.position.z =
+              currentDist * Math.sin(newVerticalAngle);
+            this.controls.update();
+            handled = true;
+            break;
+          }
+          case 'ArrowDown': {
+            // Orbit vertically (down)
+            const currentDist2 = this.controls.object.position.length();
+            const horizontalAngle2 = Math.atan2(
+              this.controls.object.position.y,
+              this.controls.object.position.x
+            );
+            const verticalAngle2 = Math.asin(
+              this.controls.object.position.z / currentDist2
+            );
+            const newVerticalAngle2 = verticalAngle2 - rotationSpeed;
+
+            this.controls.object.position.x =
+              currentDist2 * Math.cos(newVerticalAngle2) * Math.cos(horizontalAngle2);
+            this.controls.object.position.y =
+              currentDist2 * Math.cos(newVerticalAngle2) * Math.sin(horizontalAngle2);
+            this.controls.object.position.z =
+              currentDist2 * Math.sin(newVerticalAngle2);
+            this.controls.update();
+            handled = true;
+            break;
+          }
+        }
+      }
+
+      // Pan (Shift + arrow keys)
+      if (event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        switch (event.key) {
+          case 'ArrowLeft':
+            this.panCamera(-panSpeed, 0);
+            handled = true;
+            break;
+          case 'ArrowRight':
+            this.panCamera(panSpeed, 0);
+            handled = true;
+            break;
+          case 'ArrowUp':
+            this.panCamera(0, panSpeed);
+            handled = true;
+            break;
+          case 'ArrowDown':
+            this.panCamera(0, -panSpeed);
+            handled = true;
+            break;
+        }
+      }
+
+      // Zoom (+/- keys or = key for +)
+      if (event.key === '+' || event.key === '=' || event.key === '-') {
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction);
+        const zoomAmount = (event.key === '-' ? -1 : 1) * zoomSpeed;
+        this.camera.position.addScaledVector(direction, zoomAmount);
+        this.controls.update();
+        handled = true;
+      }
+
+      if (handled) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Announce camera action to screen readers
+        this.announceCameraAction(event.key, event.shiftKey);
+      }
+    };
+
+    document.addEventListener('keydown', this.keyboardHandler);
+  }
+
+  /**
+   * Setup on-screen camera controls (WCAG 2.2 SC 2.5.7)
+   * Adds visible buttons for camera manipulation
+   */
+  setupCameraControls() {
+    // Create control panel
+    const controlPanel = document.createElement('div');
+    controlPanel.className = 'camera-controls';
+    controlPanel.setAttribute('role', 'group');
+    controlPanel.setAttribute('aria-label', 'Camera controls');
+
+    // Persisted preferences: collapsed + position (keyboard-accessible “move”)
+    const collapsedKey = 'openscad-camera-controls-collapsed';
+    const positionKey = 'openscad-camera-controls-position';
+    const isCollapsed = localStorage.getItem(collapsedKey) === 'true';
+    const position =
+      localStorage.getItem(positionKey) || 'bottom-right'; // bottom-right | bottom-left | top-right | top-left
+    controlPanel.dataset.collapsed = isCollapsed ? 'true' : 'false';
+    controlPanel.dataset.position = position;
+
+    // Header with collapse + move controls (a11y: clear labels, aria-expanded)
+    const header = document.createElement('div');
+    header.className = 'camera-controls-header';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'camera-controls-toggle';
+    toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    toggleBtn.setAttribute('aria-controls', 'cameraControlsBody');
+    toggleBtn.setAttribute('aria-label', isCollapsed ? 'Expand camera controls' : 'Collapse camera controls');
+    toggleBtn.title = isCollapsed ? 'Show camera controls' : 'Hide camera controls';
+    toggleBtn.textContent = 'Camera controls';
+
+    const moveBtn = document.createElement('button');
+    moveBtn.type = 'button';
+    moveBtn.className = 'camera-controls-move';
+    moveBtn.setAttribute('aria-label', 'Move camera controls to a different corner');
+    moveBtn.title = 'Move camera controls';
+    moveBtn.textContent = 'Move';
+
+    header.appendChild(toggleBtn);
+    header.appendChild(moveBtn);
+    controlPanel.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'camera-controls-body';
+    body.id = 'cameraControlsBody';
+
+    // Rotation controls
+    const rotateGroup = document.createElement('div');
+    rotateGroup.className = 'camera-control-group';
+    rotateGroup.innerHTML = `
+      <button type="button" class="camera-control-btn" id="cameraRotateLeft" aria-label="Rotate view left" title="Rotate left (Arrow Left)">
+        ◀
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraRotateUp" aria-label="Rotate view up" title="Rotate up (Arrow Up)">
+        ▲
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraRotateDown" aria-label="Rotate view down" title="Rotate down (Arrow Down)">
+        ▼
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraRotateRight" aria-label="Rotate view right" title="Rotate right (Arrow Right)">
+        ▶
+      </button>
+    `;
+
+    // Pan controls
+    const panGroup = document.createElement('div');
+    panGroup.className = 'camera-control-group camera-pan-group';
+    panGroup.innerHTML = `
+      <button type="button" class="camera-control-btn" id="cameraPanLeft" aria-label="Pan view left" title="Pan left (Shift + Arrow Left)">
+        ⟵
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraPanUp" aria-label="Pan view up" title="Pan up (Shift + Arrow Up)">
+        ⟰
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraPanDown" aria-label="Pan view down" title="Pan down (Shift + Arrow Down)">
+        ⟱
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraPanRight" aria-label="Pan view right" title="Pan right (Shift + Arrow Right)">
+        ⟶
+      </button>
+    `;
+
+    // Zoom controls
+    const zoomGroup = document.createElement('div');
+    zoomGroup.className = 'camera-control-group camera-zoom-group';
+    zoomGroup.innerHTML = `
+      <button type="button" class="camera-control-btn" id="cameraZoomIn" aria-label="Zoom in" title="Zoom in (+)">
+        +
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraZoomOut" aria-label="Zoom out" title="Zoom out (-)">
+        −
+      </button>
+      <button type="button" class="camera-control-btn" id="cameraResetView" aria-label="Reset camera to default view" title="Reset view (Home)">
+        ⌂
+      </button>
+    `;
+
+    body.appendChild(rotateGroup);
+    body.appendChild(panGroup);
+    body.appendChild(zoomGroup);
+    controlPanel.appendChild(body);
+    this.container.appendChild(controlPanel);
+
+    // Apply initial collapsed state (hide body if collapsed)
+    if (isCollapsed) {
+      body.hidden = true;
+    }
+
+    const setCollapsed = (nextCollapsed) => {
+      controlPanel.dataset.collapsed = nextCollapsed ? 'true' : 'false';
+      body.hidden = !!nextCollapsed;
+      toggleBtn.setAttribute('aria-expanded', nextCollapsed ? 'false' : 'true');
+      toggleBtn.setAttribute('aria-label', nextCollapsed ? 'Expand camera controls' : 'Collapse camera controls');
+      toggleBtn.title = nextCollapsed ? 'Show camera controls' : 'Hide camera controls';
+      localStorage.setItem(collapsedKey, nextCollapsed ? 'true' : 'false');
+    };
+
+    const positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+    const cyclePosition = () => {
+      const current = controlPanel.dataset.position || 'bottom-right';
+      const idx = positions.indexOf(current);
+      const next = positions[(idx + 1 + positions.length) % positions.length];
+      controlPanel.dataset.position = next;
+      localStorage.setItem(positionKey, next);
+    };
+
+    toggleBtn.addEventListener('click', () => {
+      setCollapsed(controlPanel.dataset.collapsed !== 'true' ? true : false);
+    });
+    moveBtn.addEventListener('click', () => {
+      cyclePosition();
+    });
+
+    // Wire up button events
+    this.setupCameraControlButtons();
+  }
+
+  /**
+   * Setup camera control button event handlers
+   */
+  setupCameraControlButtons() {
+    const rotationSpeed = 0.1;
+    const panSpeed = 6;
+    const zoomSpeed = 15;
+
+    // Rotation buttons
+    document.getElementById('cameraRotateLeft')?.addEventListener('click', () => {
+      this.controls.object.position.applyAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        rotationSpeed
+      );
+      this.controls.update();
+      this.announceCameraAction('Rotate left');
+    });
+
+    document.getElementById('cameraRotateRight')?.addEventListener('click', () => {
+      this.controls.object.position.applyAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -rotationSpeed
+      );
+      this.controls.update();
+      this.announceCameraAction('Rotate right');
+    });
+
+    document.getElementById('cameraRotateUp')?.addEventListener('click', () => {
+      const currentDist = this.controls.object.position.length();
+      const horizontalAngle = Math.atan2(
+        this.controls.object.position.y,
+        this.controls.object.position.x
+      );
+      const verticalAngle = Math.asin(
+        this.controls.object.position.z / currentDist
+      );
+      const newVerticalAngle = Math.min(
+        verticalAngle + rotationSpeed,
+        Math.PI / 2 - 0.01
+      );
+
+      this.controls.object.position.x =
+        currentDist * Math.cos(newVerticalAngle) * Math.cos(horizontalAngle);
+      this.controls.object.position.y =
+        currentDist * Math.cos(newVerticalAngle) * Math.sin(horizontalAngle);
+      this.controls.object.position.z = currentDist * Math.sin(newVerticalAngle);
+      this.controls.update();
+      this.announceCameraAction('Rotate up');
+    });
+
+    document.getElementById('cameraRotateDown')?.addEventListener('click', () => {
+      const currentDist = this.controls.object.position.length();
+      const horizontalAngle = Math.atan2(
+        this.controls.object.position.y,
+        this.controls.object.position.x
+      );
+      const verticalAngle = Math.asin(
+        this.controls.object.position.z / currentDist
+      );
+      const newVerticalAngle = Math.max(
+        verticalAngle - rotationSpeed,
+        -Math.PI / 2 + 0.01
+      );
+
+      this.controls.object.position.x =
+        currentDist * Math.cos(newVerticalAngle) * Math.cos(horizontalAngle);
+      this.controls.object.position.y =
+        currentDist * Math.cos(newVerticalAngle) * Math.sin(horizontalAngle);
+      this.controls.object.position.z = currentDist * Math.sin(newVerticalAngle);
+      this.controls.update();
+      this.announceCameraAction('Rotate down');
+    });
+
+    // Pan buttons
+    document.getElementById('cameraPanLeft')?.addEventListener('click', () => {
+      this.panCamera(-panSpeed, 0);
+      this.announceCameraAction('Pan left');
+    });
+
+    document.getElementById('cameraPanRight')?.addEventListener('click', () => {
+      this.panCamera(panSpeed, 0);
+      this.announceCameraAction('Pan right');
+    });
+
+    document.getElementById('cameraPanUp')?.addEventListener('click', () => {
+      this.panCamera(0, panSpeed);
+      this.announceCameraAction('Pan up');
+    });
+
+    document.getElementById('cameraPanDown')?.addEventListener('click', () => {
+      this.panCamera(0, -panSpeed);
+      this.announceCameraAction('Pan down');
+    });
+
+    // Zoom buttons
+    document.getElementById('cameraZoomIn')?.addEventListener('click', () => {
+      const direction = new THREE.Vector3();
+      this.camera.getWorldDirection(direction);
+      this.camera.position.addScaledVector(direction, zoomSpeed);
+      this.controls.update();
+      this.announceCameraAction('Zoom in');
+    });
+
+    document.getElementById('cameraZoomOut')?.addEventListener('click', () => {
+      const direction = new THREE.Vector3();
+      this.camera.getWorldDirection(direction);
+      this.camera.position.addScaledVector(direction, -zoomSpeed);
+      this.controls.update();
+      this.announceCameraAction('Zoom out');
+    });
+
+    // Reset view button
+    document.getElementById('cameraResetView')?.addEventListener('click', () => {
+      if (this.mesh) {
+        this.fitCameraToModel();
+        this.announceCameraAction('Reset view');
+      }
+    });
+  }
+
+  /**
+   * Announce camera actions to screen readers
+   * @param {string} action - Action description or key pressed
+   * @param {boolean} shiftKey - Whether shift key was pressed
+   */
+  announceCameraAction(action, shiftKey = false) {
+    const srAnnouncer = document.getElementById('srAnnouncer');
+    if (!srAnnouncer) return;
+
+    let message = '';
+    if (action === 'ArrowLeft') {
+      message = shiftKey ? 'Panning left' : 'Rotating left';
+    } else if (action === 'ArrowRight') {
+      message = shiftKey ? 'Panning right' : 'Rotating right';
+    } else if (action === 'ArrowUp') {
+      message = shiftKey ? 'Panning up' : 'Rotating up';
+    } else if (action === 'ArrowDown') {
+      message = shiftKey ? 'Panning down' : 'Rotating down';
+    } else if (action === '+' || action === '=') {
+      message = 'Zooming in';
+    } else if (action === '-') {
+      message = 'Zooming out';
+    } else {
+      message = action; // For button clicks with descriptive names
+    }
+
+    srAnnouncer.textContent = message;
+    setTimeout(() => {
+      if (srAnnouncer.textContent === message) {
+        srAnnouncer.textContent = '';
+      }
+    }, 1000);
+  }
+
+  /**
    * Load and display STL from ArrayBuffer
    * @param {ArrayBuffer} stlData - Binary STL data
    */
@@ -417,6 +858,9 @@ export class PreviewManager {
         if (this.measurementsEnabled) {
           this.showMeasurements();
         }
+
+        // Update screen reader model summary (WCAG 2.2)
+        this.updateModelSummary();
 
         console.log('[Preview] STL loaded and displayed');
         resolve();
@@ -577,6 +1021,47 @@ export class PreviewManager {
       volume: Math.round(volume * 100) / 100,
       triangles: Math.round(triangles),
     };
+  }
+
+  /**
+   * Update the screen reader accessible model summary (WCAG 2.2)
+   * This provides non-visual users with model dimensions
+   */
+  updateModelSummary() {
+    const summaryEl = document.getElementById('previewModelSummary');
+    if (!summaryEl) return;
+
+    if (!this.mesh) {
+      summaryEl.textContent = 'No model loaded. Upload an OpenSCAD file and generate an STL to see the 3D preview.';
+      return;
+    }
+
+    const dims = this.calculateDimensions();
+    if (!dims) {
+      summaryEl.textContent = '3D model loaded. Dimensions unavailable.';
+      return;
+    }
+
+    // Format dimensions for screen readers in a clear, natural way
+    summaryEl.textContent = `3D model preview. Dimensions: ${dims.x} millimeters wide (X), ${dims.y} millimeters deep (Y), ${dims.z} millimeters tall (Z). Contains approximately ${dims.triangles.toLocaleString()} triangles. Use arrow keys to rotate, Shift plus arrow keys to pan, and plus or minus to zoom. On-screen camera controls are also available.`;
+  }
+
+  /**
+   * Pan camera and target in world space (Z-up)
+   * @param {number} deltaRight - Right/left movement
+   * @param {number} deltaUp - Up/down movement
+   */
+  panCamera(deltaRight, deltaUp) {
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 0, 1);
+    this.camera.getWorldDirection(right);
+    right.cross(up).normalize();
+
+    this.controls.target.addScaledVector(right, deltaRight);
+    this.controls.target.addScaledVector(up, deltaUp);
+    this.camera.position.addScaledVector(right, deltaRight);
+    this.camera.position.addScaledVector(up, deltaUp);
+    this.controls.update();
   }
 
   /**
@@ -843,6 +1328,9 @@ export class PreviewManager {
       this.mesh = null;
     }
     this.renderer.render(this.scene, this.camera);
+
+    // Update screen reader model summary (WCAG 2.2)
+    this.updateModelSummary();
   }
 
   /**
@@ -861,6 +1349,12 @@ export class PreviewManager {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
+    }
+
+    // Clean up keyboard controls
+    if (this.keyboardHandler) {
+      document.removeEventListener('keydown', this.keyboardHandler);
+      this.keyboardHandler = null;
     }
 
     if (this.mesh) {

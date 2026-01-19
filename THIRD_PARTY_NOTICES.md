@@ -84,10 +84,6 @@ This tool uses JSON Schema (draft 2020-12) for parameter validation.
 
 This tool was inspired by patterns from:
 
-### braille-card-and-cylinder-stl-generator
-- **License**: MIT
-- **Source**: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator
-
 ### openscad-web-gui (Reference Only)
 - **License**: GPL-3.0
 - **Source**: https://github.com/seasick/openscad-web-gui

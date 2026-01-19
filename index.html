@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Web-based OpenSCAD customizer - customize and generate 3D printable STL files directly in your browser" />
     <title>OpenSCAD Web Customizer</title>
     
@@ -10,22 +10,21 @@
     <link rel="manifest" href="/manifest.json" />
     
     <!-- Theme colors -->
-    <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4c400" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)" />
     
     <!-- Mobile Web App -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="OpenSCAD Forge" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+    <link rel="apple-touch-icon" href="/icons/logo.png" />
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" sizes="32x32" href="/icons/icon-32x32.svg" />
-    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/icons/icon-16x16.svg" />
+    <link rel="icon" type="image/png" href="/icons/logo.png" />
     
     <!-- Microsoft -->
-    <meta name="msapplication-TileColor" content="#0066cc" />
+    <meta name="msapplication-TileColor" content="#f4c400" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
   </head>
   <body>
@@ -36,10 +35,29 @@
       <header class="app-header">
         <div class="header-content">
           <div class="header-branding">
-            <h1>OpenSCAD Web Customizer</h1>
-            <p class="app-tagline">Customize 3D models directly in your browser</p>
+            <img
+              class="header-logo"
+              src="/icons/logo.png"
+              alt="OpenSCAD Assistive Web Forge logo"
+              width="44"
+            />
+            <div class="header-branding-text">
+              <h1>OpenSCAD Web Customizer</h1>
+              <p class="app-tagline">Customize 3D models directly in your browser</p>
+            </div>
           </div>
           <div class="header-controls">
+            <a href="https://github.com/BrennenJohnston/openscad-web-customizer-forge" 
+               class="github-link" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               aria-label="View source code on GitHub (opens in new tab)" 
+               title="View on GitHub">
+              <svg class="github-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span class="github-label">GitHub</span>
+            </a>
             <button id="contrastToggle" class="contrast-toggle" aria-label="Toggle high contrast" title="Toggle high contrast mode">
               <svg class="contrast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -84,50 +102,160 @@
               <input type="file" id="fileInput" accept=".scad,.zip" class="file-input" />
             </label>
             
-            <div class="examples-section">
-              <p>Or try an example:</p>
-              <div class="example-buttons">
-                <button id="loadBrailleEmbosserBtn" class="btn btn-secondary" data-example="braille-embosser">Braille Embosser (Complex)</button>
-                <button id="loadSimpleBoxBtn" class="btn btn-secondary" data-example="simple-box">Simple Box (Beginner)</button>
-                <button id="loadCylinderBtn" class="btn btn-secondary" data-example="cylinder">Parametric Cylinder</button>
-                <button id="loadLibraryTestBtn" class="btn btn-secondary" data-example="library-test">📚 Library Test (MCAD)</button>
-                <button id="loadColoredBoxBtn" class="btn btn-secondary" data-example="colored-box">🎨 Colored Box (Color Params)</button>
-              </div>
-            </div>
-            
             <div class="features-overview" role="region" aria-labelledby="features-heading">
-              <h3 id="features-heading">What You Can Do</h3>
-              <div class="feature-cards">
-                <div class="feature-card">
-                  <span class="feature-card-icon" aria-hidden="true">🎛️</span>
-                  <h4>Customize Parameters</h4>
-                  <p>Adjust sliders, dropdowns, and toggles to modify your model</p>
+              <h3 id="features-heading">Discover Features for Your Needs</h3>
+              <p class="features-intro">Choose a path to explore accessible customization features:</p>
+              
+              <div class="role-paths-grid">
+                <!-- Educators / Facilitators (MOVED TO FIRST) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Educators / Facilitators</h4>
+                  <p class="role-path-description">Demonstrate 3D design concepts quickly with ready-to-use examples</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Change Width/Height → watch Preview update</li>
+                    <li>Save presets for classroom reuse</li>
+                    <li>Guide students through full workflow (~2 min)</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="educators" data-tutorial="educators">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-feature-tab="presets" aria-label="Open Features Guide: Presets">
+                      Learn More
+                    </button>
+                  </div>
                 </div>
-                <div class="feature-card">
-                  <span class="feature-card-icon" aria-hidden="true">🎨</span>
-                  <h4>Color Support</h4>
-                  <p>Use color pickers for models with color parameters</p>
+
+                <!-- Advanced Makers (MOVED TO SECOND) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Advanced Makers</h4>
+                  <p class="role-path-description">Work with multi-file projects, libraries, and advanced OpenSCAD features</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Upload ZIP files with dependencies</li>
+                    <li>Enable MCAD, BOSL2, and other libraries</li>
+                    <li>Export in multiple formats (STL, OBJ, 3MF)</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="library-test" data-role="makers" data-tutorial="makers">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-feature-tab="libraries" aria-label="Open Features Guide: Libraries">
+                      Learn More
+                    </button>
+                  </div>
                 </div>
-                <div class="feature-card">
-                  <span class="feature-card-icon" aria-hidden="true">📚</span>
-                  <h4>Library Bundles</h4>
-                  <p>Access MCAD, BOSL2, and more for extended functions</p>
+
+                <!-- Keyboard-Only / Switch Users (MOVED TO THIRD) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Keyboard-Only Users</h4>
+                  <p class="role-path-description">Complete the full workflow without a mouse using predictable keyboard controls</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Tab through parameters logically</li>
+                    <li>Undo/Redo with Ctrl+Z / Ctrl+Shift+Z</li>
+                    <li>Skip to main content (screen top)</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="cylinder" data-role="keyboard-only" data-tutorial="keyboard-only">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-doc="KEYGUARD_WORKFLOW_GUIDE" aria-label="Learn about keyboard navigation">
+                      Learn More
+                    </button>
+                  </div>
                 </div>
-                <div class="feature-card">
-                  <span class="feature-card-icon" aria-hidden="true">💾</span>
-                  <h4>Save Presets</h4>
-                  <p>Save and load your favorite configurations</p>
+
+                <!-- Low Vision / High Contrast Users (MOVED TO FOURTH) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Low Vision Users</h4>
+                  <p class="role-path-description">Use high contrast themes, large touch targets, and visible focus indicators</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Toggle HC button (high contrast mode)</li>
+                    <li>Switch light/dark theme</li>
+                    <li>All buttons meet 44×44px touch target</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="low-vision" data-tutorial="low-vision">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-doc="ACCESSIBILITY_GUIDE" aria-label="Learn about visual accessibility features">
+                      Learn More
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Voice Input Users (MOVED TO FIFTH) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Voice Input Users</h4>
+                  <p class="role-path-description">Control the app with voice commands using stable, speakable names</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Say button labels: "Click Generate STL"</li>
+                    <li>Navigate: "Click Help", "Click Reset"</li>
+                    <li>All controls have unique, speakable names</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="voice-input" data-tutorial="voice-input">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-doc="ACCESSIBILITY_GUIDE" aria-label="Learn about voice input and accessible control names">
+                      Learn More
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Screen Reader / Blind Users (MOVED TO LAST) -->
+                <div class="role-path-card">
+                  <h4 class="role-path-title">Screen Reader Users</h4>
+                  <p class="role-path-description">Customize models with clear status announcements and keyboard-only workflow</p>
+                  <ul class="role-path-tips" aria-label="What you'll learn">
+                    <li>Status area announces all changes</li>
+                    <li>ARIA landmarks for quick navigation</li>
+                    <li>Plain-language error messages</li>
+                  </ul>
+                  <div class="role-path-actions">
+                    <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="screen-reader" data-tutorial="screen-reader">
+                      Start Tutorial
+                    </button>
+                    <button class="btn btn-link btn-role-learn" data-doc="ACCESSIBILITY_GUIDE" aria-label="Learn about screen reader accessibility features">
+                      Learn More
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button id="learnMoreFeaturesBtn" class="btn btn-link">
-                📖 Learn more about features
-              </button>
+              
+              <!-- Accessibility Spotlights -->
+              <div class="accessibility-spotlights">
+                <h4 class="spotlights-heading">Accessibility Highlights</h4>
+                <ul class="spotlights-list">
+                  <li>
+                    <a href="#" class="spotlight-link" data-doc="ACCESSIBILITY_GUIDE">
+                      Keyboard-first design with logical tab order
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="spotlight-link" data-doc="ACCESSIBILITY_GUIDE">
+                      High contrast &amp; forced colors support
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="spotlight-link" data-doc="ACCESSIBILITY_GUIDE">
+                      Plain-language error messages
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="spotlight-link" data-doc="KEYGUARD_WORKFLOW_GUIDE">
+                      Full workflow without drag gestures
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
         
         <div class="main-interface hidden" id="mainInterface">
           <div class="param-panel" id="paramPanel" role="region" aria-label="Model parameters">
+            <!-- WCAG 2.2 SC 3.2.6 Consistent Help: Help mechanisms (Features Guide button) 
+                 appear in consistent relative order across panels (top-right area) -->
             <div class="panel-header">
               <h2 id="parameters-heading">Parameters</h2>
               <div class="param-header-actions">
@@ -204,6 +332,27 @@
                   </ul>
                 </div>
               </details>
+            </div>
+            
+            <!-- Parameter Search and Navigation (C2: Cognitive load reduction) -->
+            <div class="param-search-section" id="paramSearchSection">
+              <div class="param-search-row">
+                <div class="param-search-input-wrapper">
+                  <label for="paramSearchInput" class="sr-only">Search parameters</label>
+                  <input type="search" id="paramSearchInput" class="param-search-input" placeholder="Search parameters..." aria-label="Search parameters by name or description" autocomplete="off" />
+                  <button type="button" id="clearParamSearchBtn" class="param-search-clear hidden" aria-label="Clear search">×</button>
+                </div>
+                <div class="param-jump-wrapper">
+                  <label for="paramJumpSelect" class="sr-only">Jump to group</label>
+                  <select id="paramJumpSelect" class="param-jump-select" aria-label="Jump to parameter group">
+                    <option value="">Jump to group...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="param-filter-stats hidden" id="paramFilterStats" aria-live="polite">
+                <span id="paramFilterCount">0</span> parameters shown
+                <button type="button" id="showAllParamsBtn" class="btn-link">Show all</button>
+              </div>
             </div>
             
             <div id="parametersContainer" class="parameters-container" aria-labelledby="parameters-heading">
@@ -315,19 +464,23 @@
             <div class="preview-content" id="previewContent">
               <!-- Top section: 3D preview canvas -->
               <div class="preview-canvas-section" id="previewCanvasSection">
-                <div class="preview-container" id="previewContainer" role="img" aria-label="3D model preview">
+                <div class="preview-container" id="previewContainer" role="group" aria-label="3D model preview and controls" aria-describedby="previewModelSummary" tabindex="0">
                   <!-- 3D preview or placeholder -->
                   <div class="preview-placeholder">
                     <p>3D preview will appear here after generating STL</p>
                   </div>
+                  <!-- Screen reader accessible model summary (WCAG 2.2 non-visual content) -->
+                  <div id="previewModelSummary" class="sr-only" aria-live="polite" aria-atomic="true">No model loaded. Upload an OpenSCAD file and generate an STL to see the 3D preview.</div>
                 </div>
               </div>
               
               <!-- Bottom section: status, settings, stats, dimensions -->
               <div class="preview-info-section" id="previewInfoSection">
-                <div class="status-area" id="statusArea" role="status" aria-live="polite" aria-atomic="true">
+                <div class="status-area" id="statusArea" role="region" aria-label="Status">
                   Ready
                 </div>
+                <!-- Dedicated screen reader announcer (separate from visible status) -->
+                <div id="srAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
                 <details class="preview-settings-details">
                   <summary class="preview-settings-summary">
@@ -439,6 +592,28 @@
       </main>
       
       <div class="error-message hidden" id="errorMessage" role="alert" aria-live="assertive" aria-atomic="true"></div>
+      
+      <!-- Workflow Progress Indicator (C3: COGA breadcrumbs) -->
+      <div class="workflow-progress hidden" id="workflowProgress" role="navigation" aria-label="Workflow progress">
+        <ol class="workflow-steps">
+          <li class="workflow-step" data-step="upload" aria-current="false">
+            <span class="workflow-step-number">1</span>
+            <span class="workflow-step-label">Upload</span>
+          </li>
+          <li class="workflow-step" data-step="customize" aria-current="false">
+            <span class="workflow-step-number">2</span>
+            <span class="workflow-step-label">Customize</span>
+          </li>
+          <li class="workflow-step" data-step="render" aria-current="false">
+            <span class="workflow-step-number">3</span>
+            <span class="workflow-step-label">Generate</span>
+          </li>
+          <li class="workflow-step" data-step="download" aria-current="false">
+            <span class="workflow-step-number">4</span>
+            <span class="workflow-step-label">Download</span>
+          </li>
+        </ol>
+      </div>
     </div>
     
     <!-- Render Queue Modal -->
@@ -706,6 +881,30 @@ color(hex2rgb(box_color))
               <li><strong>High</strong> – Higher detail for final previews</li>
             </ul>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Reset All Confirmation Modal (COGA: Undo confirmation) -->
+    <div class="modal hidden" id="resetConfirmModal" role="dialog" aria-labelledby="resetConfirmTitle" aria-modal="true">
+      <div class="modal-overlay" id="resetConfirmOverlay"></div>
+      <div class="modal-content modal-small confirm-modal-content">
+        <div class="modal-header">
+          <h2 id="resetConfirmTitle">Reset All Parameters?</h2>
+          <button class="modal-close" id="resetConfirmClose" aria-label="Cancel reset">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body confirm-modal-body">
+          <p>This will reset <strong id="resetParamCount">all</strong> parameters to their original default values.</p>
+          <p class="confirm-warning">Any customizations you've made will be lost.</p>
+        </div>
+        <div class="modal-footer confirm-modal-footer">
+          <button id="resetConfirmCancel" class="btn btn-secondary">Cancel</button>
+          <button id="resetConfirmOk" class="btn btn-primary">Reset All</button>
         </div>
       </div>
     </div>

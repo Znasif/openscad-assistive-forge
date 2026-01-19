@@ -677,7 +677,6 @@ export class AutoPreviewController {
       console.warn('[AutoPreview] forcePreview called but no SCAD content set');
       return false;
     }
-
     this.cancelPending();
 
     // If a render is already in progress, queue this as pending

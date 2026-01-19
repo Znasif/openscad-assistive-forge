@@ -90,7 +90,7 @@ describe('Quality Tiers', () => {
     });
 
     it('returns COMPLEX for many curved features', () => {
-      // Simulate braille embosser with many spheres in loops
+      // Simulate a stress-test model with many small spheres (dense curved features)
       const complexModel = `
         for (row = [0:10]) {
           for (col = [0:10]) {

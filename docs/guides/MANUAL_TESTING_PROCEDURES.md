@@ -1,7 +1,7 @@
-# Manual Testing Procedures — v1.2.0
+# Manual Testing Procedures — v1.3.0
 
-**Version**: v1.2.0  
-**Last Updated**: 2026-01-13  
+**Version**: v1.3.0  
+**Last Updated**: 2026-01-18  
 **Purpose**: Detailed step-by-step testing procedures for all features
 
 ---
@@ -750,6 +750,158 @@
 
 ---
 
+### Test 25: Forced Colors Mode (Windows High Contrast)
+
+**Objective:** Verify UI remains usable in Windows High Contrast mode
+
+**Setup:** Enable Windows High Contrast (Windows Settings → Ease of Access → High Contrast)
+
+**Steps:**
+1. Test all 4 default Windows High Contrast themes
+2. For each theme, verify all text readable, buttons visible, focus indicators visible
+
+**Expected Result:**
+- ✅ All UI elements visible in all 4 themes
+- ✅ Borders use system colors
+- ✅ Focus outlines visible (not box-shadow)
+- ✅ SVG icons remain visible
+
+**Pass/Fail:** ☐ Pass ☐ Fail
+
+---
+
+### Test 26: Camera Keyboard Controls
+
+**Objective:** Verify keyboard alternatives for 3D camera (WCAG 2.2 SC 2.5.7)
+
+**Setup:** Load Simple Box with 3D preview
+
+**Steps:**
+1. Focus 3D preview
+2. Test Arrow keys (rotate), Shift+Arrows (pan), +/- (zoom)
+3. Verify on-screen control buttons present and working (rotate, pan, zoom, reset)
+
+**Expected Result:**
+- ✅ Arrow keys rotate camera
+- ✅ Shift+Arrows pan camera  
+- ✅ +/- zoom camera
+- ✅ On-screen control buttons visible (rotate, pan, zoom, reset)
+- ✅ Controls are keyboard accessible
+
+**Pass/Fail:** ☐ Pass ☐ Fail
+
+---
+
+### Test 27: Screen Reader Announcements
+
+**Objective:** Verify dedicated SR live region
+
+**Setup:** Enable screen reader (NVDA/VoiceOver)
+
+**Steps:**
+1. Change parameter → verify announcement
+2. Rapidly move slider → verify debounced announcements
+3. Use camera controls → verify actions announced
+
+**Expected Result:**
+- ✅ Parameter changes announced
+- ✅ Rapid changes debounced (350ms)
+- ✅ Visible status doesn't flicker
+- ✅ Camera actions announced
+
+**Screen Reader:** ☐ NVDA ☐ VoiceOver ☐ JAWS
+
+**Pass/Fail:** ☐ Pass ☐ Fail
+
+---
+
+### Test 28: Focus Not Obscured (WCAG 2.2 SC 2.4.11)
+
+**Objective:** Verify focus not hidden by sticky headers
+
+**Steps:**
+1. Tab through all parameters
+2. Verify focused elements not obscured by panel header
+3. Check scroll-margin brings elements into view
+
+**Expected Result:**
+- ✅ All focused elements visible
+- ✅ No focus hidden behind sticky UI
+- ✅ Scroll-margin works correctly
+
+**Pass/Fail:** ☐ Pass ☐ Fail
+
+---
+
+## Platform + AT Testing Matrix
+
+### Required Test Combinations (must pass before release)
+
+| Platform | Browser | Assistive Technology | Check Count | Pass/Fail |
+|----------|---------|---------------------|-------------|-----------|
+| Windows | Firefox | NVDA | 5 | ☐ Pass ☐ Fail |
+| Windows | Edge | NVDA | 3 | ☐ Pass ☐ Fail |
+| Windows | Edge | High Contrast (all 4 themes) | 4 | ☐ Pass ☐ Fail |
+| Windows | Chrome | Keyboard only | 5 | ☐ Pass ☐ Fail |
+| macOS | Safari | VoiceOver | 5 | ☐ Pass ☐ Fail |
+| macOS | Chrome | VoiceOver | 3 | ☐ Pass ☐ Fail |
+| iOS | Safari | VoiceOver | 3 | ☐ Pass ☐ Fail |
+
+### Optional Test Combinations (recommended)
+
+| Platform | Browser | Assistive Technology | Check Count | Pass/Fail |
+|----------|---------|---------------------|-------------|-----------|
+| Windows | Chrome | JAWS | 3 | ☐ Pass ☐ Fail |
+| Windows | Any | Dragon NaturallySpeaking | 3 | ☐ Pass ☐ Fail |
+| Windows | Any | Windows Voice Control | 3 | ☐ Pass ☐ Fail |
+| macOS | Any | macOS Voice Control | 3 | ☐ Pass ☐ Fail |
+| Android | Chrome | TalkBack | 3 | ☐ Pass ☐ Fail |
+
+### Windows High Contrast Theme Matrix
+
+Test each of the 4 default Windows High Contrast themes:
+
+| Theme | Text Readable | Focus Visible | Buttons Visible | Pass/Fail |
+|-------|--------------|---------------|-----------------|-----------|
+| High Contrast #1 (white text on black) | ☐ | ☐ | ☐ | ☐ Pass ☐ Fail |
+| High Contrast #2 (black text on white) | ☐ | ☐ | ☐ | ☐ Pass ☐ Fail |
+| High Contrast Black | ☐ | ☐ | ☐ | ☐ Pass ☐ Fail |
+| High Contrast White | ☐ | ☐ | ☐ | ☐ Pass ☐ Fail |
+
+### Detailed AT Check Lists
+
+#### NVDA + Firefox/Edge (5 checks)
+
+1. ☐ All parameter labels announced correctly
+2. ☐ Tooltips read when help button focused
+3. ☐ Parameter value changes announced (debounced)
+4. ☐ Modal focus trapped and announced
+5. ☐ Workflow progress steps announced on change
+
+#### VoiceOver + Safari (5 checks)
+
+1. ☐ Landmark navigation works (main, navigation)
+2. ☐ All form controls have accessible names
+3. ☐ Live regions announce status changes
+4. ☐ Modal dialogs have proper role and focus
+5. ☐ 3D preview controls announced
+
+#### Keyboard Navigation (5 checks)
+
+1. ☐ Tab order is logical (top-to-bottom, left-to-right)
+2. ☐ All interactive elements focusable
+3. ☐ Focus indicators visible (min 3px)
+4. ☐ No focus traps (except intended modal traps)
+5. ☐ All actions keyboard operable (Enter/Space)
+
+#### Voice Control (3 checks)
+
+1. ☐ All buttons addressable by visible label
+2. ☐ Form inputs activatable by name
+3. ☐ "Show numbers" overlay works correctly
+
+---
+
 ## Error Handling Testing
 
 ### Test 25: Invalid File Type
@@ -1004,6 +1156,6 @@ Reviewer: _____________________ Date: _____________
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2026-01-13  
-**Next Review**: After v1.3 release
+**Document Version**: 1.3  
+**Last Updated**: 2026-01-18  
+**Next Review**: After v1.4 release

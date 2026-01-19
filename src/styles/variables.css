@@ -1,21 +1,24 @@
 /* Design System - CSS Custom Properties */
 :root {
   /* Colors - Light Mode (default) */
+  --color-brand-yellow: #f4c400;
+  --color-brand-green: #2e7d32;
+  --color-brand-black: #0b0b0b;
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-accent: #0066cc;
-  --color-accent-hover: #0052a3;
-  --color-accent-text: #ffffff;
-  --color-success: #28a745;
-  --color-success-bg: #d4edda;
+  --color-text-primary: #0b0b0b;
+  --color-text-secondary: #2b2b2b;
+  --color-text-tertiary: #5f5f5f;
+  --color-accent: var(--color-brand-yellow);
+  --color-accent-hover: #d9ac00;
+  --color-accent-text: var(--color-brand-black);
+  --color-success: var(--color-brand-green);
+  --color-success-bg: #d8f0dc;
   --color-error: #dc3545;
   --color-error-bg: #f8d7da;
-  --color-warning: #ffc107;
-  --color-warning-bg: #fff3cd;
+  --color-warning: #f4c400;
+  --color-warning-bg: #fff3c2;
   --color-border: #d1d1d1;
   --color-border-light: #e8e8e8;
   --color-input-bg: #ffffff;
@@ -41,14 +44,21 @@
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
+  --border-radius-xs: 3px;
+  --radius-md: var(--border-radius-md);
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
 
+  /* Elevated surfaces / muted text (aliases used by components) */
+  --color-bg-elevated: var(--color-bg-primary);
+  --color-text-muted: var(--color-text-tertiary);
+
   /* Focus */
-  --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.3);
+  --focus-ring: 0 0 0 3px rgba(244, 196, 0, 0.35);
+  --font-size-md: var(--font-size-base);
 
   /* Breakpoints */
   --breakpoint-mobile: 480px;
@@ -60,21 +70,21 @@
 /* Dark Mode - System Preference (when no manual override) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-bg-primary: #1a1a1a;
-    --color-bg-secondary: #2d2d2d;
-    --color-bg-tertiary: #3a3a3a;
+    --color-bg-primary: #0b0b0b;
+    --color-bg-secondary: #161616;
+    --color-bg-tertiary: #222222;
     --color-text-primary: #f5f5f5;
-    --color-text-secondary: #a0a0a0;
-    --color-text-tertiary: #707070;
-    --color-accent: #4d9fff;
-    --color-accent-hover: #6db0ff;
-    --color-accent-text: #1a1a1a;
-    --color-success: #4caf50;
-    --color-success-bg: #1e4620;
+    --color-text-secondary: #d1d1d1;
+    --color-text-tertiary: #a0a0a0;
+    --color-accent: var(--color-brand-yellow);
+    --color-accent-hover: #ffd24d;
+    --color-accent-text: var(--color-brand-black);
+    --color-success: #3fbf4c;
+    --color-success-bg: #123a1a;
     --color-error: #f44336;
     --color-error-bg: #5a1a1a;
-    --color-warning: #ffb300;
-    --color-warning-bg: #4d3800;
+    --color-warning: #f4c400;
+    --color-warning-bg: #3a2d00;
     --color-border: #404040;
     --color-border-light: #333333;
     --color-input-bg: #2d2d2d;
@@ -82,27 +92,27 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
-    --focus-ring: 0 0 0 3px rgba(77, 159, 255, 0.4);
+    --focus-ring: 0 0 0 3px rgba(244, 196, 0, 0.5);
   }
 }
 
 /* Dark Mode - Manual Override */
 :root[data-theme='dark'] {
-  --color-bg-primary: #1a1a1a;
-  --color-bg-secondary: #2d2d2d;
-  --color-bg-tertiary: #3a3a3a;
+  --color-bg-primary: #0b0b0b;
+  --color-bg-secondary: #161616;
+  --color-bg-tertiary: #222222;
   --color-text-primary: #f5f5f5;
-  --color-text-secondary: #a0a0a0;
-  --color-text-tertiary: #707070;
-  --color-accent: #4d9fff;
-  --color-accent-hover: #6db0ff;
-  --color-accent-text: #1a1a1a;
-  --color-success: #4caf50;
-  --color-success-bg: #1e4620;
+  --color-text-secondary: #d1d1d1;
+  --color-text-tertiary: #a0a0a0;
+  --color-accent: var(--color-brand-yellow);
+  --color-accent-hover: #ffd24d;
+  --color-accent-text: var(--color-brand-black);
+  --color-success: #3fbf4c;
+  --color-success-bg: #123a1a;
   --color-error: #f44336;
   --color-error-bg: #5a1a1a;
-  --color-warning: #ffb300;
-  --color-warning-bg: #4d3800;
+  --color-warning: #f4c400;
+  --color-warning-bg: #3a2d00;
   --color-border: #404040;
   --color-border-light: #333333;
   --color-input-bg: #2d2d2d;
@@ -110,7 +120,7 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
-  --focus-ring: 0 0 0 3px rgba(77, 159, 255, 0.4);
+  --focus-ring: 0 0 0 3px rgba(244, 196, 0, 0.5);
 }
 
 /* Light Mode - Manual Override (forces light even if system prefers dark) */
@@ -118,18 +128,18 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-accent: #0066cc;
-  --color-accent-hover: #0052a3;
-  --color-accent-text: #ffffff;
-  --color-success: #28a745;
-  --color-success-bg: #d4edda;
+  --color-text-primary: #0b0b0b;
+  --color-text-secondary: #2b2b2b;
+  --color-text-tertiary: #5f5f5f;
+  --color-accent: var(--color-brand-yellow);
+  --color-accent-hover: #d9ac00;
+  --color-accent-text: var(--color-brand-black);
+  --color-success: var(--color-brand-green);
+  --color-success-bg: #d8f0dc;
   --color-error: #dc3545;
   --color-error-bg: #f8d7da;
-  --color-warning: #ffc107;
-  --color-warning-bg: #fff3cd;
+  --color-warning: #f4c400;
+  --color-warning-bg: #fff3c2;
   --color-border: #d1d1d1;
   --color-border-light: #e8e8e8;
   --color-input-bg: #ffffff;
@@ -137,7 +147,7 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
-  --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.3);
+  --focus-ring: 0 0 0 3px rgba(244, 196, 0, 0.35);
 }
 
 /* High Contrast Mode - Works with any theme (Light/Dark/Auto) */
@@ -266,5 +276,147 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+   Forced Colors Mode (Windows High Contrast, etc.)
+   ============================================================================
+   When users enable OS-level forced color schemes (Windows High Contrast),
+   we use system color keywords to ensure legibility.
+   Reference: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors
+   ============================================================================ */
+
+@media (forced-colors: active) {
+  :root {
+    /* Map all color tokens to system colors */
+    --color-bg-primary: Canvas;
+    --color-bg-secondary: Canvas;
+    --color-bg-tertiary: Canvas;
+    --color-text-primary: CanvasText;
+    --color-text-secondary: CanvasText;
+    --color-text-tertiary: CanvasText;
+    --color-accent: LinkText;
+    --color-accent-hover: LinkText;
+    --color-accent-text: Canvas;
+    --color-success: LinkText;
+    --color-success-bg: Canvas;
+    --color-error: LinkText;
+    --color-error-bg: Canvas;
+    --color-warning: LinkText;
+    --color-warning-bg: Canvas;
+    --color-border: CanvasText;
+    --color-border-light: CanvasText;
+    --color-input-bg: Field;
+    --color-hover-bg: Canvas;
+
+    /* Use solid outlines instead of box-shadow for focus (box-shadow suppressed in forced-colors) */
+    --focus-ring: none;
+  }
+
+  /* Ensure all interactive elements have visible borders */
+  button,
+  input,
+  select,
+  textarea,
+  .btn {
+    border: 2px solid ButtonText !important;
+  }
+
+  /* Focus indicators must use outline or border, not box-shadow */
+  *:focus,
+  *:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Ensure links are distinguishable */
+  a {
+    color: LinkText;
+    text-decoration: underline;
+  }
+
+  a:visited {
+    color: VisitedText;
+  }
+
+  /* Ensure SVG icons remain visible */
+  svg {
+    fill: currentColor;
+    stroke: currentColor;
+  }
+
+  /* Remove background images that may disappear in forced-colors */
+  * {
+    background-image: none !important;
+  }
+
+  /* Ensure borders are visible for containers */
+  .param-panel,
+  .preview-panel,
+  .panel-header,
+  .modal,
+  .preset-modal-content,
+  .param-group,
+  .preset-controls {
+    border: 2px solid CanvasText !important;
+  }
+}
+
+/* ============================================================================
+   Enhanced Contrast Preference (prefers-contrast: more)
+   ============================================================================
+   For users who want enhanced contrast without forced color palettes.
+   Works on macOS, iOS, and modern browsers.
+   Reference: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-contrast
+   ============================================================================ */
+
+@media (prefers-contrast: more) {
+  :root {
+    /* Increase contrast ratios while preserving color identity */
+    --color-text-primary: #000000;
+    --color-text-secondary: #1a1a1a;
+    --color-border: #000000;
+    --color-border-light: #333333;
+
+    /* Stronger focus indicators */
+    --focus-ring: 0 0 0 4px rgba(0, 102, 204, 0.5);
+  }
+
+  /* Dark mode enhanced contrast */
+  :root[data-theme='dark'] {
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #f0f0f0;
+    --color-border: #ffffff;
+    --color-border-light: #cccccc;
+    --focus-ring: 0 0 0 4px rgba(77, 159, 255, 0.6);
+  }
+
+  /* System preference for dark mode */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --color-text-primary: #ffffff;
+      --color-text-secondary: #f0f0f0;
+      --color-border: #ffffff;
+      --color-border-light: #cccccc;
+      --focus-ring: 0 0 0 4px rgba(77, 159, 255, 0.6);
+    }
+  }
+
+  /* Thicker borders for all components */
+  button,
+  input,
+  select,
+  textarea,
+  .btn,
+  .param-panel,
+  .preview-panel,
+  .modal {
+    border-width: 2px !important;
+  }
+
+  /* Stronger focus outlines */
+  *:focus-visible {
+    outline-width: 4px !important;
   }
 }

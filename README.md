@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="OpenSCAD Assistive Web Forge Logo.png" alt="OpenSCAD Assistive Web Forge Logo" width="200">
+</p>
+
 # OpenSCAD Web Customizer Forge
 
 > **Customize parametric 3D models directly in your browser.** Upload a Customizer-enabled `.scad`, adjust parameters through an accessibility-first UI, preview the result, and download printable outputs — no installation, no account, no server.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![OpenSCAD](https://img.shields.io/badge/OpenSCAD-WASM-orange.svg)](https://openscad.org/)
-[![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
+[![Accessibility](https://img.shields.io/badge/WCAG-2.2%20AA-green.svg)](https://www.w3.org/WAI/WCAG22/quickref/)
 [![Version](https://img.shields.io/badge/version-3.0.0-brightgreen.svg)](CHANGELOG.md)
 [![PWA](https://img.shields.io/badge/PWA-enabled-blue.svg)](https://web.dev/progressive-web-apps/)
 [![Deploy](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020.svg)](https://openscad-web-customizer-forge.pages.dev/)
@@ -15,11 +19,13 @@ OpenSCAD is a powerful parametric CAD tool — but its workflows can be hard to 
 
 **This project’s intent is to be a Customizer-first, accessibility-first OpenSCAD interface**:
 
-- **Keyboard-first**: everything works without a mouse
-- **Screen-reader friendly**: semantic HTML + ARIA where needed
-- **WCAG 2.1 AA baseline**, with a **High Contrast mode** designed to meet **WCAG AAA contrast targets**
+- **Keyboard-first**: everything works without a mouse, including camera controls for 3D preview
+- **Screen-reader friendly**: semantic HTML + ARIA with dedicated announcement regions
+- **WCAG 2.2 AA compliant**, with **High Contrast mode** designed to meet **WCAG AAA contrast targets**
+- **Forced colors support**: Works with Windows High Contrast and OS-enforced color schemes
 - **Reduced motion support** via `prefers-reduced-motion`
-- **Touch targets** sized for real-world use (mobile/desktop)
+- **Touch targets** sized for real-world use (44×44px minimum)
+- **Voice input compatible**: All controls have speakable labels
 - **Privacy-first**: runs client-side; your models don’t get uploaded to a server
 
 If you find an accessibility barrier, please report it. Accessibility issues are treated as bugs.
@@ -185,6 +191,11 @@ Start here:
 - [Choosing Forge vs Playground](docs/guides/CHOOSING_FORGE_VS_PLAYGROUND.md)
 - [Testing instructions](TESTING_INSTRUCTIONS.md)
 - [Test report](TEST_REPORT.md)
+
+### Accessibility Guides
+
+- **[Accessibility Guide](docs/guides/ACCESSIBILITY_GUIDE.md)** - Comprehensive guide for users with disabilities, including screen reader users, low vision users, keyboard-only navigation, and voice input users
+- **[AAC Keyguard Workflow Guide](docs/guides/KEYGUARD_WORKFLOW_GUIDE.md)** - Step-by-step instructions for clinicians and caregivers customizing assistive communication devices
 
 Examples live in `public/examples/`.
 
