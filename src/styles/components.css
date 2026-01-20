@@ -20,6 +20,21 @@
   outline-offset: 2px;
 }
 
+/* Global focus ring for interactive elements that are not `.btn` */
+a:focus,
+button:focus,
+summary:focus,
+[role='button']:focus,
+[tabindex]:focus,
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-focus) !important;
+  outline-offset: 2px !important;
+}
+
 /* Buttons */
 .btn {
   padding: var(--space-sm) var(--space-md);
@@ -47,7 +62,9 @@
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
   /* Additional border for increased perimeter size */
-  box-shadow: 0 0 0 1px var(--color-bg-primary), 0 0 0 4px var(--color-focus);
+  box-shadow:
+    0 0 0 1px var(--color-bg-primary),
+    0 0 0 4px var(--color-focus);
 }
 
 .btn:active {
@@ -70,7 +87,7 @@
 
 .btn-success {
   background-color: var(--color-success);
-  color: white;
+  color: var(--color-accent-text);
 }
 
 .btn-success:hover:not(:disabled) {
@@ -94,8 +111,8 @@
 }
 
 .btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-accent);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   color: var(--color-text-primary);
   text-decoration: none;
   display: inline-flex;
@@ -104,8 +121,8 @@
 }
 
 .btn-outline:hover:not(:disabled) {
-  background-color: var(--color-accent);
-  color: var(--color-accent-text);
+  background-color: var(--color-hover-bg);
+  border-color: var(--color-text-primary);
 }
 
 .btn-large {
@@ -131,7 +148,10 @@
   border-color: var(--color-accent);
 }
 
-/* Collapse button icon rotation */
+/* ============================================================================
+   Panel Collapse Button - Icon Rotation & States
+   ============================================================================ */
+
 #collapseParamPanelBtn svg {
   transition: transform 0.3s ease;
 }
@@ -142,8 +162,16 @@
   }
 }
 
+/* Rotate icon 180° when collapsed to show "expand" direction */
 .param-panel.collapsed #collapseParamPanelBtn svg {
   transform: rotate(180deg);
+}
+
+/* Desktop only - hide collapse button on mobile (drawer toggle is used instead) */
+@media (max-width: 767px) {
+  .panel-collapse-control {
+    display: none;
+  }
 }
 
 /* ============================================================================
@@ -178,6 +206,150 @@
 @media (max-width: 360px) {
   #mobileDrawerToggle .btn-label {
     display: none;
+  }
+}
+
+/* ============================================================================
+   Preview Drawer Header
+   ============================================================================
+   Container for the preview settings drawer toggle and mobile params button.
+   On mobile, both buttons appear side by side. On desktop, only the drawer
+   toggle is visible since the params panel is always visible.
+   ============================================================================ */
+
+.preview-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-sm);
+}
+
+/* Header layout containers */
+.preview-drawer-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.preview-drawer-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+}
+
+.preview-drawer-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Match Camera/Parameters collapse toggle button styling */
+.preview-drawer-toggle-btn.btn-collapse-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  border-right: 1px solid var(--color-border); /* override base .btn-collapse-panel */
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-xs);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.preview-drawer-toggle-btn.btn-collapse-panel svg {
+  transition: transform 0.2s ease;
+  /* Base icon points left; rotate to point DOWN when collapsed (expand) */
+  transform: rotate(90deg);
+}
+
+.preview-drawer-toggle-btn.btn-collapse-panel[aria-expanded='true'] svg {
+  /* Rotate to point UP when expanded (collapse) */
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-drawer-toggle-btn.btn-collapse-panel svg {
+    transition: none;
+  }
+}
+
+/* Preview drawer toggle now uses shared .btn-collapse-panel styling (see above). */
+
+/* ============================================================================
+   Actions Drawer Toggle Button (Mobile)
+   ============================================================================
+   Toggle button for expanding secondary actions in the actions bar.
+   Arrow indicates expand (up) or collapse (down) state.
+   ============================================================================ */
+
+.actions-drawer-toggle {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .actions-drawer-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    width: 100%;
+    min-height: 36px;
+    padding: var(--space-xs) var(--space-md);
+    background-color: var(--color-bg-tertiary);
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    order: -2; /* Place at top of actions bar */
+  }
+
+  .actions-drawer-toggle:hover {
+    background-color: var(--color-hover-bg);
+  }
+
+  .actions-drawer-toggle:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+
+  .actions-toggle-label {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .actions-toggle-arrow {
+    width: 18px;
+    height: 18px;
+    color: var(--color-accent);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  /* Arrow flips when drawer content is visible */
+  .actions-drawer-toggle[aria-expanded='true'] .actions-toggle-arrow {
+    transform: rotate(180deg);
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .actions-toggle-arrow {
+      transition: none;
+    }
   }
 }
 
@@ -246,17 +418,16 @@
   color: var(--color-text-secondary);
 }
 
-.preview-settings-details {
+.preview-settings-panel {
   margin: var(--space-sm) 0;
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-secondary);
 }
 
-.preview-settings-summary {
+.preview-settings-header {
   padding: var(--space-sm) var(--space-md);
-  cursor: pointer;
-  user-select: none;
+  user-select: text;
   font-weight: 600;
   font-size: var(--font-size-sm);
   display: flex;
@@ -265,11 +436,11 @@
   transition: background-color 0.2s ease;
 }
 
-.preview-settings-summary:hover {
+.preview-settings-header:hover {
   background-color: var(--color-bg-primary);
 }
 
-.preview-settings-summary:focus {
+.preview-settings-header:focus {
   outline: 3px solid var(--color-focus);
   outline-offset: -3px;
 }
@@ -839,13 +1010,13 @@ select:focus-visible {
 /* State: Current - preview matches parameters */
 .preview-state-indicator.state-current {
   background-color: var(--color-success);
-  color: white;
+  color: var(--color-accent-text);
 }
 
 /* State: Pending - parameter changed, render scheduled */
 .preview-state-indicator.state-pending {
   background-color: var(--color-warning);
-  color: var(--color-text-primary);
+  color: var(--color-accent-text);
   animation: pulse-pending 1.5s ease-in-out infinite;
 }
 
@@ -858,13 +1029,14 @@ select:focus-visible {
 /* State: Stale - preview outdated */
 .preview-state-indicator.state-stale {
   background-color: var(--color-warning-hover);
-  color: var(--color-text-primary);
+  color: var(--color-accent-text);
 }
 
 /* State: Error - render failed */
 .preview-state-indicator.state-error {
-  background-color: var(--color-error);
-  color: white;
+  background-color: var(--color-error-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-error);
 }
 
 /* Pulse animation for pending state */
@@ -1044,17 +1216,17 @@ select:focus-visible {
 }
 
 /* Dark theme overrides for complexity indicator - now handled by semantic tokens */
-[data-theme="dark"] .complexity-tier-label.tier-beginner {
+[data-theme='dark'] .complexity-tier-label.tier-beginner {
   background-color: var(--color-success-bg);
   color: var(--color-success-text);
 }
 
-[data-theme="dark"] .complexity-tier-label.tier-standard {
+[data-theme='dark'] .complexity-tier-label.tier-standard {
   background-color: var(--color-info-bg);
   color: var(--color-info-text);
 }
 
-[data-theme="dark"] .complexity-tier-label.tier-complex {
+[data-theme='dark'] .complexity-tier-label.tier-complex {
   background-color: var(--color-warning-bg);
   color: var(--color-warning-text);
 }
@@ -1452,7 +1624,8 @@ select:focus-visible {
   border: 2px solid var(--color-border);
 }
 
-.preset-modal-header {
+.preset-modal-header,
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1468,7 +1641,8 @@ select:focus-visible {
   margin: 0;
 }
 
-.preset-modal-close {
+.preset-modal-close,
+.modal-close {
   background: transparent;
   border: none;
   font-size: 1.5rem;
@@ -1481,12 +1655,14 @@ select:focus-visible {
   border-radius: var(--border-radius-sm);
 }
 
-.preset-modal-close:hover {
+.preset-modal-close:hover,
+.modal-close:hover {
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
 }
 
-.preset-modal-close:focus {
+.preset-modal-close:focus,
+.modal-close:focus {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -2463,42 +2639,23 @@ select:focus-visible {
   transform: translateY(1px);
 }
 
-.file-info-wrapper {
-  display: flex;
-  gap: var(--space-sm);
-  align-items: center;
-  flex: 1;
-  flex-wrap: wrap;
-  row-gap: var(--space-xs);
-}
-
 .file-info {
-  flex: 1 1 auto;
-  padding: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  min-height: auto;
+  margin-bottom: var(--space-sm);
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-xs);
-  line-height: 1.2;
-  min-width: 0;
+  line-height: 1.4;
 }
 
 .file-info-summary {
-  flex: 1 1 auto;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-info-wrapper > button {
-  flex-shrink: 0;
+  word-wrap: break-word;
 }
 
 .file-info-details {
@@ -2540,7 +2697,7 @@ select:focus-visible {
   width: 44px;
   height: 44px;
   background: var(--color-error);
-  color: white;
+  color: var(--color-accent-text);
   border: none;
   border-radius: var(--border-radius-sm);
   font-size: 18px;
@@ -3595,112 +3752,6 @@ select:focus-visible {
   }
 }
 
-/* ========== FEATURE HINTS ========== */
-
-.feature-hints {
-  margin: var(--space-md) 0;
-  padding: 0;
-}
-
-.hints-details {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-}
-
-.hints-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  min-height: 44px;
-  user-select: none;
-  transition: background-color 0.2s;
-}
-
-.hints-summary:hover {
-  background-color: var(--color-bg-hover);
-}
-
-.hints-summary:focus {
-  outline: 3px solid var(--color-focus);
-  outline-offset: -3px;
-}
-
-.hints-icon {
-  font-size: var(--font-size-lg);
-  line-height: 1;
-}
-
-.hints-content {
-  padding: 0 var(--space-md) var(--space-md);
-}
-
-.hints-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.hint-item {
-  display: flex;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-sm);
-  border-left: 3px solid var(--color-accent);
-}
-
-.hint-icon {
-  font-size: var(--font-size-xl);
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.hint-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.hint-title {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.hint-text {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.hint-action {
-  align-self: flex-start;
-  margin-top: var(--space-xs);
-}
-
-/* High Contrast for Feature Hints */
-[data-high-contrast='true'] .hints-details {
-  border-width: 2px;
-}
-
-[data-high-contrast='true'] .hint-item {
-  border-width: 2px;
-  border-left-width: 4px;
-}
-
 /* ========== FEATURES GUIDE MODAL ========== */
 
 .features-guide-body {
@@ -3899,19 +3950,19 @@ select:focus-visible {
     max-height: 80vh;
     max-height: 80dvh;
   }
-  
+
   .modal-large {
     width: 95vw;
     max-width: none;
     margin: var(--space-sm);
   }
-  
+
   .features-tab {
     padding: var(--space-sm);
     min-width: 70px;
     font-size: var(--font-size-sm);
   }
-  
+
   .features-panel {
     padding: var(--space-md);
   }
@@ -4193,7 +4244,9 @@ select:focus-visible {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .feature-card:hover {
@@ -4284,7 +4337,9 @@ select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .role-path-card:focus-within {
@@ -4394,7 +4449,9 @@ select:focus-visible {
   min-height: 44px;
   display: flex;
   align-items: center;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
 .spotlight-link:hover {
@@ -4452,7 +4509,7 @@ select:focus-visible {
   background: var(--color-bg-primary);
   border: 2px solid var(--color-accent);
   border-radius: var(--border-radius-lg);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   width: min(90vw, 340px);
@@ -4466,7 +4523,7 @@ select:focus-visible {
 }
 
 .tutorial-panel:focus {
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 3px var(--color-focus);
 }
@@ -4542,7 +4599,9 @@ select:focus-visible {
   cursor: pointer;
   padding: var(--space-xs);
   border-radius: var(--border-radius-sm);
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   min-width: 32px;
   min-height: 32px;
   display: flex;
@@ -4711,7 +4770,9 @@ select:focus-visible {
   font-weight: 500;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   min-height: 44px;
 }
 
@@ -4777,18 +4838,23 @@ select:focus-visible {
 #featuresGuideModal.tutorial-target-highlight .modal-content {
   opacity: 1 !important;
   background: var(--color-bg-primary) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 4px var(--color-accent) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 4px var(--color-accent) !important;
 }
 
 /* Reduce tutorial backdrop opacity when modal is spotlighted */
-.tutorial-overlay:has(~ #featuresGuideModal.tutorial-target-highlight) .tutorial-backdrop,
-.tutorial-overlay:has(+ * #featuresGuideModal.tutorial-target-highlight) .tutorial-backdrop {
+.tutorial-overlay:has(~ #featuresGuideModal.tutorial-target-highlight)
+  .tutorial-backdrop,
+.tutorial-overlay:has(+ * #featuresGuideModal.tutorial-target-highlight)
+  .tutorial-backdrop {
   fill: rgba(0, 0, 0, 0.3);
 }
 
 /* Animations */
 @keyframes tutorialTargetPulse {
-  0%, 100% {
+  0%,
+  100% {
     outline-color: var(--color-focus);
     outline-offset: 4px;
   }
@@ -4799,8 +4865,12 @@ select:focus-visible {
 }
 
 @keyframes tutorialFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes tutorialPanelIn {
@@ -4826,14 +4896,23 @@ select:focus-visible {
 }
 
 @keyframes requirementPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); background: var(--color-warning); color: var(--color-accent-text); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+    background: var(--color-warning);
+    color: var(--color-accent-text);
+  }
 }
 
 /* High Contrast Mode */
 [data-high-contrast='true'] .tutorial-panel {
   border-width: 3px;
-  box-shadow: 0 0 0 2px var(--color-bg-primary), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 0 2px var(--color-bg-primary),
+    0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 [data-high-contrast='true'] .tutorial-arrow {
@@ -4862,7 +4941,7 @@ select:focus-visible {
     animation: none !important;
     transition: none !important;
   }
-  
+
   .tutorial-restore {
     transition: none;
   }
@@ -4882,16 +4961,16 @@ select:focus-visible {
     transform: none !important;
     max-height: 50vh;
   }
-  
+
   .tutorial-arrow {
     display: none !important;
   }
-  
+
   .tutorial-minimized {
     bottom: var(--space-md);
     right: var(--space-md);
   }
-  
+
   .tutorial-footer {
     flex-direction: row;
     padding: var(--space-md);
@@ -4916,7 +4995,7 @@ select:focus-visible {
   .role-paths-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .spotlights-list {
     grid-template-columns: 1fr;
   }
@@ -4927,7 +5006,7 @@ select:focus-visible {
   .role-path-card {
     transition: none;
   }
-  
+
   .spotlight-link {
     transition: none;
   }
@@ -4974,7 +5053,9 @@ select:focus-visible {
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   min-height: 44px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .param-search-input:focus {
@@ -5077,11 +5158,11 @@ select:focus-visible {
 }
 
 .param-default-value::before {
-  content: "(default: ";
+  content: '(default: ';
 }
 
 .param-default-value::after {
-  content: ")";
+  content: ')';
 }
 
 /* =========================================
@@ -5101,18 +5182,53 @@ select:focus-visible {
   box-shadow: var(--shadow-sm);
   /* Ensure it's within the app flow, not overlaying */
   width: 100%;
+  /* Flexbox layout for steps + actions */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .workflow-steps {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
-  max-width: 600px;
-  margin: 0 auto;
+  flex: 1;
+  max-width: 500px;
+}
+
+/* Workflow action buttons container */
+.workflow-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.workflow-actions .btn {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  min-height: 32px;
+}
+
+.workflow-actions .btn-text {
+  display: inline;
+}
+
+/* Hide button text on small screens, show only icons */
+@media (max-width: 600px) {
+  .workflow-actions .btn-text {
+    display: none;
+  }
+
+  .workflow-actions .btn {
+    min-width: 32px;
+    padding: var(--space-xs);
+  }
 }
 
 .workflow-step {
@@ -5122,22 +5238,6 @@ select:focus-visible {
   position: relative;
   flex: 1;
   justify-content: center;
-}
-
-.workflow-step::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: calc(100% - clamp(3rem, 12vw, 5rem));
-  height: 2px;
-  background: var(--color-border);
-  transform: translateY(-50%);
-  z-index: -1;
-}
-
-.workflow-step:last-child::after {
-  display: none;
 }
 
 .workflow-step-number {
@@ -5163,7 +5263,7 @@ select:focus-visible {
 }
 
 /* Active step */
-.workflow-step[aria-current="step"],
+.workflow-step[aria-current='step'],
 .workflow-step.active {
   .workflow-step-number {
     background: var(--color-accent);
@@ -5181,10 +5281,10 @@ select:focus-visible {
   .workflow-step-number {
     background: var(--color-success);
     border-color: var(--color-success);
-    color: white;
+    color: var(--color-accent-text);
   }
   .workflow-step-number::after {
-    content: "✓";
+    content: '✓';
   }
   .workflow-step-label {
     color: var(--color-success);
@@ -5326,6 +5426,7 @@ select:focus-visible {
 
   .workflow-progress {
     padding: var(--space-xs) var(--space-sm);
+    gap: var(--space-sm);
   }
 
   .workflow-step-label {
@@ -5336,6 +5437,20 @@ select:focus-visible {
     width: 32px;
     height: 32px;
     font-size: var(--font-size-base);
+  }
+
+  /* Compact workflow action buttons on mobile */
+  .workflow-actions {
+    gap: var(--space-xs);
+  }
+
+  .workflow-actions .btn-text {
+    display: none;
+  }
+
+  .workflow-actions .btn {
+    min-width: 32px;
+    padding: var(--space-xs);
   }
 }
 
@@ -5382,6 +5497,35 @@ select:focus-visible {
     opacity: 1; /* Don't use opacity in forced-colors */
     color: GrayText;
     border-color: GrayText !important;
+  }
+
+  /* Drawer toggle buttons */
+  .preview-drawer-toggle-btn,
+  .actions-drawer-toggle {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 2px solid ButtonText !important;
+  }
+
+  .preview-drawer-toggle-btn:hover,
+  .preview-drawer-toggle-btn:focus,
+  .actions-drawer-toggle:hover,
+  .actions-drawer-toggle:focus {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight !important;
+  }
+
+  .drawer-toggle-handle {
+    background: ButtonText !important;
+  }
+
+  .actions-toggle-arrow {
+    color: ButtonText;
+  }
+
+  .actions-drawer-toggle:hover .actions-toggle-arrow {
+    color: HighlightText;
   }
 
   /* Input fields */
@@ -5600,15 +5744,13 @@ select:focus-visible {
   /* Details/summary elements */
   .param-group,
   .preset-controls,
-  .preview-settings-details,
+  .preview-settings-panel,
   .library-details,
   .advanced-menu {
     border: 2px solid CanvasText !important;
   }
 
-  /* Feature hints and cards */
-  .hints-details,
-  .hint-item,
+  /* Feature cards */
   .feature-card {
     border: 2px solid CanvasText !important;
     background: Canvas;

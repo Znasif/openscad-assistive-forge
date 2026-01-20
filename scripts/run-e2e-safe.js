@@ -43,6 +43,7 @@ const CONFIG = {
     CI: '1',                          // Force CI mode (non-interactive)
     PWTEST_SKIP_TEST_OUTPUT: '1',    // Reduce output verbosity
     NO_COLOR: '1',                    // Disable color codes that can cause hangs
+    PW_REUSE_SERVER: '1',            // Allow reusing existing dev server
   }
 }
 
