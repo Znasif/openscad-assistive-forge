@@ -304,6 +304,55 @@ describe('Theme Manager', () => {
       const result = themeManager.init()
       expect(result).toBe(themeManager)
     })
+
+    it('should warn when MutationObserver is unavailable', () => {
+      const originalMutationObserver = window.MutationObserver
+      window.MutationObserver = undefined
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      themeManager.init()
+
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+      window.MutationObserver = originalMutationObserver
+    })
+
+    it('should respond to system theme changes in auto mode', () => {
+      const originalMatchMedia = window.matchMedia
+      let changeHandler
+
+      window.matchMedia = vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: (event, handler) => {
+          if (event === 'change') {
+            changeHandler = handler
+          }
+        },
+        removeEventListener: () => {},
+      })
+
+      themeManager.currentTheme = 'auto'
+
+      const applySpy = vi.spyOn(themeManager, 'applyRadixScales')
+      const notifySpy = vi.spyOn(themeManager, 'notifyListeners')
+
+      themeManager.init()
+
+      applySpy.mockClear()
+      notifySpy.mockClear()
+
+      expect(changeHandler).toBeDefined()
+      changeHandler({ matches: true })
+
+      expect(applySpy).toHaveBeenCalled()
+      expect(notifySpy).toHaveBeenCalled()
+
+      applySpy.mockRestore()
+      notifySpy.mockRestore()
+      window.matchMedia = originalMatchMedia
+    })
   })
 
   describe('Cycle Theme Messages', () => {
