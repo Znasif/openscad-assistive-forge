@@ -296,6 +296,21 @@
                  appear in consistent relative order across panels (top-right area) -->
             <div class="panel-header">
               <h2 id="parameters-heading">Parameters</h2>
+              
+              <!-- Mobile close button for drawer -->
+              <button 
+                id="drawerCloseBtn" 
+                class="btn btn-sm btn-icon mobile-only drawer-close-btn" 
+                aria-label="Close parameters panel"
+                title="Close"
+                style="display: none;"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+              
               <div class="param-header-actions">
                 <button id="undoBtn" class="btn btn-sm btn-outline" aria-label="Undo last parameter change (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled>
                   ↩️ Undo
@@ -473,6 +488,24 @@
                 <!-- Drawer toggle header with mobile params button -->
                 <div class="preview-drawer-header">
                   <div class="preview-drawer-header-left">
+                    <!-- Parameters button FIRST (left position) -->
+                    <button 
+                      id="mobileDrawerToggle" 
+                      class="btn btn-sm btn-icon mobile-only" 
+                      aria-expanded="false" 
+                      aria-controls="paramPanel"
+                      aria-label="Open parameters panel"
+                      title="Parameters"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                      </svg>
+                      <span class="btn-label">Params</span>
+                    </button>
+                    
+                    <!-- Preview Settings button SECOND (right of Parameters) -->
                     <button 
                       id="previewDrawerToggle" 
                       class="btn btn-sm btn-icon btn-collapse-panel preview-drawer-toggle-btn" 
@@ -490,22 +523,7 @@
                   </div>
 
                   <div class="preview-drawer-header-right">
-                    <!-- Mobile drawer toggle for parameters panel -->
-                    <button 
-                      id="mobileDrawerToggle" 
-                      class="btn btn-sm btn-icon mobile-only" 
-                      aria-expanded="false" 
-                      aria-controls="paramPanel"
-                      aria-label="Open parameters panel"
-                      title="Parameters"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                      </svg>
-                      <span class="btn-label">Params</span>
-                    </button>
+                    <!-- Empty or future controls -->
                   </div>
                 </div>
                 
