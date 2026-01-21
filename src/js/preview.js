@@ -333,12 +333,20 @@ export class PreviewManager {
    */
   setColorOverride(hexColor) {
     this.colorOverride = normalizeHexColor(hexColor);
-    if (this.mesh && this.mesh.material) {
-      const colors = PREVIEW_COLORS[this.currentTheme] || PREVIEW_COLORS.light;
-      const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
-      const appliedHex = this.colorOverride || themeHex;
-      this.mesh.material.color.setHex(parseInt(appliedHex.slice(1), 16));
-    }
+    this.applyColorToMesh(); // Always call apply (it checks if mesh exists)
+  }
+
+  /**
+   * Apply the current color (override or theme default) to the mesh
+   * Safe to call even if mesh doesn't exist yet
+   */
+  applyColorToMesh() {
+    if (!this.mesh?.material) return;
+    
+    const colors = PREVIEW_COLORS[this.currentTheme] || PREVIEW_COLORS.light;
+    const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
+    const appliedHex = this.colorOverride || themeHex;
+    this.mesh.material.color.setHex(parseInt(appliedHex.slice(1), 16));
   }
 
   /**
@@ -897,6 +905,12 @@ export class PreviewManager {
         // Create mesh
         this.mesh = new THREE.Mesh(geometry, material);
         this.scene.add(this.mesh);
+
+        // Re-apply color override if one was set before mesh loaded
+        // This ensures color changes made before/during render are applied
+        if (this.colorOverride) {
+          this.applyColorToMesh();
+        }
 
         // Auto-fit camera to model
         this.fitCameraToModel();

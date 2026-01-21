@@ -143,6 +143,43 @@ body {
   font-weight: 700;
 }
 
+/* ============================================================================
+   High Contrast Mode: Button Interactive States
+   Ensures readable text on focused/active/selected buttons
+   ============================================================================ */
+
+/* High contrast DARK mode: focus and active states */
+:root[data-high-contrast='true'][data-theme='dark'] .theme-toggle:focus,
+:root[data-high-contrast='true'][data-theme='dark'] .theme-toggle:active,
+:root[data-high-contrast='true'][data-theme='dark'] .theme-toggle:hover,
+:root[data-high-contrast='true'][data-theme='dark'] .contrast-toggle:focus,
+:root[data-high-contrast='true'][data-theme='dark'] .contrast-toggle:active,
+:root[data-high-contrast='true'][data-theme='dark'] .contrast-toggle:hover {
+  background: var(--color-accent) !important;
+  color: var(--color-accent-text) !important;
+  border-color: var(--color-accent) !important;
+}
+
+/* High contrast LIGHT mode: focus and active states */
+:root[data-high-contrast='true'][data-theme='light'] .theme-toggle:focus,
+:root[data-high-contrast='true'][data-theme='light'] .theme-toggle:active,
+:root[data-high-contrast='true'][data-theme='light'] .theme-toggle:hover,
+:root[data-high-contrast='true'][data-theme='light'] .contrast-toggle:focus,
+:root[data-high-contrast='true'][data-theme='light'] .contrast-toggle:active,
+:root[data-high-contrast='true'][data-theme='light'] .contrast-toggle:hover {
+  background: var(--color-accent) !important;
+  color: var(--color-accent-text) !important;
+  border-color: var(--color-accent) !important;
+}
+
+/* Contrast toggle "selected" state when high contrast is ON */
+:root[data-high-contrast='true'] .contrast-toggle {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-color: var(--color-accent);
+  font-weight: 700;
+}
+
 /* GitHub Link */
 .github-link {
   background: var(--color-bg-secondary);
@@ -331,6 +368,19 @@ body {
   }
 }
 
+/* Mobile portrait: ensure welcome content starts at top */
+@media (max-width: 767px) {
+  .welcome-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
+  }
+  
+  .welcome-content {
+    margin-top: 0;
+  }
+}
+
 .welcome-content h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-md);
@@ -426,6 +476,45 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .drawer-backdrop {
     transition: none;
+  }
+}
+
+/* Mobile drawer close button */
+.drawer-close-btn {
+  position: absolute;
+  right: var(--space-md);
+  top: var(--space-md);
+  min-width: 44px;
+  min-height: 44px;
+  z-index: 10;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  display: none; /* Hidden by default */
+}
+
+.drawer-close-btn:hover {
+  background: var(--color-hover-bg);
+  transform: scale(1.05);
+}
+
+.drawer-close-btn:active {
+  transform: scale(0.95);
+}
+
+/* Show close button only when drawer is open on mobile */
+@media (max-width: 767px) {
+  .param-panel.drawer-open .drawer-close-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Ensure close button is hidden on desktop */
+@media (min-width: 768px) {
+  .drawer-close-btn {
+    display: none !important;
   }
 }
 
@@ -737,6 +826,13 @@ body {
   background-color: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   z-index: 20;
+}
+
+/* Semi-transparent background when on-screen keyboard is visible */
+.preview-info-section.keyboard-visible {
+  background-color: rgba(var(--color-bg-primary-rgb), 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* Collapsible content wrapper */

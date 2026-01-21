@@ -936,15 +936,26 @@ async function initApp() {
     modelColorPicker.value = savedModelColor;
   }
 
+  // Debounce timer for color changes
+  let colorChangeTimeout;
+
   if (modelColorPicker) {
     modelColorPicker.addEventListener('input', () => {
       const color = modelColorPicker.value;
-      if (previewManager) {
-        previewManager.setColorOverride(color);
-      }
-      // Save to localStorage
-      localStorage.setItem('openscad-customizer-model-color', color);
-      console.log(`[App] Model color changed to ${color}`);
+      
+      // Clear previous timeout
+      clearTimeout(colorChangeTimeout);
+      
+      // Debounce: wait 150ms before applying color
+      // This prevents rapid-fire updates while user drags the color picker
+      colorChangeTimeout = setTimeout(() => {
+        if (previewManager) {
+          previewManager.setColorOverride(color);
+        }
+        // Save to localStorage
+        localStorage.setItem('openscad-customizer-model-color', color);
+        console.log(`[App] Model color changed to ${color}`);
+      }, 150);
     });
   }
 

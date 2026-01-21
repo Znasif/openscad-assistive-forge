@@ -471,6 +471,43 @@ export function initPreviewSettingsDrawer(options = {}) {
     }
   }
 
+  // ============================================================================
+  // On-screen keyboard detection (mobile)
+  // ============================================================================
+  let keyboardVisible = false;
+
+  /**
+   * Detect if on-screen keyboard is visible
+   * Compares visual viewport height to window height
+   */
+  const detectKeyboard = () => {
+    if (!('visualViewport' in window) || !window.visualViewport) return;
+    
+    const viewportHeight = window.visualViewport.height;
+    const windowHeight = window.innerHeight;
+    const heightDiff = windowHeight - viewportHeight;
+    
+    // Keyboard is likely visible if height difference > 150px
+    const isKeyboardVisible = heightDiff > 150;
+    
+    if (isKeyboardVisible !== keyboardVisible) {
+      keyboardVisible = isKeyboardVisible;
+      
+      if (isKeyboardVisible) {
+        previewInfoSection.classList.add('keyboard-visible');
+      } else {
+        previewInfoSection.classList.remove('keyboard-visible');
+      }
+    }
+  };
+
+  // Set up keyboard detection listener
+  if ('visualViewport' in window && window.visualViewport) {
+    window.visualViewport.addEventListener('resize', detectKeyboard);
+    // Initial check
+    detectKeyboard();
+  }
+
   // Handle window resize
   let resizeTimeout;
   window.addEventListener('resize', () => {

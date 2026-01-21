@@ -14,6 +14,7 @@ export function initDrawerController() {
   const drawer = document.getElementById('paramPanel');
   const backdrop = document.getElementById('drawerBackdrop');
   const toggleBtn = document.getElementById('mobileDrawerToggle');
+  const closeBtn = document.getElementById('drawerCloseBtn');
 
   if (!drawer || !backdrop || !toggleBtn) {
     return;
@@ -78,6 +79,11 @@ export function initDrawerController() {
     // Open drawer
     drawer.classList.add('drawer-open');
 
+    // Show close button on mobile
+    if (closeBtn) {
+      closeBtn.style.display = 'flex';
+    }
+
     // Lock body scroll
     document.body.classList.add('drawer-open');
     document.body.style.top = `-${scrollY}px`;
@@ -122,6 +128,11 @@ export function initDrawerController() {
 
     // Close drawer
     drawer.classList.remove('drawer-open');
+
+    // Hide close button
+    if (closeBtn) {
+      closeBtn.style.display = 'none';
+    }
 
     // Unlock body scroll
     document.body.classList.remove('drawer-open');
@@ -190,6 +201,11 @@ export function initDrawerController() {
   // Event listeners
   toggleBtn.addEventListener('click', toggle);
   backdrop.addEventListener('click', close);
+  
+  // Wire up close button
+  if (closeBtn) {
+    closeBtn.addEventListener('click', close);
+  }
 
   // Close drawer on resize to desktop breakpoint
   let resizeTimeout;
