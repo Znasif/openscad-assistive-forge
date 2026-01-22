@@ -30,9 +30,10 @@
   --color-bg-secondary: var(--slate-2);
   --color-bg-tertiary: var(--slate-3);
   --color-bg-elevated: var(--slate-1); /* Alias for elevated surfaces */
-  
+
   /* RGB values for semi-transparent backgrounds (used by keyboard detection) */
-  --color-bg-primary-rgb: 252, 252, 253; /* Light theme: slate-1 approximation */
+  --color-bg-primary-rgb:
+    252, 252, 253; /* Light theme: slate-1 approximation */
 
   /* ========================================================================
      Text Colors
@@ -154,7 +155,7 @@
   --color-bg-secondary: var(--slate-2);
   --color-bg-tertiary: var(--slate-3);
   --color-bg-elevated: var(--slate-1);
-  
+
   /* RGB values for semi-transparent backgrounds (used by keyboard detection) */
   --color-bg-primary-rgb: 24, 24, 27; /* Dark theme: slate-1 approximation */
 

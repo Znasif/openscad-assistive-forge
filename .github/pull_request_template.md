@@ -47,6 +47,20 @@ Fixes # (issue number, if applicable)
 
 **Screen reader tested with**: [e.g., NVDA, JAWS, VoiceOver, or "Not applicable - no UI changes"]
 
+## UI Consistency Checklist
+
+> **Required for UI changes** — Verify these before submitting (see [UI_STANDARDS.md](../docs/guides/UI_STANDARDS.md)):
+
+- [ ] **Design tokens**: All new UI components use design tokens (no hardcoded colors/sizes)
+- [ ] **Drawer patterns**: Follows documented orientation rules (side panels collapse outward, bottom drawers open upward)
+- [ ] **Mobile portrait**: Tested in portrait mode (≤480px) — title abbreviation, buttons right-aligned, drawers work correctly
+- [ ] **All themes tested**: Visual elements visible and functional in:
+  - [ ] Light mode
+  - [ ] Dark mode
+  - [ ] High contrast mode
+- [ ] **Component patterns**: Follows existing patterns (buttons, drawers, forms) documented in UI_STANDARDS.md
+- [ ] **No hardcoded values**: Uses tokens from `variables.css` instead of magic numbers
+
 ## Screenshots (if applicable)
 
 **Before:**

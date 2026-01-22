@@ -4,7 +4,9 @@
 
 ## Overview
 
-The Welcome screen's "Discover Features for Your Needs" section provides **role-based entry points** with **guided tutorial sandboxes** to help users quickly learn the app's most relevant features based on their needs.
+The Welcome screen's "Discover Features for Your Needs" section provides **entry points** with **guided tutorial sandboxes** to help users quickly learn the app.
+
+In the current UI, the only visible entry point is a single beginner-friendly **Getting Started** tutorial that includes both workflow basics and UI orientation.
 
 ### What's New in v2.0
 
@@ -36,25 +38,25 @@ All copy follows [WCAG 2.2 SC 3.1.5 Reading Level](https://www.w3.org/WAI/WCAG22
 
 ## Role Paths (Reordered v2.0)
 
-### 1. Educators / Facilitators (MOVED TO FIRST)
+### 1. Beginners Start Here (Getting Started)
 
-**Target audience:** Teachers, workshop facilitators, mentors
+**Target audience:** Anyone new to the app
 
 **Example:** Simple Box
-- Perfect for teaching basic customization
+- Simple, beginner-friendly parameters
 - Clear cause-and-effect with parameters
 - Fast preview rendering
 
-**What you'll learn (~2 min):**
+**What you'll learn (~3 min):**
+- Where Parameters, Preview, Actions, and Camera controls are (desktop + mobile)
 - Change Width/Height → watch Preview update
-- Save presets for classroom reuse
-- Guide students through full workflow
+- Save a preset, then generate and download your first file
 
-**Tutorial:** 8-step guided walkthrough showing:
-- How to customize parameters
-- Saving presets for reuse
-- Generating and downloading STL files
-- Where to find Help and Examples
+**Tutorial:** Guided walkthrough showing:
+- Opening/closing panels and drawers (mobile portrait/landscape + desktop layouts)
+- Adjusting a parameter (with live preview)
+- Presets, Preview Settings & Info, Actions, and Camera controls
+- Generating a file and opening Help
 
 ### 2. Advanced Makers (MOVED TO SECOND)
 
@@ -149,36 +151,9 @@ All copy follows [WCAG 2.2 SC 3.1.5 Reading Level](https://www.w3.org/WAI/WCAG22
 - How to access Help (📖 Help button in consistent location)
 - Where to find Clear button to restart
 
-## UI Orientation (New in v2.4)
+## UI Orientation
 
-**Placement:** Below Accessibility Spotlights section
-**Style:** Subtle call-to-action, not a card
-
-**Target audience:** All new users who need to understand the app layout before diving into customization
-
-**Example:** Simple Box
-- Loads a working example so drawers/panels are visible
-- Non-blocking, optional orientation
-
-**What you'll learn (~1 min):**
-- Where Parameters, Preview, and Actions areas are
-- How to open/close each drawer/panel
-- Mobile vs. desktop control differences
-
-**Tutorial:** 6-step non-gated walkthrough showing:
-1. **App Layout** - Overview of three main areas
-2. **Parameters Panel** - Mobile (tap "Params") vs. Desktop (collapse button)
-3. **Preview Settings & Info** - Expandable drawer with status/dimensions/quality
-4. **Actions Menu** - Share Link, Export Params, Compare, Queue
-5. **Camera Controls** (Optional) - Desktop panel vs. mobile drawer
-6. **Ready to Explore** - Return to Welcome or start customizing
-
-**Key Design Decisions:**
-- **Non-gated**: No completion requirements (recognition-focused, not task-based)
-- **Fast**: Under 1 minute, skippable at any time
-- **Viewport-aware**: Uses comma-separated selectors to highlight mobile OR desktop controls based on viewport
-- **Progressive disclosure**: Teaches "where things are" first, lets role tutorials teach "how to use them"
-- **COGA-friendly**: Keeps cognitive load low by separating layout orientation from feature training
+UI orientation is now included inside the single beginner-friendly **Getting Started** tutorial (so there’s only one intro tour to learn).
 
 ## Accessibility Spotlights
 

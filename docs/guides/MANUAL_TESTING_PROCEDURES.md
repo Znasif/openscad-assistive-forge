@@ -1,6 +1,6 @@
-# Manual Testing Procedures — v3.1.0
+# Manual Testing Procedures — v4.0.0
 
-**Version**: v3.1.0  
+**Version**: v4.0.0  
 **Last Updated**: 2026-01-18  
 **Purpose**: Detailed step-by-step testing procedures for all features
 

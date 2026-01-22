@@ -66,11 +66,38 @@ When you change UI behavior or markup, please verify:
 
 If you add new interactive patterns, prefer semantic HTML (`button`, `details/summary`, `fieldset/legend`, etc.) before adding ARIA.
 
-## UI styling standards (for theme-consistent UI changes)
+## UI consistency rules (for UI changes)
 
-For drawer headers, icons, spacing, and token usage across **all themes** (including **high contrast** and **forced-colors**), follow:
+All UI work must follow our design system to maintain consistency across themes, viewports, and user preferences. **See the complete guide:**
 
-- `docs/guides/UI_STANDARDS.md`
+- **[UI_STANDARDS.md](docs/guides/UI_STANDARDS.md)** - Comprehensive design system documentation
+
+### Quick UI Rules
+
+**Use Design Tokens (Required):**
+- Always use tokens from `src/styles/variables.css` for colors, spacing, typography, and sizing
+- Never hardcode colors (hex codes) or magic numbers (arbitrary pixel values)
+- Example: Use `var(--space-sm)` instead of `8px`
+
+**Follow Component Patterns:**
+- **Drawers**: Side panels collapse outward, bottom drawers expand upward
+- **Buttons**: Use existing button classes (`.btn`, `.btn-icon`, `.btn-primary`) — don't create new variants
+- **Icons**: Always use `currentColor` for SVG icons so they adapt to themes
+
+**Test All Themes:**
+- Light mode
+- Dark mode
+- High contrast mode (toggle with HC button)
+- Windows forced-colors mode (if possible)
+
+**Test Mobile:**
+- Portrait mode (≤480px): Title abbreviates, buttons right-aligned
+- Landscape mode: Drawers and controls remain accessible
+- Touch targets: Minimum 44×44px for all interactive elements
+
+**Documentation Updates:**
+- If you add a new component pattern, document it in `UI_STANDARDS.md`
+- Update PR template checklist to verify your changes
 
 ## Submitting changes
 

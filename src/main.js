@@ -46,14 +46,8 @@ import { ComparisonController } from './js/comparison-controller.js';
 import { ComparisonView } from './js/comparison-view.js';
 import { libraryManager, LIBRARY_DEFINITIONS } from './js/library-manager.js';
 import { RenderQueue } from './js/render-queue.js';
-import {
-  openModal,
-  closeModal,
-  initStaticModals,
-} from './js/modal-manager.js';
-import {
-  translateError,
-} from './js/error-translator.js';
+import { openModal, closeModal, initStaticModals } from './js/modal-manager.js';
+import { translateError } from './js/error-translator.js';
 import {
   showWorkflowProgress,
   hideWorkflowProgress,
@@ -273,7 +267,7 @@ function sanitizeUrlParams(extracted, urlParams) {
 
 // Initialize app
 async function initApp() {
-  console.log('OpenSCAD Assistive Forge v3.1.0');
+  console.log('OpenSCAD Assistive Forge v4.0.0');
   console.log('Initializing...');
 
   let statusArea = null;
@@ -946,10 +940,10 @@ async function initApp() {
   if (modelColorPicker) {
     modelColorPicker.addEventListener('input', () => {
       const color = modelColorPicker.value;
-      
+
       // Clear previous timeout
       clearTimeout(colorChangeTimeout);
-      
+
       // Debounce: wait 150ms before applying color
       // This prevents rapid-fire updates while user drags the color picker
       colorChangeTimeout = setTimeout(() => {
@@ -2583,9 +2577,46 @@ async function initApp() {
     const initActionsDrawer = () => {
       const toggleBtn = document.getElementById('actionsDrawerToggle');
       const drawer = document.getElementById('actionsDrawer');
+      const STORAGE_KEY = 'openscad-drawer-actions-state';
 
       if (!toggleBtn || !drawer) return;
 
+      // Load saved state
+      const loadState = () => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          return saved === 'expanded';
+        } catch (e) {
+          console.warn('Could not load actions drawer state:', e);
+          return false; // Default collapsed
+        }
+      };
+
+      // Save state
+      const saveState = (isExpanded) => {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            isExpanded ? 'expanded' : 'collapsed'
+          );
+        } catch (e) {
+          console.warn('Could not save actions drawer state:', e);
+        }
+      };
+
+      // Set initial state
+      const shouldExpand = loadState();
+      if (shouldExpand) {
+        drawer.classList.remove('collapsed');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.setAttribute('aria-label', 'Collapse actions menu');
+      } else {
+        drawer.classList.add('collapsed');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute('aria-label', 'Expand actions menu');
+      }
+
+      // Toggle handler
       toggleBtn.addEventListener('click', () => {
         const isExpanded = !drawer.classList.contains('collapsed');
 
@@ -2594,18 +2625,28 @@ async function initApp() {
           drawer.classList.add('collapsed');
           toggleBtn.setAttribute('aria-expanded', 'false');
           toggleBtn.setAttribute('aria-label', 'Expand actions menu');
+          saveState(false);
         } else {
           // Expand drawer
           drawer.classList.remove('collapsed');
           toggleBtn.setAttribute('aria-expanded', 'true');
           toggleBtn.setAttribute('aria-label', 'Collapse actions menu');
+          saveState(true);
         }
+
+        // Retain focus on toggle button
+        toggleBtn.focus();
       });
 
-      // Keep drawer collapsed on resize if screen is small
+      // On mobile, collapse drawer automatically
       window.addEventListener('resize', () => {
-        // On mobile, keep drawer behavior consistent
-        // On desktop, drawer can stay expanded
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && !drawer.classList.contains('collapsed')) {
+          drawer.classList.add('collapsed');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+          toggleBtn.setAttribute('aria-label', 'Expand actions menu');
+          saveState(false);
+        }
       });
     };
 
@@ -4356,7 +4397,7 @@ async function initApp() {
   /**
    * Open a minimal guided tour modal (for Welcome screen role paths)
    * Tours are skippable, focus-safe, and respect prefers-reduced-motion
-   * @param {string} tourType - Type of tour ('screen-reader', 'voice-input', 'educators')
+   * @param {string} tourType - Type of tour ('screen-reader', 'voice-input', 'intro')
    */
   function openGuidedTour(tourType) {
     // TODO: Implement guided tours in a separate task

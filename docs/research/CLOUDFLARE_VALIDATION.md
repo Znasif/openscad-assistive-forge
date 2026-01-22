@@ -373,7 +373,7 @@ npm run preview
 The following was captured from the production deployment:
 
 ```
-OpenSCAD Assistive Forge v3.1.0
+OpenSCAD Assistive Forge v4.0.0
 Initializing...
 [PWA] Service Worker registered: https://openscad-assistive-forge.pages.dev/
 [Theme] Applied: auto

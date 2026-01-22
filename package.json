@@ -1,8 +1,17 @@
 {
   "name": "openscad-assistive-forge",
-  "version": "3.1.0",
-  "description": "Web-based OpenSCAD customizer with client-side WASM rendering and developer toolchain",
+  "version": "4.0.0",
+  "description": "Accessibility-first web-based OpenSCAD customizer with client-side WASM rendering and developer toolchain",
   "type": "module",
+  "author": "Brennen Johnston <https://github.com/BrennenJohnston>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrennenJohnston/openscad-assistive-forge.git"
+  },
+  "homepage": "https://openscad-assistive-forge.pages.dev/",
+  "bugs": {
+    "url": "https://github.com/BrennenJohnston/openscad-assistive-forge/issues"
+  },
   "bin": {
     "openscad-forge": "./bin/openscad-forge.js"
   },
@@ -34,9 +43,16 @@
     "customizer",
     "3d-printing",
     "stl",
-    "wasm"
+    "wasm",
+    "accessibility",
+    "wcag",
+    "assistive-technology",
+    "parametric-design",
+    "cad",
+    "webassembly",
+    "pwa",
+    "three.js"
   ],
-  "author": "",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

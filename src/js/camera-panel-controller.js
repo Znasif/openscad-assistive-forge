@@ -6,7 +6,8 @@
  */
 
 const STORAGE_KEY_COLLAPSED = 'openscad-customizer-camera-panel-collapsed';
-const STORAGE_KEY_MOBILE_COLLAPSED = 'openscad-customizer-camera-drawer-collapsed';
+const STORAGE_KEY_MOBILE_COLLAPSED =
+  'openscad-customizer-camera-drawer-collapsed';
 
 /**
  * Initialize the camera panel controller

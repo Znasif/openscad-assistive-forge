@@ -8,7 +8,6 @@
 const STORAGE_KEY_DRAWER_HEIGHT = 'openscad-customizer-drawer-height';
 const STORAGE_KEY_DRAWER_COLLAPSED = 'openscad-customizer-drawer-collapsed';
 const MIN_DRAWER_HEIGHT = 100; // Minimum height in pixels
-const MIN_SAVEABLE_HEIGHT = 200; // Only save heights above this (indicates user intentionally adjusted)
 const DEFAULT_EXPANDED_HEIGHT = 360; // Default height when expanded (shows most settings)
 const HEADER_HEIGHT = 44; // Height of the toggle button header
 
@@ -47,17 +46,14 @@ export function initPreviewSettingsDrawer(options = {}) {
 
   /**
    * Get saved drawer height from localStorage
-   * Only returns saved height if it's above MIN_SAVEABLE_HEIGHT
-   * (indicating user intentionally adjusted it)
+   * Returns saved height if it meets minimum drawer height requirement
    */
   const loadSavedHeight = () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_DRAWER_HEIGHT);
       if (saved) {
         const height = parseInt(saved, 10);
-        // Only return saved heights that are meaningfully large
-        // Small heights indicate the user didn't intentionally set a preference
-        if (!isNaN(height) && height >= MIN_SAVEABLE_HEIGHT) {
+        if (!isNaN(height) && height >= MIN_DRAWER_HEIGHT) {
           return height;
         }
       }
@@ -69,17 +65,15 @@ export function initPreviewSettingsDrawer(options = {}) {
 
   /**
    * Save drawer height to localStorage
-   * Only saves heights above MIN_SAVEABLE_HEIGHT (user intentionally adjusted)
+   * Saves any height that meets minimum requirement
    */
   const saveHeight = (height) => {
-    // Only save meaningful heights - small heights shouldn't override the default
-    if (height < MIN_SAVEABLE_HEIGHT) {
-      return;
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY_DRAWER_HEIGHT, String(height));
-    } catch (e) {
-      console.warn('Could not save drawer height:', e);
+    if (height >= MIN_DRAWER_HEIGHT) {
+      try {
+        localStorage.setItem(STORAGE_KEY_DRAWER_HEIGHT, String(height));
+      } catch (e) {
+        console.warn('Could not save drawer height:', e);
+      }
     }
   };
 
@@ -189,7 +183,6 @@ export function initPreviewSettingsDrawer(options = {}) {
       options.onResize();
     }
   };
-
 
   /**
    * Expand the drawer to show all settings
@@ -482,17 +475,17 @@ export function initPreviewSettingsDrawer(options = {}) {
    */
   const detectKeyboard = () => {
     if (!('visualViewport' in window) || !window.visualViewport) return;
-    
+
     const viewportHeight = window.visualViewport.height;
     const windowHeight = window.innerHeight;
     const heightDiff = windowHeight - viewportHeight;
-    
+
     // Keyboard is likely visible if height difference > 150px
     const isKeyboardVisible = heightDiff > 150;
-    
+
     if (isKeyboardVisible !== keyboardVisible) {
       keyboardVisible = isKeyboardVisible;
-      
+
       if (isKeyboardVisible) {
         previewInfoSection.classList.add('keyboard-visible');
       } else {

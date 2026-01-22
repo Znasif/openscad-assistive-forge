@@ -18,7 +18,6 @@ let limitsUnlocked = false;
 // Store parameter metadata for search
 let parameterMetadata = {};
 
-
 /**
  * Set whether parameter limits are unlocked
  * @param {boolean} unlocked - Whether limits should be unlocked

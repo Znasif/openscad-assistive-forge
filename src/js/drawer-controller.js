@@ -32,6 +32,7 @@ export function initDrawerController() {
   let triggerEl = null;
   let scrollY = 0;
   let focusTrapHandler = null;
+  let docKeydownHandler = null;
 
   /**
    * Get all focusable elements within the drawer
@@ -46,9 +47,15 @@ export function initDrawerController() {
       '[tabindex]:not([tabindex="-1"])',
     ].join(',');
 
-    return Array.from(drawer.querySelectorAll(selectors)).filter(
-      (el) => el.offsetParent !== null
-    );
+    // Avoid relying on offsetParent (returns null for some positioning contexts).
+    // Prefer a visibility check based on layout boxes.
+    return Array.from(drawer.querySelectorAll(selectors)).filter((el) => {
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden')
+        return false;
+      // getClientRects catches elements that are visible but have offsetParent=null
+      return el.getClientRects().length > 0;
+    });
   }
 
   /**
@@ -68,6 +75,8 @@ export function initDrawerController() {
     drawer.setAttribute('aria-modal', 'true');
     drawer.setAttribute('aria-labelledby', 'parameters-heading');
     drawer.removeAttribute('aria-label');
+    // Ensure the dialog container itself can receive focus (needed for robust focus trapping)
+    drawer.setAttribute('tabindex', '-1');
 
     // Update toggle button state
     toggleBtn.setAttribute('aria-expanded', 'true');
@@ -89,16 +98,63 @@ export function initDrawerController() {
     document.body.style.top = `-${scrollY}px`;
 
     // Move focus into drawer
-    const focusableElements = getFocusableElements();
-    if (focusableElements.length > 0) {
-      setTimeout(() => {
+    setTimeout(() => {
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length > 0) {
         focusableElements[0].focus();
-      }, 300); // Wait for transition
-    }
+      } else {
+        // Fallback: keep focus on drawer container
+        drawer.focus?.();
+      }
+    }, 300); // Wait for transition
 
-    // Set up focus trap
-    focusTrapHandler = handleKeydown.bind(null, focusableElements);
-    drawer.addEventListener('keydown', focusTrapHandler);
+    // Set up focus trap (document-level so it works even if focus escapes)
+    // ESC should close even if focus isn't inside the drawer (e.g. on toggle button)
+    docKeydownHandler = (event) => {
+      if (!isOpen) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        // Keep focus on the drawer container when nothing else is focusable.
+        event.preventDefault();
+        drawer.focus?.();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const active = document.activeElement;
+      const inDrawer = active ? drawer.contains(active) : false;
+
+      // If focus is outside the drawer, bring it back in.
+      if (!inDrawer) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+      }
+
+      // Cycle within the drawer
+      if (event.shiftKey) {
+        if (active === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        if (active === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', docKeydownHandler, true);
   }
 
   /**
@@ -117,6 +173,12 @@ export function initDrawerController() {
     drawer.removeAttribute('aria-labelledby');
     if (originalAttrs.ariaLabel) {
       drawer.setAttribute('aria-label', originalAttrs.ariaLabel);
+    }
+    // Restore original tabindex (or remove if none)
+    if (originalAttrs.tabIndex !== null) {
+      drawer.setAttribute('tabindex', originalAttrs.tabIndex);
+    } else {
+      drawer.removeAttribute('tabindex');
     }
 
     // Update toggle button state
@@ -139,10 +201,9 @@ export function initDrawerController() {
     document.body.style.removeProperty('top');
     window.scrollTo(0, scrollY);
 
-    // Remove focus trap
-    if (focusTrapHandler) {
-      drawer.removeEventListener('keydown', focusTrapHandler);
-      focusTrapHandler = null;
+    if (docKeydownHandler) {
+      document.removeEventListener('keydown', docKeydownHandler, true);
+      docKeydownHandler = null;
     }
 
     // Return focus to trigger
@@ -154,9 +215,11 @@ export function initDrawerController() {
 
   /**
    * Handle keyboard events for ESC and Tab trap
+   * @note Currently unused - keyboard handling done via docKeydownHandler
    */
-  function handleKeydown(focusableElements, event) {
-    // ESC to close
+  // eslint-disable-next-line no-unused-vars
+  function handleKeydown(event) {
+    // ESC to close (still handle inside-drawer for completeness)
     if (event.key === 'Escape') {
       event.preventDefault();
       close();
@@ -165,6 +228,7 @@ export function initDrawerController() {
 
     // Tab cycling within drawer
     if (event.key === 'Tab') {
+      const focusableElements = getFocusableElements();
       if (focusableElements.length === 0) return;
 
       const firstElement = focusableElements[0];
@@ -198,10 +262,74 @@ export function initDrawerController() {
     }
   }
 
+  // Guard backdrop closes during parameter interaction
+  let backdropPointerStarted = false;
+  let ignoreBackdropClose = false;
+  let activeIgnorePointerId = null;
+
+  /**
+   * Track pointerdown on backdrop - only allow close if pointer started here
+   */
+  backdrop.addEventListener('pointerdown', (event) => {
+    // Only track if the event target is the backdrop itself
+    if (event.target === backdrop && !ignoreBackdropClose) {
+      backdropPointerStarted = true;
+    }
+  });
+
+  /**
+   * Close drawer only if pointer started AND ended on backdrop
+   */
+  backdrop.addEventListener('pointerup', (event) => {
+    if (
+      event.target === backdrop &&
+      backdropPointerStarted &&
+      !ignoreBackdropClose
+    ) {
+      close();
+    }
+    backdropPointerStarted = false;
+  });
+
+  /**
+   * Reset pointer tracking if pointer leaves backdrop
+   */
+  backdrop.addEventListener('pointerleave', () => {
+    backdropPointerStarted = false;
+  });
+
+  /**
+   * Track pointerdown inside drawer - set ignore flag to prevent
+   * accidental backdrop closes when user drags from inside drawer
+   */
+  drawer.addEventListener('pointerdown', (event) => {
+    // While a pointer is down that started inside the drawer, never allow a backdrop-close.
+    // This prevents "drag a slider then lift finger on backdrop" from closing the drawer.
+    ignoreBackdropClose = true;
+    activeIgnorePointerId = event.pointerId ?? null;
+    backdropPointerStarted = false;
+
+    const clearIgnore = (e) => {
+      if (
+        activeIgnorePointerId !== null &&
+        e?.pointerId !== undefined &&
+        e.pointerId !== activeIgnorePointerId
+      ) {
+        return;
+      }
+      ignoreBackdropClose = false;
+      activeIgnorePointerId = null;
+      window.removeEventListener('pointerup', clearIgnore, true);
+      window.removeEventListener('pointercancel', clearIgnore, true);
+    };
+
+    window.addEventListener('pointerup', clearIgnore, true);
+    window.addEventListener('pointercancel', clearIgnore, true);
+  });
+
   // Event listeners
   toggleBtn.addEventListener('click', toggle);
-  backdrop.addEventListener('click', close);
-  
+
   // Wire up close button
   if (closeBtn) {
     closeBtn.addEventListener('click', close);

@@ -516,7 +516,7 @@ summary:focus-visible,
 .model-color-picker input[type='color'] {
   width: 44px;
   height: 32px;
-  padding: 2px;
+  padding: var(--space-2xs);
   border: 2px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
@@ -541,7 +541,7 @@ summary:focus-visible,
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
   color: var(--color-text-secondary);
-  font-size: 16px;
+  font-size: var(--size-icon-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -655,8 +655,8 @@ summary:focus-visible,
 .param-label-container {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .param-help-wrapper {
@@ -671,7 +671,7 @@ summary:focus-visible,
   background: var(--color-accent);
   color: var(--color-accent-text);
   border: none;
-  font-size: 12px;
+  font-size: var(--font-size-2xs);
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -703,7 +703,7 @@ summary:focus-visible,
 
 .param-tooltip {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + var(--space-sm));
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-bg-secondary);
@@ -739,7 +739,7 @@ summary:focus-visible,
   transform: translateX(-50%);
   border: 5px solid transparent;
   border-bottom-color: var(--color-bg-secondary);
-  margin-bottom: 1px;
+  margin-bottom: calc(var(--space-2xs) / 2);
 }
 
 /* High Contrast Mode Adjustments for Tooltips */
@@ -795,7 +795,7 @@ body.high-contrast .param-tooltip {
 .slider-container input[type='range'] {
   flex: 1;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
   background: var(--color-bg-secondary);
   outline: none;
 }
@@ -823,7 +823,7 @@ body.high-contrast .param-tooltip {
 .number-input-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .number-input-container input[type='number'] {
@@ -912,7 +912,7 @@ select:focus-visible {
   height: 28px;
   appearance: none;
   background-color: var(--color-border);
-  border-radius: 14px;
+  border-radius: var(--border-radius-pill);
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -960,7 +960,7 @@ select:focus-visible {
   width: 100%;
   height: 4px;
   background-color: var(--color-bg-secondary);
-  border-radius: 2px;
+  border-radius: var(--border-radius-xs);
   overflow: hidden;
   margin-top: var(--space-sm);
 }
@@ -1178,7 +1178,7 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-xs);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
 }
@@ -1205,8 +1205,8 @@ select:focus-visible {
 .complexity-tier-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--border-radius-sm);
   font-weight: 500;
   font-size: var(--font-size-xs);
@@ -1298,7 +1298,7 @@ select:focus-visible {
 .preset-modal-content::-webkit-scrollbar-thumb,
 .file-tree::-webkit-scrollbar-thumb {
   background-color: var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   border: 2px solid transparent;
   background-clip: content-box;
 }
@@ -1352,7 +1352,7 @@ select:focus-visible {
 }
 
 .file-tree-item {
-  padding: 2px 0;
+  padding: var(--space-2xs) 0;
   padding-left: var(--space-md);
   color: var(--color-text-secondary);
 }
@@ -1364,12 +1364,12 @@ select:focus-visible {
 
 .file-tree-badge {
   display: inline-block;
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-xs);
   margin-left: var(--space-xs);
   background: var(--color-accent);
   color: var(--color-accent-text);
-  font-size: 0.75rem;
-  border-radius: 3px;
+  font-size: var(--font-size-2xs);
+  border-radius: var(--border-radius-xs);
   font-weight: 600;
   font-family: var(--font-family-base);
 }
@@ -1708,7 +1708,7 @@ select:focus-visible {
   font-weight: 600;
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
-  margin: 0 0 4px 0;
+  margin: 0 0 var(--space-xs) 0;
   word-break: break-word;
 }
 
@@ -2053,7 +2053,7 @@ select:focus-visible {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   padding: var(--space-xs);
-  font-size: 20px;
+  font-size: var(--size-icon-md);
   min-width: 36px;
   min-height: 36px;
   display: flex;
@@ -2291,7 +2291,7 @@ select:focus-visible {
   padding: 0 var(--space-xs);
   background: var(--color-accent);
   color: var(--color-accent-text);
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
@@ -2356,7 +2356,7 @@ select:focus-visible {
 }
 
 .library-icon {
-  font-size: 24px;
+  font-size: var(--size-icon-lg);
   flex-shrink: 0;
   line-height: 1;
 }
@@ -2365,7 +2365,7 @@ select:focus-visible {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 
@@ -2380,11 +2380,11 @@ select:focus-visible {
 
 .library-required-badge {
   display: inline-block;
-  padding: 2px var(--space-xs);
+  padding: var(--space-2xs) var(--space-xs);
   background: var(--color-warning);
   color: var(--color-on-warning);
   border-radius: var(--border-radius-sm);
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2451,7 +2451,7 @@ select:focus-visible {
   }
 
   .library-icon {
-    font-size: 20px;
+    font-size: var(--size-icon-md);
   }
 
   .library-name {
@@ -2459,7 +2459,7 @@ select:focus-visible {
   }
 
   .library-description {
-    font-size: 12px;
+    font-size: var(--font-size-2xs);
   }
 }
 
@@ -2510,7 +2510,7 @@ select:focus-visible {
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   background: none;
-  padding: 2px;
+  padding: var(--space-2xs);
   transition: border-color 0.2s;
 }
 
@@ -2714,7 +2714,7 @@ select:focus-visible {
   color: var(--color-accent-text);
   border: none;
   border-radius: var(--border-radius-sm);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   cursor: pointer;
   transition:
     background-color 0.2s,
@@ -2796,11 +2796,11 @@ select:focus-visible {
 .queue-badge {
   display: inline-block;
   min-width: 20px;
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-xs);
   background: var(--color-accent);
   color: var(--color-on-accent);
-  border-radius: 10px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   line-height: 1;
   text-align: center;
@@ -2909,7 +2909,7 @@ select:focus-visible {
 }
 
 .queue-item-icon {
-  font-size: 20px;
+  font-size: var(--size-icon-md);
   line-height: 1;
 }
 
@@ -2924,7 +2924,7 @@ select:focus-visible {
 }
 
 .queue-item-name[contenteditable='true'] {
-  padding: 2px 4px;
+  padding: var(--space-2xs) var(--space-xs);
   border-radius: var(--border-radius-sm);
   cursor: text;
 }
@@ -2939,19 +2939,19 @@ select:focus-visible {
 }
 
 .queue-item-format {
-  padding: 2px var(--space-xs);
+  padding: var(--space-2xs) var(--space-xs);
   background: var(--color-bg-secondary);
   border-radius: var(--border-radius-sm);
-  font-size: 12px;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
 }
 
 .queue-item-state {
-  padding: 2px var(--space-xs);
+  padding: var(--space-2xs) var(--space-xs);
   border-radius: var(--border-radius-sm);
-  font-size: 12px;
+  font-size: var(--font-size-2xs);
   font-weight: 600;
   text-transform: capitalize;
 }
@@ -3572,12 +3572,12 @@ select:focus-visible {
    ========================================= */
 
 .param-reset-btn {
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-xs);
   font-size: var(--font-size-xs);
   background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-primary); /* Ensure this adapts to theme */
   cursor: pointer;
   opacity: 0;
   transition:
@@ -3711,14 +3711,14 @@ select:focus-visible {
   flex: 1;
   height: 8px;
   background: var(--color-bg-secondary);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   overflow: hidden;
 }
 
 .wasm-loading-progress-fill {
   height: 100%;
   background: var(--color-accent);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   transition: width 0.3s ease-out;
 }
 
@@ -3885,7 +3885,7 @@ select:focus-visible {
 
 .features-panel p code {
   background: var(--color-bg-secondary);
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-xs);
   border-radius: var(--border-radius-xs);
   font-size: 0.9em;
 }
@@ -3984,7 +3984,9 @@ select:focus-visible {
   opacity: 0.9;
 }
 
-#featuresGuideModal .modal-content.tutorial-target-highlight .modal-close:hover {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .modal-close:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.2);
 }
@@ -3995,7 +3997,9 @@ select:focus-visible {
   position: relative;
 }
 
-#featuresGuideModal .modal-content.tutorial-target-highlight .modal-close::after {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .modal-close::after {
   content: 'Close to continue';
   position: absolute;
   right: 100%;
@@ -4010,7 +4014,8 @@ select:focus-visible {
 }
 
 @keyframes closeButtonHint {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -4031,14 +4036,22 @@ select:focus-visible {
   transition: all 0.2s ease;
 }
 
-#featuresGuideModal .modal-content.tutorial-target-highlight .features-tab:hover {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .features-tab:hover {
   background: color-mix(in srgb, var(--color-accent) 15%, transparent);
 }
 
-#featuresGuideModal .modal-content.tutorial-target-highlight .features-tab[aria-selected='true'] {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .features-tab[aria-selected='true'] {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg-primary));
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 10%,
+    var(--color-bg-primary)
+  );
 }
 
 /* Enhanced panel content when spotlighted */
@@ -4046,7 +4059,10 @@ select:focus-visible {
   background: var(--color-bg-primary);
 }
 
-#featuresGuideModal .modal-content.tutorial-target-highlight .features-panel h3 {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .features-panel
+  h3 {
   color: var(--color-accent);
   border-bottom: 2px solid var(--color-accent);
   padding-bottom: var(--space-xs);
@@ -4055,11 +4071,17 @@ select:focus-visible {
 
 #featuresGuideModal .modal-content.tutorial-target-highlight .features-action {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary));
+  background: color-mix(
+    in srgb,
+    var(--color-accent) 8%,
+    var(--color-bg-secondary)
+  );
 }
 
 /* Encourage exploration - hint above tabs */
-#featuresGuideModal .modal-content.tutorial-target-highlight .features-tabs::before {
+#featuresGuideModal
+  .modal-content.tutorial-target-highlight
+  .features-tabs::before {
   content: '👆 Explore the tabs to learn more';
   position: absolute;
   left: var(--space-sm);
@@ -4080,7 +4102,7 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-panel {
   transform: translateX(-50%) !important;
   max-width: min(400px, calc(100vw - var(--space-lg) * 2)) !important;
   z-index: 10006 !important;
-  box-shadow: 
+  box-shadow:
     0 -4px 20px rgba(0, 0, 0, 0.3),
     0 0 0 3px var(--color-accent) !important;
 }
@@ -4251,7 +4273,7 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   border: 2px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   color: var(--color-text-primary);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -4347,7 +4369,7 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
     height: 40px;
     min-width: 40px;
     min-height: 40px;
-    font-size: 16px;
+    font-size: var(--font-size-base);
   }
 }
 
@@ -4623,28 +4645,6 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   outline-offset: 2px;
 }
 
-/* UI Orientation CTA */
-.ui-orientation-cta {
-  margin-top: var(--space-xl);
-  padding: var(--space-lg);
-  text-align: center;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-}
-
-.ui-orientation-cta p {
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.btn-ui-orientation {
-  min-height: 44px;
-  padding: var(--space-sm) var(--space-lg);
-  font-size: var(--font-size-base);
-}
-
 /* ============================================================================
    Tutorial Overlay System - Spotlight Coachmarks
    ============================================================================
@@ -4660,9 +4660,10 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 10000;
+  z-index: var(--z-index-tutorial-backdrop);
   pointer-events: none;
   animation: tutorialFadeIn 0.3s ease-out;
+  contain: layout style;
 }
 
 /* SVG Spotlight overlay with mask cutout */
@@ -4674,6 +4675,8 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   height: 100%;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  z-index: var(--z-index-tutorial-spotlight);
+  contain: strict;
 }
 
 .tutorial-backdrop {
@@ -4695,12 +4698,23 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
     0 0 0 1px rgba(255, 255, 255, 0.1);
   width: min(90vw, 340px);
   max-width: calc(100vw - 32px);
+  /* dvh-aware max-height with fallback for older browsers */
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
   animation: tutorialPanelIn 0.3s ease-out;
   outline: none;
+  z-index: var(--z-index-tutorial-panel);
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* Use dynamic viewport height on modern browsers */
+@supports (max-height: 100dvh) {
+  .tutorial-panel {
+    max-height: calc(100dvh - 32px);
+  }
 }
 
 .tutorial-panel:focus {
@@ -4850,8 +4864,8 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   display: inline-block;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-2xs) var(--space-xs);
   font-family: inherit;
   font-size: 0.85em;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -4863,6 +4877,127 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   color: var(--color-text-secondary);
   opacity: 0.8;
   margin-top: var(--space-xs) !important;
+}
+
+/* Expandable "more" section for compact content */
+.tutorial-more {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.tutorial-more summary {
+  cursor: pointer;
+  color: var(--color-accent);
+  font-weight: 500;
+  padding: var(--space-2xs) 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.tutorial-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.tutorial-more summary::before {
+  content: '▸';
+  transition: transform 0.15s ease;
+}
+
+.tutorial-more[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.tutorial-more ul {
+  margin: var(--space-xs) 0 0 var(--space-sm);
+  padding-left: var(--space-sm);
+}
+
+.tutorial-more li {
+  margin-bottom: var(--space-2xs);
+}
+
+/* Small-height viewport adjustments for tutorial panel */
+@media (max-height: 640px) {
+  .tutorial-panel {
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .tutorial-header {
+    padding: var(--space-sm) var(--space-sm) var(--space-xs);
+  }
+
+  .tutorial-body {
+    padding: 0 var(--space-sm) var(--space-sm);
+  }
+
+  .tutorial-step-title {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-xs);
+  }
+
+  .tutorial-step-content {
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+  }
+
+  .tutorial-step-content ul {
+    margin: var(--space-2xs) 0;
+    padding-left: var(--space-sm);
+  }
+
+  .tutorial-step-content li {
+    margin-bottom: var(--space-2xs);
+  }
+
+  .tutorial-footer {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .tutorial-keyboard-hint {
+    display: none; /* Hide keyboard hints on very small viewports */
+  }
+}
+
+/* Even smaller viewport - mobile portrait with zoom */
+@media (max-height: 520px) {
+  .tutorial-panel {
+    max-height: calc(100vh - 8px);
+    max-height: calc(100dvh - 8px);
+    width: min(95vw, 300px);
+  }
+
+  .tutorial-header {
+    padding: var(--space-xs);
+  }
+
+  .tutorial-title {
+    font-size: var(--font-size-xs);
+  }
+
+  .tutorial-minimize,
+  .tutorial-close {
+    min-width: 28px;
+    min-height: 28px;
+    padding: var(--space-2xs);
+  }
+
+  .tutorial-body {
+    padding: 0 var(--space-xs) var(--space-xs);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .tutorial-step-title {
+    font-size: var(--font-size-sm);
+  }
+
+  .tutorial-nav .btn {
+    padding: var(--space-2xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
 }
 
 /* Completion requirement indicator */
@@ -4949,11 +5084,52 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   gap: var(--space-sm);
 }
 
+/* Tutorial navigation buttons - MUST override reset.css button { background: none; }
+   This is critical for accessibility - without explicit colors, Back button is invisible in dark theme */
 .tutorial-btn-back,
 .tutorial-btn-next {
   min-height: 36px;
   padding: var(--space-xs) var(--space-md);
   font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+
+/* Back button - secondary style with explicit colors */
+.tutorial-btn-back {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-text-primary);
+}
+
+.tutorial-btn-back:hover:not(:disabled) {
+  background: var(--color-hover-bg);
+  border-color: var(--color-border-hover);
+}
+
+.tutorial-btn-back:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Next button - primary style with explicit colors */
+.tutorial-btn-next {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border: 1px solid var(--color-accent);
+}
+
+.tutorial-btn-next:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.tutorial-btn-next:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .tutorial-btn-back:disabled {
@@ -4966,12 +5142,45 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   cursor: not-allowed;
 }
 
+/* Keyboard shortcuts hint */
+.tutorial-keyboard-hint {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.tutorial-keyboard-hint kbd {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xs);
+  background: var(--color-bg-secondary);
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+@media (forced-colors: active) {
+  .tutorial-keyboard-hint kbd {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* During repositioning, temporarily remove containment for accurate measurements */
+.tutorial-panel.measuring {
+  contain: none;
+  content-visibility: visible;
+}
+
 /* Minimized state - floating pill button */
 .tutorial-minimized {
   position: fixed;
   bottom: var(--space-lg);
   right: var(--space-lg);
-  z-index: 10005;
+  z-index: var(--z-index-tutorial-minimized);
   pointer-events: auto;
 }
 
@@ -4982,7 +5191,7 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   background: var(--color-accent);
   color: var(--color-accent-text);
   border: none;
-  border-radius: 50px;
+  border-radius: var(--border-radius-pill);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -5008,9 +5217,62 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
 
 .tutorial-minimized-progress {
   background: rgba(255, 255, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
+}
+
+/* Tutorial keyboard shortcuts: icon-only, expandable */
+.tutorial-keyboard-help {
+  margin-left: auto;
+}
+
+.tutorial-keyboard-help > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.tutorial-keyboard-help > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tutorial-keyboard-help[open] > summary {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tutorial-keyboard-help-content {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Scroll-margin for elements that can be tutorial targets */
+[data-tutorial-target] {
+  scroll-margin-top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+  scroll-margin-bottom: calc(
+    var(--space-lg) + 60px
+  ); /* Account for mobile actions bar */
+}
+
+/* Smooth scrolling during tutorial for targeted elements */
+.tutorial-overlay ~ * [data-tutorial-target] {
+  scroll-behavior: smooth;
 }
 
 /* Highlight ring on target element */
@@ -5070,18 +5332,21 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
 }
 
 /* Make the modal overlay semi-transparent when content is spotlighted */
-#featuresGuideModal:has(.modal-content.tutorial-target-highlight) .modal-overlay {
+#featuresGuideModal:has(.modal-content.tutorial-target-highlight)
+  .modal-overlay {
   background: rgba(0, 0, 0, 0.5);
 }
 
 /* Reduce tutorial backdrop when modal content is spotlighted */
-body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial-backdrop {
+body:has(#featuresGuideModal .modal-content.tutorial-target-highlight)
+  .tutorial-backdrop {
   fill: rgba(0, 0, 0, 0.4);
 }
 
 /* Animation for highlighted modal */
 @keyframes tutorialModalHighlight {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 12px 48px rgba(0, 0, 0, 0.5),
       0 0 0 4px var(--color-accent),
@@ -5175,6 +5440,92 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
   outline-width: 4px !important;
 }
 
+/* High Contrast Mode - Tutorial buttons */
+[data-high-contrast='true'] .tutorial-btn-back {
+  background: var(--color-bg-tertiary);
+  border-width: 2px;
+  border-color: var(--color-text-primary);
+}
+
+[data-high-contrast='true'] .tutorial-btn-next {
+  border-width: 2px;
+}
+
+/* Forced Colors Mode (Windows High Contrast) - Tutorial buttons */
+@media (forced-colors: active) {
+  .tutorial-btn-back,
+  .tutorial-btn-next {
+    border: 2px solid ButtonText !important;
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    forced-color-adjust: none;
+  }
+
+  .tutorial-btn-next {
+    background: Highlight !important;
+    color: HighlightText !important;
+    border-color: HighlightText !important;
+  }
+
+  .tutorial-btn-back:hover:not(:disabled),
+  .tutorial-btn-next:hover:not(:disabled) {
+    border-color: Highlight !important;
+  }
+
+  .tutorial-btn-back:disabled,
+  .tutorial-btn-next:disabled {
+    opacity: 1 !important;
+    background: GrayText !important;
+    color: Canvas !important;
+    border-color: GrayText !important;
+  }
+
+  .tutorial-spotlight-cutout {
+    stroke: Highlight;
+    stroke-width: 3px;
+  }
+}
+
+/* Enhanced Contrast Mode (prefers-contrast: more) - Tutorial */
+@media (prefers-contrast: more) {
+  .tutorial-btn-back,
+  .tutorial-btn-next {
+    border-width: 2px;
+    font-weight: 600;
+  }
+
+  .tutorial-btn-back {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-text-primary);
+  }
+
+  .tutorial-panel {
+    border-width: 3px;
+  }
+
+  .tutorial-spotlight-cutout {
+    stroke: var(--color-focus);
+    stroke-width: 3px;
+  }
+
+  .tutorial-target-highlight {
+    outline-width: 4px !important;
+  }
+}
+
+/* Reduced Transparency Mode */
+@media (prefers-reduced-transparency: reduce) {
+  .tutorial-backdrop {
+    backdrop-filter: none !important;
+    fill: var(--color-overlay-solid, rgba(0, 0, 0, 0.85)) !important;
+  }
+
+  .tutorial-panel {
+    background: var(--color-bg-primary) !important;
+    border-width: 2px;
+  }
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .tutorial-overlay,
@@ -5189,35 +5540,137 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
   .tutorial-restore {
     transition: none;
   }
+
+  /* Disable tutorial arrow bounce */
+  .tutorial-arrow {
+    animation: none !important;
+  }
 }
 
-/* Mobile: Stack at bottom */
+/* Mobile: only dock the panel when NOT positioned near a target.
+   When a target is highlighted, allow JS positioning so the panel can move
+   out of the way instead of covering the control. */
 @media (max-width: 600px) {
-  .tutorial-panel {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
+  .tutorial-panel:not(.tutorial-panel-positioned) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-width: 100%;
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    transform: none !important;
+    transform: none;
     max-height: 50vh;
+    max-height: 50dvh; /* Dynamic viewport height */
+    /* Safe area padding for notched devices (iPhone X+) */
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
   }
 
+  /* On very small screens, arrows tend to overlap. Hide them. */
   .tutorial-arrow {
-    display: none !important;
+    display: none;
   }
 
   .tutorial-minimized {
-    bottom: var(--space-md);
-    right: var(--space-md);
+    bottom: max(var(--space-md), env(safe-area-inset-bottom));
+    right: max(var(--space-md), env(safe-area-inset-right));
   }
 
   .tutorial-footer {
     flex-direction: row;
     padding: var(--space-md);
+  }
+}
+
+/* Landscape on notched devices */
+@media (orientation: landscape) and (max-height: 500px) {
+  .tutorial-panel {
+    max-width: calc(
+      100vw - env(safe-area-inset-left) - env(safe-area-inset-right) -
+        var(--space-lg) * 2
+    );
+    margin-left: max(var(--space-md), env(safe-area-inset-left));
+    margin-right: max(var(--space-md), env(safe-area-inset-right));
+  }
+}
+
+/* Touch device optimizations */
+@media (pointer: coarse) {
+  .tutorial-btn-back,
+  .tutorial-btn-next {
+    min-height: 44px;
+    min-width: 44px;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  /* Touch feedback */
+  .tutorial-btn-back:active,
+  .tutorial-btn-next:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+
+  .tutorial-restore {
+    min-height: 48px;
+    padding: var(--space-sm) var(--space-lg);
+  }
+}
+
+/* Prevent text selection during touch interactions on tutorial panel (but allow in content) */
+.tutorial-panel {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Body scroll locking when tutorial is active */
+body.tutorial-body-locked {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  /* top is set dynamically via JS to preserve scroll position */
+}
+
+/* Paused tutorial visual feedback (when tab is hidden) */
+.tutorial-overlay.tutorial-paused {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.tutorial-overlay.tutorial-paused .tutorial-panel {
+  pointer-events: none;
+}
+
+.tutorial-content,
+.tutorial-step-content {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Tutorial body scrollable for overflow handling */
+.tutorial-body {
+  overflow-y: auto;
+  max-height: 50vh;
+  max-height: 50dvh;
+}
+
+/* Print styles - hide tutorial completely */
+@media print {
+  .tutorial-overlay,
+  .tutorial-backdrop,
+  .tutorial-panel,
+  .tutorial-spotlight-svg,
+  .tutorial-minimized {
+    display: none !important;
+  }
+}
+
+/* Inverted colors support (iOS/macOS Smart Invert) */
+@media (inverted-colors: inverted) {
+  .tutorial-backdrop,
+  .tutorial-panel {
+    filter: invert(0); /* Prevent double-inversion */
   }
 }
 
@@ -5290,7 +5743,7 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
 .param-search-input {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
-  padding-right: 36px;
+  padding-right: calc(var(--space-md) + var(--size-touch-target));
   border: 2px solid var(--color-border);
   border-radius: var(--border-radius-sm);
   background: var(--color-bg-primary);
@@ -5314,16 +5767,16 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
 
 .param-search-clear {
   position: absolute;
-  right: 8px;
+  right: var(--space-sm);
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
   padding: 0;
   border: none;
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   cursor: pointer;
   border-radius: 50%;
@@ -5887,6 +6340,7 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
   .tutorial-panel {
     border: 3px solid CanvasText !important;
     background: Canvas;
+    color: CanvasText;
   }
 
   .tutorial-arrow {
@@ -5908,6 +6362,47 @@ body:has(#featuresGuideModal .modal-content.tutorial-target-highlight) .tutorial
   .tutorial-target-highlight {
     outline: 4px solid Highlight !important;
     animation: none !important;
+  }
+
+  /* Tutorial navigation buttons - critical for visibility in forced-colors */
+  .tutorial-btn-back {
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    border: 2px solid ButtonText !important;
+  }
+
+  .tutorial-btn-next {
+    background: Highlight !important;
+    color: HighlightText !important;
+    border: 2px solid HighlightText !important;
+  }
+
+  .tutorial-btn-back:disabled,
+  .tutorial-btn-next:disabled {
+    background: GrayText !important;
+    color: Canvas !important;
+    border-color: GrayText !important;
+    opacity: 1 !important;
+  }
+
+  .tutorial-header,
+  .tutorial-title,
+  .tutorial-step-title {
+    color: CanvasText;
+  }
+
+  .tutorial-content,
+  .tutorial-step-content {
+    color: CanvasText;
+  }
+
+  .tutorial-progress {
+    color: CanvasText;
+  }
+
+  .tutorial-spotlight-cutout {
+    stroke: Highlight;
+    stroke-width: 3px;
   }
 
   /* File tree and code areas */

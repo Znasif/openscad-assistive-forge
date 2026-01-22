@@ -843,7 +843,7 @@ test.describe('Screen Reader Support', () => {
       
       // Wait for example to load
       await page.waitForSelector('.param-control', {
-        timeout: 15000
+        timeout: 60000
       })
       
       // Tutorial overlay should appear after a short delay
@@ -852,9 +852,10 @@ test.describe('Screen Reader Support', () => {
       const tutorialOverlay = page.locator('.tutorial-overlay')
       await expect(tutorialOverlay).toBeVisible()
       
-      // Check ARIA attributes
-      await expect(tutorialOverlay).toHaveAttribute('role', 'dialog')
-      await expect(tutorialOverlay).toHaveAttribute('aria-modal', 'true')
+      // Check ARIA attributes on the dialog panel
+      const tutorialPanel = page.locator('.tutorial-panel')
+      await expect(tutorialPanel).toHaveAttribute('role', 'dialog')
+      await expect(tutorialPanel).toHaveAttribute('aria-modal', 'true')
     })
     
     test('should have keyboard-navigable tutorial with Back/Next buttons', async ({ page }) => {
@@ -870,7 +871,7 @@ test.describe('Screen Reader Support', () => {
       
       // Wait for tutorial to appear
       await page.waitForSelector('.tutorial-overlay', {
-        timeout: 20000
+        timeout: 60000
       })
       
       // Check that tutorial has navigation buttons
@@ -907,7 +908,7 @@ test.describe('Screen Reader Support', () => {
       
       // Wait for tutorial to appear
       await page.waitForSelector('.tutorial-overlay', {
-        timeout: 20000
+        timeout: 60000
       })
       
       // Press Escape to close
@@ -936,7 +937,7 @@ test.describe('Screen Reader Support', () => {
       
       // Wait for tutorial to appear
       await page.waitForSelector('.tutorial-overlay', {
-        timeout: 20000
+        timeout: 60000
       })
       
       // Check close button
@@ -968,7 +969,7 @@ test.describe('Screen Reader Support', () => {
       
       // Wait for tutorial to appear
       await page.waitForSelector('.tutorial-overlay', {
-        timeout: 20000
+        timeout: 60000
       })
       
       // Check progress indicator
@@ -977,6 +978,144 @@ test.describe('Screen Reader Support', () => {
       
       const progressText = await progressIndicator.textContent()
       expect(progressText).toMatch(/Step \d+ of \d+/)
+    })
+
+    test('should spotlight Actions drawer toggle (mobile tutorial step 8)', async ({ page }) => {
+      // Skip in CI - requires WASM for example loading
+      test.skip(isCI, 'WASM example loading is slow/unreliable in CI')
+
+      // Mobile viewport (where Actions bar is fixed at bottom)
+      await page.setViewportSize({ width: 390, height: 844 })
+
+      await page.goto('/')
+      await waitForWasmReady(page)
+      
+      // Click a "Start Tutorial" button
+      const firstTryButton = page.locator('.btn-role-try').first()
+      await firstTryButton.click()
+      
+      // Wait for tutorial to appear
+      await page.waitForSelector('.tutorial-overlay', {
+        timeout: 60000
+      })
+      
+      const nextBtn = page.locator('#tutorialNextBtn')
+      const stepTitle = page.locator('.tutorial-step-title')
+
+      // Step 1 -> Step 2
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('The 3 main areas', { timeout: 60000 })
+
+      // Step 2 -> Step 3
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('Open and close Parameters', { timeout: 60000 })
+
+      // Step 3 -> Step 4 (requires width input)
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('Adjust a parameter', { timeout: 60000 })
+
+      // Complete step 4 to enable Next.
+      // IMPORTANT: do this via a real click/fill so we catch cases where the tutorial panel
+      // is covering the control on small portrait screens.
+      await page.waitForSelector('#param-width', { timeout: 15000 })
+      const widthInput = page.locator('#param-width')
+
+      // Ensure the input is actually tappable (not covered by the tutorial panel)
+      const widthIsOnTop = await page.evaluate(() => {
+        const el = document.querySelector('#param-width')
+        if (!el) return false
+        const r = el.getBoundingClientRect()
+        const x = r.left + r.width / 2
+        const y = r.top + r.height / 2
+        const topEl = document.elementFromPoint(x, y)
+        return !!topEl && (el === topEl || el.contains(topEl))
+      })
+      expect(widthIsOnTop).toBe(true)
+
+      // Drawer should remain open during parameter interaction on mobile
+      await expect(page.locator('#paramPanel')).toHaveClass(/drawer-open/)
+
+      await widthInput.click()
+      await widthInput.fill('60')
+      // Ensure an input event is fired consistently across input types
+      await widthInput.dispatchEvent('input')
+      await expect(nextBtn).not.toBeDisabled()
+
+      // Step 4 -> Step 5
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('See the preview update')
+
+      // Step 5 -> Step 6 (requires opening Presets details)
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('Save a preset (optional, but helpful)')
+
+      const presets = page.locator('#presetControls')
+      // With mobile docking/auto-minimize, this should now be a real, tappable interaction.
+      await presets.locator('summary').click()
+      // Toggle event can be delayed by animations/layout; give it a moment.
+      await expect(nextBtn).not.toBeDisabled({ timeout: 20000 })
+
+      // Step 6 -> Step 7
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('Preview Settings & Info')
+
+      // Step 7 -> Step 8 (Actions menu)
+      await nextBtn.click()
+      await expect(stepTitle).toHaveText('Actions menu')
+
+      const actionsToggle = page.locator('#actionsDrawerToggle')
+      const previewToggle = page.locator('#previewDrawerToggle')
+      const cutout = page.locator('.tutorial-spotlight-cutout')
+
+      await expect(actionsToggle).toBeVisible()
+      await expect(previewToggle).toBeVisible()
+
+      // The cutout should contain the Actions toggle center point, not the Preview toggle center.
+      // Note: boundingBox() for an SVG rect inside a mask can be unreliable in Playwright,
+      // so we assert using the rect's x/y/width/height attributes (the values our JS sets).
+      const [actionsBox, previewBox, cutoutAttrs] = await Promise.all([
+        actionsToggle.boundingBox(),
+        previewToggle.boundingBox(),
+        cutout.evaluate((el) => ({
+          x: parseFloat(el.getAttribute('x') || '0'),
+          y: parseFloat(el.getAttribute('y') || '0'),
+          width: parseFloat(el.getAttribute('width') || '0'),
+          height: parseFloat(el.getAttribute('height') || '0'),
+        })),
+      ])
+
+      expect(actionsBox).not.toBeNull()
+      expect(previewBox).not.toBeNull()
+      expect(cutoutAttrs).toBeTruthy()
+
+      const actionsCenter = {
+        x: actionsBox.x + actionsBox.width / 2,
+        y: actionsBox.y + actionsBox.height / 2,
+      }
+      const previewCenter = {
+        x: previewBox.x + previewBox.width / 2,
+        y: previewBox.y + previewBox.height / 2,
+      }
+
+      const cutoutRect = {
+        left: cutoutAttrs.x,
+        right: cutoutAttrs.x + cutoutAttrs.width,
+        top: cutoutAttrs.y,
+        bottom: cutoutAttrs.y + cutoutAttrs.height,
+      }
+
+      expect(actionsCenter.x).toBeGreaterThanOrEqual(cutoutRect.left)
+      expect(actionsCenter.x).toBeLessThanOrEqual(cutoutRect.right)
+      expect(actionsCenter.y).toBeGreaterThanOrEqual(cutoutRect.top)
+      expect(actionsCenter.y).toBeLessThanOrEqual(cutoutRect.bottom)
+
+      // Ensure we're not still spotlighting Preview Settings (regression for step 8)
+      expect(
+        previewCenter.x >= cutoutRect.left &&
+          previewCenter.x <= cutoutRect.right &&
+          previewCenter.y >= cutoutRect.top &&
+          previewCenter.y <= cutoutRect.bottom
+      ).toBe(false)
     })
   })
 })
@@ -1340,6 +1479,186 @@ test.describe('New Color Tokens (Teal Info Color)', () => {
   });
 });
 
+test.describe('Tutorial Button Contrast - CRITICAL REGRESSION TEST', () => {
+  test('tutorial Back button is readable in dark theme', async ({ page }) => {
+    // Skip in CI - requires WASM for example loading
+    test.skip(isCI, 'WASM example loading is slow/unreliable in CI')
+    
+    await page.goto('/')
+    await waitForWasmReady(page)
+    
+    // Set dark theme BEFORE starting tutorial
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark')
+    })
+    
+    // Start tutorial via the beginner role card
+    const firstTryButton = page.locator('.btn-role-try').first()
+    await firstTryButton.click()
+    
+    // Wait for tutorial to appear
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 })
+    
+    // Advance past first step so Back button is enabled
+    const nextBtn = page.locator('#tutorialNextBtn')
+    await nextBtn.click()
+    await page.waitForTimeout(300)
+    
+    // Get Back button styles
+    const backBtn = page.locator('#tutorialBackBtn')
+    const styles = await backBtn.evaluate(el => {
+      const computed = getComputedStyle(el)
+      return {
+        bg: computed.backgroundColor,
+        color: computed.color,
+        bgIsTransparent: computed.backgroundColor === 'rgba(0, 0, 0, 0)' || 
+                         computed.backgroundColor === 'transparent',
+      }
+    })
+    
+    // CRITICAL: Assert background is NOT transparent
+    // This was the root cause of the black-on-black text issue
+    expect(styles.bgIsTransparent).toBe(false)
+    expect(styles.bg).not.toBe('rgba(0, 0, 0, 0)')
+    expect(styles.bg).not.toBe('transparent')
+    
+    // Assert text color is light (for dark theme) - RGB values should be high
+    const colorMatch = styles.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+    if (colorMatch) {
+      const [, r, g, b] = colorMatch.map(Number)
+      // In dark theme, text should be light (high RGB values)
+      expect(r + g + b).toBeGreaterThan(400)
+    }
+    
+    console.log('Dark theme Back button styles:', styles)
+  })
+  
+  test('tutorial Back button has visible border in all themes', async ({ page }) => {
+    await page.goto('/')
+    
+    const themes = [
+      { theme: 'light', highContrast: false },
+      { theme: 'dark', highContrast: false },
+      { theme: 'light', highContrast: true },
+      { theme: 'dark', highContrast: true }
+    ]
+    
+    for (const config of themes) {
+      await page.evaluate((cfg) => {
+        document.documentElement.setAttribute('data-theme', cfg.theme)
+        if (cfg.highContrast) {
+          document.documentElement.setAttribute('data-high-contrast', 'true')
+        } else {
+          document.documentElement.removeAttribute('data-high-contrast')
+        }
+      }, config)
+      
+      // Inject a test tutorial button to check styles without loading full app
+      const borderWidth = await page.evaluate(() => {
+        const testBtn = document.createElement('button')
+        testBtn.className = 'btn btn-sm tutorial-btn-back'
+        testBtn.style.position = 'fixed'
+        testBtn.style.top = '-9999px'
+        document.body.appendChild(testBtn)
+        const width = getComputedStyle(testBtn).borderWidth
+        document.body.removeChild(testBtn)
+        return width
+      })
+      
+      const borderWidthPx = parseFloat(borderWidth)
+      expect(borderWidthPx).toBeGreaterThanOrEqual(1)
+      
+      console.log(`${config.theme}${config.highContrast ? ' HC' : ''}: Back button border = ${borderWidth}`)
+    }
+  })
+  
+  test('tutorial repositions correctly after orientation change', async ({ page }) => {
+    // Skip in CI - requires WASM for example loading
+    test.skip(isCI, 'WASM example loading is slow/unreliable in CI')
+    
+    // Start in portrait
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/')
+    await waitForWasmReady(page)
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first()
+    await firstTryButton.click()
+    
+    // Wait for tutorial to appear
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 })
+    await page.waitForTimeout(300)
+    
+    // Rotate to landscape
+    await page.setViewportSize({ width: 812, height: 375 })
+    await page.waitForTimeout(500) // Wait for reposition
+    
+    // Assert panel is within viewport
+    const panel = page.locator('.tutorial-panel')
+    const box = await panel.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.y).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(812)
+    expect(box.y + box.height).toBeLessThanOrEqual(375)
+  })
+  
+  test('tutorial locks body scroll when active', async ({ page }) => {
+    // Skip in CI - requires WASM for example loading
+    test.skip(isCI, 'WASM example loading is slow/unreliable in CI')
+    
+    await page.goto('/')
+    await waitForWasmReady(page)
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first()
+    await firstTryButton.click()
+    
+    // Wait for tutorial to appear
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 })
+    
+    // Verify body scroll is locked
+    const bodyClasses = await page.evaluate(() => document.body.classList.toString())
+    expect(bodyClasses).toContain('tutorial-body-locked')
+    
+    // Close tutorial
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+    
+    // Verify scroll restored
+    const restoredClasses = await page.evaluate(() => document.body.classList.toString())
+    expect(restoredClasses).not.toContain('tutorial-body-locked')
+  })
+  
+  test('tutorial focus trap keeps focus within panel', async ({ page }) => {
+    // Skip in CI - requires WASM for example loading
+    test.skip(isCI, 'WASM example loading is slow/unreliable in CI')
+    
+    await page.goto('/')
+    await waitForWasmReady(page)
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first()
+    await firstTryButton.click()
+    
+    // Wait for tutorial to appear
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 })
+    
+    // Tab through all focusable elements multiple times
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press('Tab')
+      
+      // Verify focus is still inside tutorial panel
+      const isFocusInsideTutorial = await page.evaluate(
+        () => !!document.activeElement?.closest('.tutorial-panel')
+      )
+      expect(isFocusInsideTutorial).toBe(true)
+    }
+    
+    console.log('Focus trap working correctly - focus stayed in tutorial panel')
+  })
+})
+
 test.describe('Drawer Accessibility', () => {
   test.use({ viewport: { width: 375, height: 667 } });
   
@@ -1383,6 +1702,198 @@ test.describe('Drawer Accessibility', () => {
     } catch (error) {
       console.log('Could not complete drawer axe test:', error.message);
       test.skip();
+    }
+  });
+});
+
+test.describe('Tutorial Responsive Behavior - Phase 6.2', () => {
+  test('tutorial repositions correctly after orientation change', async ({ page }) => {
+    test.skip(isCI, 'Orientation testing is unreliable in CI');
+    
+    // Start in portrait
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    
+    // Start tutorial (mock or use actual)
+    await page.evaluate(() => {
+      // Start a simple mock tutorial for testing
+      const mockTutorial = {
+        id: 'test-orientation',
+        title: 'Test Tutorial',
+        steps: [
+          { title: 'Step 1', content: 'Test', highlightSelector: 'body' }
+        ]
+      };
+      if (window.tutorialSandbox && window.tutorialSandbox.startTutorial) {
+        window.tutorialSandbox.startTutorial(mockTutorial);
+      }
+    });
+    
+    await page.waitForTimeout(500);
+    
+    // Check panel is visible and within portrait viewport
+    const panelPortrait = await page.locator('.tutorial-panel').boundingBox();
+    if (panelPortrait) {
+      expect(panelPortrait.x).toBeGreaterThanOrEqual(0);
+      expect(panelPortrait.y).toBeGreaterThanOrEqual(0);
+      expect(panelPortrait.x + panelPortrait.width).toBeLessThanOrEqual(375);
+      expect(panelPortrait.y + panelPortrait.height).toBeLessThanOrEqual(812);
+    }
+    
+    // Rotate to landscape
+    await page.setViewportSize({ width: 812, height: 375 });
+    await page.waitForTimeout(600); // Wait for reposition
+    
+    // Check panel repositioned and is within landscape viewport
+    const panelLandscape = await page.locator('.tutorial-panel').boundingBox();
+    if (panelLandscape) {
+      expect(panelLandscape.x).toBeGreaterThanOrEqual(0);
+      expect(panelLandscape.y).toBeGreaterThanOrEqual(0);
+      expect(panelLandscape.x + panelLandscape.width).toBeLessThanOrEqual(812);
+      expect(panelLandscape.y + panelLandscape.height).toBeLessThanOrEqual(375);
+    }
+  });
+  
+  test('tutorial keyboard shortcuts work correctly', async ({ page }) => {
+    test.skip(isCI, 'Tutorial interaction requires WASM');
+    
+    await page.goto('/');
+    await waitForWasmReady(page);
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first();
+    await firstTryButton.click();
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 });
+    
+    // Test ArrowRight advances step
+    const initialStep = await page.locator('#tutorial-step-current').textContent();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(300);
+    const nextStep = await page.locator('#tutorial-step-current').textContent();
+    expect(parseInt(nextStep)).toBeGreaterThan(parseInt(initialStep));
+    
+    // Test ArrowLeft goes back
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(300);
+    const prevStep = await page.locator('#tutorial-step-current').textContent();
+    expect(parseInt(prevStep)).toBe(parseInt(initialStep));
+    
+    // Test Escape closes tutorial
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    const overlayVisible = await page.locator('.tutorial-overlay').isVisible().catch(() => false);
+    expect(overlayVisible).toBe(false);
+  });
+});
+
+test.describe('Tutorial State Management - Phase 6.3', () => {
+  test('tutorial body scroll locking works', async ({ page }) => {
+    test.skip(isCI, 'Tutorial interaction requires WASM');
+    
+    await page.goto('/');
+    await waitForWasmReady(page);
+    
+    // Check body is scrollable initially
+    const initialOverflow = await page.evaluate(() => {
+      return window.getComputedStyle(document.body).overflow;
+    });
+    expect(initialOverflow).not.toBe('hidden');
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first();
+    await firstTryButton.click();
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 });
+    
+    // Check body scroll is locked
+    const lockedOverflow = await page.evaluate(() => {
+      return window.getComputedStyle(document.body).overflow;
+    });
+    // Body should have scroll lock class or style
+    const bodyClasses = await page.evaluate(() => document.body.className);
+    const hasScrollLock = bodyClasses.includes('tutorial-active') || lockedOverflow === 'hidden';
+    expect(hasScrollLock).toBe(true);
+    
+    // Close tutorial
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    
+    // Check scroll is restored
+    const restoredOverflow = await page.evaluate(() => {
+      return window.getComputedStyle(document.body).overflow;
+    });
+    expect(restoredOverflow).not.toBe('hidden');
+  });
+  
+  test('tutorial keyboard hint is visible', async ({ page }) => {
+    test.skip(isCI, 'Tutorial interaction requires WASM');
+    
+    await page.goto('/');
+    await waitForWasmReady(page);
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first();
+    await firstTryButton.click();
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 });
+    
+    // Check keyboard hint exists and is visible
+    const keyboardHint = page.locator('.tutorial-keyboard-hint');
+    await expect(keyboardHint).toBeVisible();
+    
+    // Check it contains keyboard shortcut indicators
+    const hintText = await keyboardHint.textContent();
+    expect(hintText).toContain('←');
+    expect(hintText).toContain('→');
+    expect(hintText).toContain('Esc');
+  });
+});
+
+test.describe('Tutorial CSS and Styling - Phase 6.4', () => {
+  test('tutorial uses CSS custom properties for z-index', async ({ page }) => {
+    await page.goto('/');
+    
+    // Check that z-index variables are defined
+    const zIndexVars = await page.evaluate(() => {
+      const root = document.documentElement;
+      const styles = getComputedStyle(root);
+      return {
+        backdrop: styles.getPropertyValue('--z-index-tutorial-backdrop'),
+        spotlight: styles.getPropertyValue('--z-index-tutorial-spotlight'),
+        panel: styles.getPropertyValue('--z-index-tutorial-panel'),
+        minimized: styles.getPropertyValue('--z-index-tutorial-minimized')
+      };
+    });
+    
+    expect(zIndexVars.backdrop).toBeTruthy();
+    expect(zIndexVars.panel).toBeTruthy();
+  });
+  
+  test('tutorial keyboard hint has proper kbd styling', async ({ page }) => {
+    test.skip(isCI, 'Tutorial interaction requires WASM');
+    
+    await page.goto('/');
+    await waitForWasmReady(page);
+    
+    // Start tutorial
+    const firstTryButton = page.locator('.btn-role-try').first();
+    await firstTryButton.click();
+    await page.waitForSelector('.tutorial-overlay', { timeout: 60000 });
+    
+    // Check kbd elements have border and background
+    const kbdStyles = await page.evaluate(() => {
+      const kbd = document.querySelector('.tutorial-keyboard-hint kbd');
+      if (!kbd) return null;
+      const styles = getComputedStyle(kbd);
+      return {
+        border: styles.border,
+        background: styles.backgroundColor,
+        padding: styles.padding
+      };
+    });
+    
+    if (kbdStyles) {
+      expect(kbdStyles.border).not.toBe('0px none');
+      expect(kbdStyles.background).not.toBe('rgba(0, 0, 0, 0)');
+      expect(kbdStyles.padding).not.toBe('0px');
     }
   });
 });

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isWindows = process.platform === 'win32'
+const baseURL = process.env.PW_BASE_URL || 'http://localhost:5173'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -19,7 +20,7 @@ export default defineConfig({
   outputDir: './test-results',
   
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -47,7 +48,7 @@ export default defineConfig({
   
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: baseURL,
     reuseExistingServer: !process.env.CI || process.env.PW_REUSE_SERVER === '1',
     timeout: 120000,
   },
