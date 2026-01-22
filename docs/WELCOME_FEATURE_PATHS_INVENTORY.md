@@ -2,16 +2,16 @@
 
 This document maps the 6 core user roles to their primary capabilities, examples, accessibility spotlights, and documentation links for the Welcome screen redesign.
 
-**Note:** As of v2.0 (January 2026), Welcome paths have been reordered to prioritize likely audiences (Educators → Advanced Makers → Keyboard-first → Low Vision → Voice Input → Screen Reader). Each path now launches a guided tutorial sandbox overlay.
+**Note:** As of v2.0 (January 2026), Welcome paths support role-based entry points and guided tutorial sandbox overlays. In the current UI, the only visible entry point is a single beginner-friendly “Getting Started” tutorial.
 
 ## Role Mapping (Reordered v2.0)
 
-### 1. Educators / Facilitators (MOVED TO FIRST)
+### 1. Beginners Start Here (Getting Started)
 
-**Primary Goal:** Quickly demonstrate features and guide learners
+**Primary Goal:** Learn the interface and complete the basic workflow
 
 **Try It Example:** `simple-box`
-- Perfect for teaching basic customization
+- Simple, beginner-friendly example
 - Clear cause-and-effect with parameters
 - Fast preview rendering
 
@@ -21,18 +21,19 @@ This document maps the 6 core user roles to their primary capabilities, examples
 - Features Guide with comprehensive documentation
 - Workflow progress indicator shows current step
 - Clear visual feedback
-- Focus Mode (maximize preview for presenting)
-- Actions menu for Share Link / Export Params (handouts + reproducible demos)
+- Focus Mode (maximize preview)
+- Actions menu for Share Link / Export Params (save and share your setup)
 
 **Documentation Links:**
 - Features Guide modal (accessible via "Help" button)
 - Example files in `/public/examples/`
 
-**Tutorial Sandbox:** Guided walkthrough showing:
-- How to customize parameters and watch preview update
+**Tutorial Sandbox (Getting Started):** Guided walkthrough showing:
+- Where Parameters, Preview, Actions, and Camera controls are (desktop + mobile)
+- How to customize parameters and watch the preview update
 - Using presets to save configurations
-- Opening Features Guide for reference
-- Guiding students through full workflow (~2 min)
+- Using Actions (share/export/compare/queue)
+- Generating and downloading a file, and where to find Help
 
 ---
 
@@ -178,43 +179,9 @@ This document maps the 6 core user roles to their primary capabilities, examples
 
 ---
 
-### UI Orientation (New in v2.4)
+### UI Orientation
 
-**Primary Goal:** Quick familiarization with app layout and drawer/panel locations
-
-**Placement:** Below Accessibility Spotlights section as a subtle call-to-action (not a role card)
-
-**Target Audience:** All new users who need to understand where things are before diving into features
-
-**Try It Example:** `simple-box`
-- Loads a working example so drawers/panels are visible
-- Non-blocking, optional orientation
-
-**What You'll Learn (~1 min):**
-- Where Parameters, Preview, and Actions areas are
-- How to open/close each drawer/panel
-- Mobile vs. desktop control differences (viewport-aware selectors)
-
-**Tutorial Sandbox:** 6-step non-gated walkthrough showing:
-1. **App Layout** - Overview of three main areas (Parameters, Preview, Actions)
-2. **Parameters Panel** - Mobile: tap "Params" button; Desktop: collapse/expand button
-3. **Preview Settings & Info** - Expandable drawer with status, dimensions, quality settings
-4. **Actions Menu** - Share Link, Export Params, Compare, Queue
-5. **Camera Controls** (Optional) - Desktop: right panel; Mobile: camera drawer
-6. **Ready to Explore** - Return to Welcome or start customizing
-
-**Key Features:**
-- **Non-gated**: No completion requirements (recognition-focused, not task-based)
-- **Fast**: Under 1 minute, skippable at any time with Escape
-- **Viewport-aware**: Uses comma-separated selectors to highlight mobile OR desktop controls
-- **Progressive disclosure**: Teaches "where things are" first; role tutorials teach "how to use them"
-- **COGA-friendly**: Keeps cognitive load low by separating layout orientation from feature training
-
-**Drawer/Panel Selectors:**
-- Parameters Panel: `#mobileDrawerToggle, #collapseParamPanelBtn`
-- Preview Settings & Info: `#previewDrawerToggle`
-- Actions Menu: `#actionsDrawerToggle`
-- Camera Controls: `#cameraPanelToggle, #cameraDrawerToggle`
+UI orientation is now included inside the single beginner-friendly **Getting Started** tutorial (so there’s only one intro tour to learn).
 
 **Research Foundation:**
 - **W3C COGA**: Progressive disclosure, predictable controls, clear language

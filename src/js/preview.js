@@ -344,7 +344,7 @@ export class PreviewManager {
    */
   applyColorToMesh() {
     if (!this.mesh?.material) return;
-    
+
     const colors = PREVIEW_COLORS[this.currentTheme] || PREVIEW_COLORS.light;
     const themeHex = `#${colors.model.toString(16).padStart(6, '0')}`;
     const appliedHex = this.colorOverride || themeHex;

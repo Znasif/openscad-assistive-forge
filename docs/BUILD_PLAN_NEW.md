@@ -1,11 +1,11 @@
 ---
 name: OpenSCAD Assistive Forge — Build Plan
-version: 3.1.0
+version: 4.0.0
 date: 2026-01-12
-last_validated: 2026-01-20
-validated_by: Project maintainer (v3.1.0 Enhanced UI & Accessibility Release)
+last_validated: 2026-01-22
+validated_by: Project maintainer (v4.0.0 Major Stable Release)
 status: released
-next_milestone: v3.2 (Q2 2026)
+next_milestone: v4.1 (Q2 2026)
 license: GPL-3.0-or-later
 ---
 

@@ -73,6 +73,20 @@ body {
   line-height: 1.2;
 }
 
+/* Title abbreviation for mobile portrait */
+.title-short {
+  display: none;
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .title-full {
+    display: none;
+  }
+  .title-short {
+    display: inline;
+  }
+}
+
 .app-tagline {
   font-size: var(--font-size-sm);
   opacity: 0.9;
@@ -92,6 +106,30 @@ body {
 @media (min-width: 320px) {
   .header-content {
     gap: var(--space-md);
+  }
+}
+
+/* Mobile: ensure header controls align right */
+@media (max-width: 767px) {
+  .header-content {
+    flex-wrap: wrap;
+  }
+
+  .header-controls {
+    margin-left: auto; /* Push to right */
+    justify-content: flex-end;
+    order: 2; /* After branding */
+  }
+
+  .header-branding {
+    order: 1;
+    flex: 1 1 100%; /* Full width on very small screens */
+  }
+}
+
+@media (max-width: 480px) {
+  .header-branding {
+    flex: 0 1 auto; /* Allow controls to fit on same row if possible */
   }
 }
 
@@ -378,7 +416,7 @@ body {
     /* align-items: flex-start is now the default */
     padding-top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
   }
-  
+
   .welcome-content {
     /* On mobile, always start at top instead of centering */
     margin-top: 0;
@@ -1166,9 +1204,12 @@ body {
     border-bottom: 1px solid var(--color-border);
     background-color: var(--color-bg-secondary);
     gap: var(--space-sm);
+    overflow: visible; /* Prevent clipping */
   }
 
   .camera-panel-header h2 {
+    flex: 1;
+    text-align: center;
     font-size: var(--font-size-sm);
     font-weight: 600;
     margin: 0;
@@ -1181,9 +1222,13 @@ body {
     border: 1px solid var(--color-border);
     border-left: none;
     border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
-    min-width: 28px;
-    min-height: 44px;
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+    min-width: var(--size-touch-target);
+    min-height: var(--size-touch-target);
     padding: var(--space-xs);
+    flex-shrink: 0;
+    overflow: visible;
     transition:
       background-color 0.2s,
       border-color 0.2s;
@@ -1237,6 +1282,7 @@ body {
   .camera-panel.collapsed .camera-panel-header h2 {
     writing-mode: vertical-rl;
     text-orientation: mixed;
+    text-align: center;
     margin: var(--space-sm) 0;
     font-size: var(--font-size-sm);
   }
@@ -1441,6 +1487,108 @@ body {
   color: var(--color-text-secondary);
 }
 
+/* Icon span in shortcuts summary */
+.camera-shortcuts-icon {
+  font-size: var(--font-size-base);
+}
+
+/* Label span in shortcuts summary */
+.camera-shortcuts-label {
+  /* Shown by default */
+}
+
+/* ============================================================================
+   Compact Keyboard Shortcuts - Icon-Only Popover
+   ============================================================================
+   On narrow widths or short heights, convert the shortcuts help to a 
+   compact icon button with a popover-style dropdown.
+   ============================================================================ */
+@media (max-width: 600px), (max-height: 500px) {
+  .camera-shortcuts-help {
+    position: relative;
+    margin-top: auto;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .camera-shortcuts-details {
+    position: relative;
+  }
+
+  /* Icon-only button style for summary */
+  .camera-shortcuts-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--border-radius-sm);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+  }
+
+  .camera-shortcuts-summary:hover,
+  .camera-shortcuts-summary:focus {
+    background: var(--color-accent);
+    color: var(--color-accent-text);
+    border-color: var(--color-accent);
+  }
+
+  .camera-shortcuts-summary:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Hide label, show only icon */
+  .camera-shortcuts-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .camera-shortcuts-icon {
+    font-size: var(--font-size-lg);
+  }
+
+  /* Popover-style positioning for the list */
+  .camera-shortcuts-list {
+    position: absolute;
+    bottom: calc(100% + var(--space-xs));
+    right: 0;
+    margin: 0;
+    padding: var(--space-sm);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 180px;
+    max-width: 220px;
+    z-index: 100;
+  }
+
+  /* Popover arrow pointing down to the icon */
+  .camera-shortcuts-list::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 12px;
+    width: 14px;
+    height: 14px;
+    background: var(--color-bg-primary);
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    transform: rotate(45deg);
+    z-index: -1;
+  }
+}
+
 /* Mobile: Hide camera panel (use camera drawer instead) */
 @media (max-width: 767px) {
   .camera-panel {
@@ -1643,11 +1791,11 @@ details summary:focus,
 }
 
 /* ============================================================================
-   Actions Bar - Drawer Pattern
+   Actions Bar - Bottom Sheet Pattern
    ============================================================================
-   A collapsible drawer on the left containing secondary actions, with the
-   primary action (Generate/Download STL) always visible on the right.
-   Matches the drawer pattern used by the Parameters panel and Camera panel.
+   A bottom sheet drawer that expands upward from the actions bar.
+   When expanded, it overlays the main content to remain fully visible
+   regardless of whether side panels (Parameters/Camera) are open.
    ============================================================================ */
 
 .actions-bar {
@@ -1656,37 +1804,63 @@ details summary:focus,
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-primary);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  min-height: 52px;
+  min-height: var(--actions-bar-height);
+  z-index: var(--z-index-drawer);
+  position: relative;
 }
 
-/* Actions Drawer (left side, collapsible) */
+/* Actions Drawer (bottom sheet, collapsible) */
 .actions-drawer {
   display: flex;
   align-items: center;
   background-color: var(--color-bg-secondary);
   border-right: 1px solid var(--color-border);
-  transition: width 0.2s ease;
-  overflow: hidden;
+  transition: none; /* Disable width transition for bottom sheet */
 }
 
-/* Collapsed state - just toggle button and label */
+/* Collapsed state - just toggle button and label in actions bar */
 .actions-drawer.collapsed {
   width: auto;
   min-width: 124px;
+  position: relative;
 }
 
 .actions-drawer.collapsed .actions-drawer-body {
   display: none;
 }
 
-/* Expanded state - show all content */
+/* Expanded state - show as bottom sheet overlay */
 .actions-drawer:not(.collapsed) {
-  width: auto;
-  flex: 0 1 auto;
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Keep the docked actions bar (primary button row) clickable/visible */
+  bottom: calc(var(--actions-bar-height) + env(safe-area-inset-bottom, 0px));
+  z-index: calc(var(--z-index-drawer) + 10);
+  flex-direction: column;
+  max-height: var(--drawer-max-height);
+  overflow: auto;
+  border-right: none;
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Desktop: Keep expanded actions drawer within preview panel bounds
+   to avoid overlapping Parametric (left) and Camera (right) panels */
+@media (min-width: 768px) {
+  .actions-drawer:not(.collapsed) {
+    position: absolute;
+    bottom: 100%; /* Position above the actions bar */
+    left: 0;
+    right: 0;
+  }
 }
 
 .actions-drawer:not(.collapsed) .actions-drawer-body {
   display: flex;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 /* Drawer toggle button */
@@ -1714,20 +1888,25 @@ details summary:focus,
   outline-offset: -3px;
 }
 
-/* Arrow icon rotation */
+/* Arrow icon rotation for bottom sheet */
 .actions-drawer-icon {
   /* no-op: we rotate only the chevron, not the whole icon */
+}
+
+/* Hide the vertical edge line - drawer expands upward (bottom sheet pattern) */
+.actions-drawer-icon .drawer-edge {
+  display: none;
 }
 
 .actions-drawer-icon .drawer-chevron {
   transition: transform 0.2s ease;
   transform-box: fill-box;
   transform-origin: center;
-  transform: rotate(0deg); /* Collapsed: points right (expand) */
+  transform: rotate(-90deg); /* Collapsed: points up (expand upward) */
 }
 
 .actions-drawer:not(.collapsed) .actions-drawer-icon .drawer-chevron {
-  transform: rotate(180deg); /* Expanded: points left (collapse) */
+  transform: rotate(90deg); /* Expanded: points down (collapse down) */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1742,7 +1921,8 @@ details summary:focus,
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-primary);
-  padding-right: var(--space-sm);
+  padding: 0 var(--space-sm); /* Add horizontal padding */
+  margin-left: var(--space-xs); /* Space from toggle button */
   white-space: nowrap;
 }
 
@@ -2084,11 +2264,7 @@ details summary:focus,
     width: 100%;
     min-height: 44px;
     padding: var(--space-xs) var(--space-sm);
-    background: color-mix(
-      in srgb,
-      var(--color-bg-tertiary) 90%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--color-bg-tertiary) 90%, transparent);
     border: none;
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text-primary);
@@ -2113,14 +2289,30 @@ details summary:focus,
     outline-offset: -3px;
   }
 
-  /* Arrow icon rotation */
+  /* Arrow icon - ensure visibility in all themes */
+  .camera-drawer-toggle-btn svg {
+    stroke: currentColor;
+    color: var(--color-text-primary);
+    opacity: 1; /* Ensure not hidden */
+  }
+
   .camera-drawer-icon .drawer-chevron {
+    stroke: currentColor;
+    stroke-width: 2;
     transition: transform 0.2s ease;
     transform: rotate(180deg); /* Collapsed: points up (expand) */
   }
 
   .camera-drawer:not(.collapsed) .camera-drawer-icon .drawer-chevron {
     transform: rotate(0deg); /* Expanded: points down (collapse) */
+  }
+
+  /* Verify visibility in each theme */
+  :root[data-theme='light'] .camera-drawer-toggle-btn svg,
+  :root[data-theme='dark'] .camera-drawer-toggle-btn svg,
+  :root[data-theme='high-contrast'] .camera-drawer-toggle-btn svg {
+    color: var(--color-text-primary);
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2208,11 +2400,7 @@ details summary:focus,
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: color-mix(
-      in srgb,
-      var(--color-bg-secondary) 85%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--color-bg-secondary) 85%, transparent);
     border-radius: var(--border-radius-sm);
   }
 
@@ -2232,16 +2420,14 @@ details summary:focus,
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(
-      in srgb,
-      var(--color-bg-tertiary) 92%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--color-bg-tertiary) 92%, transparent);
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-sm);
     color: var(--color-text-primary);
     cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
   }
 
   /* Fallback for buttons */
@@ -2337,19 +2523,6 @@ details summary:focus,
 
   .actions-drawer.collapsed .actions-drawer-label {
     display: inline;
-  }
-
-  /* Arrow points up when collapsed (to indicate expand direction) */
-  .actions-drawer-icon .drawer-edge {
-    display: none;
-  }
-
-  .actions-drawer-icon .drawer-chevron {
-    transform: rotate(-90deg);
-  }
-
-  .actions-drawer:not(.collapsed) .actions-drawer-icon .drawer-chevron {
-    transform: rotate(90deg);
   }
 
   /* Drawer body on mobile - vertical list */
@@ -2490,11 +2663,7 @@ details summary:focus,
   }
 
   :root[data-theme='dark'] .camera-drawer-btn {
-    background: color-mix(
-      in srgb,
-      var(--color-bg-tertiary) 95%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--color-bg-tertiary) 95%, transparent);
   }
 
   /* High contrast mode - disable transparency for maximum readability */

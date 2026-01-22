@@ -44,7 +44,10 @@
               width="44"
             />
             <div class="header-branding-text">
-              <h1>OpenSCAD Assistive Forge</h1>
+              <h1>
+                <span class="title-full">OpenSCAD Assistive Forge</span>
+                <span class="title-short" aria-hidden="true">OpenSCAD AF</span>
+              </h1>
               <p class="app-tagline">Customize 3D models directly in your browser</p>
             </div>
           </div>
@@ -60,7 +63,7 @@
               </svg>
               <span class="github-label">GitHub</span>
             </a>
-            <button id="contrastToggle" class="btn btn-sm btn-secondary contrast-toggle" aria-label="Toggle high contrast" title="Toggle high contrast mode">
+            <button id="contrastToggle" class="btn btn-sm btn-secondary contrast-toggle" aria-label="Toggle high contrast" title="Toggle high contrast mode" data-tutorial-target="contrast-toggle">
               <svg class="contrast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M12 2 L12 22"></path>
@@ -68,7 +71,7 @@
               </svg>
               <span class="contrast-label">HC</span>
             </button>
-            <button id="themeToggle" class="btn btn-sm btn-secondary theme-toggle" aria-label="Toggle theme" title="Toggle light/dark theme">
+            <button id="themeToggle" class="btn btn-sm btn-secondary theme-toggle" aria-label="Toggle theme" title="Toggle light/dark theme" data-tutorial-target="theme-toggle">
               <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="5"></circle>
                 <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -115,10 +118,10 @@
             </svg>
             <span class="btn-text">Full Screen</span>
           </button>
-          <button id="featuresGuideBtn" class="btn btn-sm btn-outline" aria-label="Open features guide and examples" title="Help & Examples">
+          <button id="featuresGuideBtn" class="btn btn-sm btn-outline" aria-label="Open features guide and examples" title="Help & Examples" data-tutorial-target="features-guide">
             📖 Help
           </button>
-          <button id="clearFileBtn" class="btn btn-sm btn-outline" aria-label="Go back to welcome screen. Warning: unsaved changes will be lost" title="Back to welcome screen (unsaved changes will be lost)">
+          <button id="clearFileBtn" class="btn btn-sm btn-outline" aria-label="Go back to welcome screen. Warning: unsaved changes will be lost" title="Back to welcome screen (unsaved changes will be lost)" data-tutorial-target="clear-file">
             ← Back
           </button>
         </div>
@@ -140,22 +143,23 @@
               <input type="file" id="fileInput" accept=".scad,.zip" class="file-input" />
             </label>
             
-            <div class="features-overview" role="region" aria-labelledby="features-heading">
+              <div class="features-overview" role="region" aria-labelledby="features-heading">
               <h3 id="features-heading">Discover Features for Your Needs</h3>
-              <p class="features-intro">Start with the guided beginner tutorial, then explore more features in Help.</p>
+                <p class="features-intro">Start with the guided beginner tutorial, then use Help for deeper explanations and examples.</p>
               
               <div class="role-paths-grid">
                 <!-- Beginners Start Here (only visible tutorial for now) -->
                 <div class="role-path-card">
                   <h4 class="role-path-title">Beginners Start Here</h4>
-                  <p class="role-path-description">New to OpenSCAD Assistive Forge? Learn the basics with a simple example</p>
+                    <p class="role-path-description">New here? Learn the interface and the basic workflow with a simple example.</p>
                   <ul class="role-path-tips" aria-label="What you'll learn">
-                    <li>Change Width/Height → watch Preview update</li>
-                    <li>Save a preset to reuse later</li>
-                    <li>Generate and download your first STL (~2 min)</li>
+                      <li>Find Parameters, Preview, and Actions</li>
+                      <li>Change Width/Height → watch Preview update</li>
+                      <li>Use Presets, Actions, and Camera controls</li>
+                      <li>Generate and download your first file (~3 min)</li>
                   </ul>
                   <div class="role-path-actions">
-                    <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="beginners" data-tutorial="educators">
+                      <button class="btn btn-primary btn-role-try" data-example="simple-box" data-role="beginners" data-tutorial="intro">
                       Start Tutorial
                     </button>
                     <button class="btn btn-link btn-role-learn" data-feature-tab="presets" aria-label="Open Features Guide: Presets">
@@ -283,18 +287,6 @@
                 </ul>
               </div>
               
-              <!-- UI Orientation Call-to-Action -->
-              <div class="ui-orientation-cta">
-                <p>New to the interface?</p>
-                <button 
-                  class="btn btn-outline btn-ui-orientation" 
-                  data-example="simple-box" 
-                  data-tutorial="ui-orientation"
-                  aria-label="Start UI orientation tour (1 minute)"
-                >
-                  🧭 UI Orientation (1 min)
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -313,6 +305,7 @@
                 aria-label="Close parameters panel"
                 title="Close"
                 style="display: none;"
+                data-tutorial-target="mobile-drawer-close"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -338,6 +331,7 @@
                   aria-controls="paramPanelBody" 
                   aria-label="Collapse parameters panel"
                   title="Collapse panel"
+                  data-tutorial-target="collapse-param-panel"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <polyline points="11 18 5 12 11 6"></polyline>
@@ -349,7 +343,7 @@
             
             <div class="param-panel-body" id="paramPanelBody">
             <!-- Preset Controls (Collapsed by default on desktop) -->
-            <details class="preset-controls" id="presetControls" role="region" aria-label="Parameter presets">
+            <details class="preset-controls" id="presetControls" role="region" aria-label="Parameter presets" data-tutorial-target="preset-controls">
               <summary class="preset-summary">
                 <span class="preset-icon">💾</span>
                 Presets
@@ -373,7 +367,7 @@
             </details>
             
             <!-- Library Controls -->
-            <div class="library-controls hidden" id="libraryControls" role="region" aria-label="OpenSCAD library bundles">
+            <div class="library-controls hidden" id="libraryControls" role="region" aria-label="OpenSCAD library bundles" data-tutorial-target="library-controls">
               <details class="library-details">
                 <summary class="library-summary">
                   📚 Libraries <span class="library-badge" id="libraryBadge">0</span>
@@ -413,14 +407,14 @@
               </div>
             </div>
             
-            <div id="parametersContainer" class="parameters-container" aria-labelledby="parameters-heading">
+            <div id="parametersContainer" class="parameters-container" aria-labelledby="parameters-heading" data-tutorial-target="parameters-container">
               <!-- Parameters will be dynamically generated here -->
             </div>
             
             <!-- Output Format Selector -->
             <div class="output-format-section" aria-label="Output format selection">
               <label for="outputFormat" class="output-format-label">Output:</label>
-              <select id="outputFormat" class="output-format-select" aria-label="Select output file format">
+              <select id="outputFormat" class="output-format-select" aria-label="Select output file format" data-tutorial-target="output-format">
                 <option value="stl" selected>STL</option>
                 <option value="obj">OBJ</option>
                 <option value="off">OFF</option>
@@ -505,6 +499,7 @@
                       aria-controls="paramPanel"
                       aria-label="Open parameters panel"
                       title="Parameters"
+                      data-tutorial-target="mobile-drawer-toggle"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -522,6 +517,7 @@
                       aria-controls="previewInfoContent"
                       aria-label="Expand preview settings and model info"
                       title="Preview Settings &amp; Info"
+                      data-tutorial-target="preview-drawer-toggle"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <polyline points="13 6 7 12 13 18"></polyline>
@@ -658,7 +654,7 @@
               
               <!-- Bottom section: 3D preview canvas -->
               <div class="preview-canvas-section" id="previewCanvasSection">
-                <div class="preview-container" id="previewContainer" role="group" aria-label="3D model preview and controls" aria-describedby="previewModelSummary" tabindex="0">
+                <div class="preview-container" id="previewContainer" role="group" aria-label="3D model preview and controls" aria-describedby="previewModelSummary" tabindex="0" data-tutorial-target="preview-container">
                   <!-- 3D preview or placeholder -->
                   <div class="preview-placeholder">
                     <p>3D preview will appear here after generating STL</p>
@@ -688,6 +684,7 @@
                   aria-controls="actionsDrawerBody"
                   aria-label="Expand actions menu"
                   title="More Actions"
+                  data-tutorial-target="actions-drawer-toggle"
                 >
                   <svg class="actions-drawer-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <line class="drawer-edge" x1="7" y1="4" x2="7" y2="20" stroke-width="2"></line>
@@ -756,7 +753,7 @@
                   </svg>
                   <span>Cancel</span>
                 </button>
-                <button id="primaryActionBtn" class="btn btn-primary btn-large" aria-label="Generate STL file from current parameters" data-action="generate">Generate STL</button>
+                <button id="primaryActionBtn" class="btn btn-primary btn-large" aria-label="Generate STL file from current parameters" data-action="generate" data-tutorial-target="primary-action">Generate STL</button>
                 <a id="downloadFallbackLink" href="#" class="btn btn-sm btn-outline hidden" aria-label="Download previously generated file">
                   <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -777,6 +774,7 @@
                   aria-controls="cameraDrawerBody"
                   aria-label="Expand camera controls"
                   title="Camera Controls"
+                  data-tutorial-target="mobile-camera-drawer-toggle"
                 >
                   <svg class="camera-drawer-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <polyline class="drawer-chevron" points="6 9 12 15 18 9"></polyline>
@@ -887,6 +885,7 @@
                 aria-controls="cameraPanelBody" 
                 aria-label="Expand camera controls panel"
                 title="Camera Controls"
+                data-tutorial-target="camera-panel-toggle"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <polyline points="13 6 7 12 13 18"></polyline>
@@ -993,7 +992,10 @@
               <!-- Keyboard Shortcuts Help -->
               <div class="camera-shortcuts-help">
                 <details class="camera-shortcuts-details">
-                  <summary class="camera-shortcuts-summary">⌨️ Keyboard Shortcuts</summary>
+                  <summary class="camera-shortcuts-summary" aria-label="Keyboard shortcuts">
+                    <span class="camera-shortcuts-icon" aria-hidden="true">⌨️</span>
+                    <span class="camera-shortcuts-label">Keyboard Shortcuts</span>
+                  </summary>
                   <dl class="camera-shortcuts-list">
                     <div class="camera-shortcut-item">
                       <dt>Arrow Keys</dt>
@@ -1034,7 +1036,7 @@
     <!-- Render Queue Modal -->
     <div class="modal hidden" id="renderQueueModal" role="dialog" aria-labelledby="queueModalTitle" aria-modal="true">
       <div class="modal-overlay" id="queueModalOverlay"></div>
-      <div class="modal-content modal-large">
+      <div class="modal-content modal-large" data-tutorial-target="features-guide-modal">
         <div class="modal-header">
           <h2 id="queueModalTitle">Render Queue</h2>
           <button class="modal-close" id="queueModalClose" aria-label="Close render queue">

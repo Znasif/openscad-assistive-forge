@@ -446,6 +446,6 @@ If you encounter issues:
 
 ---
 
-**Last Updated**: 2026-01-18  
-**Version**: 2.4.0+  
+**Last Updated**: 2026-01-22  
+**Version**: 4.0.0  
 **Maintained by**: OpenSCAD Assistive Forge community

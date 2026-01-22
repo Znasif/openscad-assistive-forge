@@ -538,7 +538,7 @@ Visit your production URL and verify:
 1. **Page Load**
    - [ ] Page loads without errors
    - [ ] No 404s in Network tab
-   - [ ] Console shows "OpenSCAD Assistive Forge v3.1.0"
+   - [ ] Console shows "OpenSCAD Assistive Forge v4.0.0"
    - [ ] Console shows "[Worker] OpenSCAD WASM initialized successfully"
 
 2. **File Upload**

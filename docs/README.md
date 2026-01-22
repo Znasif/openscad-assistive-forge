@@ -197,5 +197,5 @@ When adding new documentation:
 
 ---
 
-**Last Updated**: January 19, 2026  
-**Documentation Version**: 3.0.0
+**Last Updated**: January 22, 2026  
+**Documentation Version**: 4.0.0

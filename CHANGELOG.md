@@ -5,6 +5,42 @@ All notable changes to the OpenSCAD Assistive Forge project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-01-22
+
+### Major Stable Release
+
+This is the **first major stable release** of OpenSCAD Assistive Forge, marking the project as production-ready for general use.
+
+**Highlights:**
+- Comprehensive documentation overhaul for accessibility and onboarding
+- Enhanced README with detailed project intent and accessibility features
+- Package metadata improvements for npm discoverability
+- Open source conventions fully implemented
+
+### Changed
+
+- **README.md**: Completely rewritten with comprehensive project intent, detailed accessibility features documentation, user role guide, and improved organization
+- **package.json**: Added author, repository, homepage, and bugs fields; expanded keywords for better discoverability
+- **Version**: Bumped to 4.0.0 to signify stable release milestone
+
+### Documentation
+
+- Enhanced accessibility documentation with standards compliance tables
+- Added detailed keyboard shortcut reference
+- Documented screen reader support and tested configurations
+- Added user role guide (screen reader users, clinicians, low vision users, etc.)
+- Improved CLI documentation with command tables
+- Better organized feature sections
+
+### Open Source
+
+- Complete open source convention compliance
+- Enhanced CONTRIBUTING.md with UI consistency rules
+- Comprehensive THIRD_PARTY_NOTICES.md
+- Clear licensing information throughout
+
+---
+
 ## [3.1.0] - 2026-01-20
 
 ### Enhanced UI & Accessibility Release
@@ -708,10 +744,9 @@ See [docs/BUILD_PLAN_NEW.md](docs/BUILD_PLAN_NEW.md) for complete details.
 - **v1.1.0 - v1.7.0** (2026-01-13): Rapid feature releases
 - **v1.8.0 - v1.10.0** (2026-01-14): Advanced features
 - **v2.0.0** (2026-01-15): Developer toolchain
-- **v2.1.0** (2026-01-15): Enhanced CLI
-- **v2.2.0** (2026-01-15): Additional templates
-- **v2.3.0** (2026-01-15): Audit & polish release
-- **v2.4.0+**: Future releases (planned)
+- **v2.1.0 - v2.10.1** (2026-01-15 to 2026-01-18): CLI enhancements, templates, testing
+- **v3.0.0 - v3.1.0** (2026-01-19 to 2026-01-20): Cloudflare deployment, UI/accessibility enhancements
+- **v4.0.0** (2026-01-22): Major stable release with comprehensive documentation
 
 ## Version Scheme
 
