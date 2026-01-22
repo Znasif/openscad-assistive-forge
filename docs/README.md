@@ -72,6 +72,17 @@
 
 ## 🏗️ Development & Architecture
 
+### Development Workflow
+
+- **[Development Workflow](DEVELOPMENT_WORKFLOW.md)** ⭐ **Start Here for Contributors**
+  - Complete branching strategy (Git Flow)
+  - Commit message conventions
+  - Pull request process
+  - Release procedures
+- [Quick Reference](QUICK_REFERENCE.md) — Command cheat sheet for daily development
+- [Contributing Guidelines](../CONTRIBUTING.md) — Code style, accessibility checklist, and UI standards
+- [Branch Protection Setup](../.github/BRANCH_PROTECTION.md) — GitHub repository configuration
+
 ### Planning Documents
 
 - [Build Plan](BUILD_PLAN_NEW.md) — Current development roadmap
@@ -123,7 +134,7 @@ Historical documents and legacy content: [archive/](archive/)
 | **Deployment** | [Cloudflare Guide](guides/CLOUDFLARE_PAGES_DEPLOYMENT.md), [Vercel Guide](guides/DEPLOYMENT_GUIDE.md), [PWA Guide](guides/PWA_DEPLOYMENT_GUIDE.md) |
 | **Testing** | [Quick Start](guides/TESTING_QUICK_START.md), [Manual Procedures](guides/MANUAL_TESTING_PROCEDURES.md), [Test Report](../TEST_REPORT.md) |
 | **Troubleshooting** | [Troubleshooting Guide](TROUBLESHOOTING.md), [Deployment Verification](guides/DEPLOYMENT_VERIFICATION.md) |
-| **Development** | [Build Plan](BUILD_PLAN_NEW.md), [Parameter Schema](specs/PARAMETER_SCHEMA_SPEC.md), [Performance](PERFORMANCE.md) |
+| **Development** | [Workflow](DEVELOPMENT_WORKFLOW.md), [Quick Reference](QUICK_REFERENCE.md), [Contributing](../CONTRIBUTING.md), [Build Plan](BUILD_PLAN_NEW.md) |
 | **Research** | [WASM Analysis](research/WASM_THREADING_ANALYSIS.md), [Comparable Projects](research/COMPARABLE_PROJECTS.md) |
 
 ### By User Role
@@ -139,6 +150,9 @@ Historical documents and legacy content: [archive/](archive/)
 - [Cloudflare Configuration Validation](research/CLOUDFLARE_VALIDATION.md)
 
 **For Developers:**
+- [Development Workflow](DEVELOPMENT_WORKFLOW.md) ⭐ **Start Here**
+- [Quick Reference](QUICK_REFERENCE.md) — Daily workflow commands
+- [Contributing Guidelines](../CONTRIBUTING.md)
 - [Build Plan](BUILD_PLAN_NEW.md)
 - [Parameter Schema Spec](specs/PARAMETER_SCHEMA_SPEC.md)
 - [Testing Documentation](TESTING.md)

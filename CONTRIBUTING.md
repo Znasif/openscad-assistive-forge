@@ -29,6 +29,34 @@ Open `http://localhost:5173`.
 
 ## Development workflow
 
+**📖 For complete branching strategy and release process, see [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)**
+
+### Branch Structure
+
+- **`main`** - Production releases (protected, requires PR)
+- **`develop`** - Active development (base for feature branches)
+- **`feat/*`** - Feature branches (merge to `develop`)
+- **`fix/*`** - Bug fix branches (merge to `develop`)
+- **`hotfix/*`** - Critical fixes (merge to both `main` and `develop`)
+
+### Quick Start for Contributors
+
+```bash
+# Start a new feature
+git checkout develop
+git pull origin develop
+git checkout -b feat/your-feature-name
+
+# Make changes and commit
+git add .
+git commit -m "feat: description of your changes"
+
+# Push and create PR to develop
+git push -u origin feat/your-feature-name
+```
+
+See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for detailed workflow, release process, and commit conventions.
+
 ### Code style
 
 - Run formatting: `npm run format`

@@ -294,6 +294,41 @@ npm run setup-wasm
 npm run setup-libraries
 ```
 
+### Contributing
+
+We welcome contributions! Please follow our development workflow:
+
+**Branch Structure:**
+- `main` - Production releases (protected)
+- `develop` - Active development (base for feature branches)
+- `feat/*` - Feature branches
+- `fix/*` - Bug fix branches
+
+**Quick Start:**
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/openscad-assistive-forge.git
+cd openscad-assistive-forge
+
+# Create feature branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b feat/your-feature-name
+
+# Make changes, commit using conventional commits
+git add .
+git commit -m "feat: add your feature"
+
+# Push and create PR to develop
+git push -u origin feat/your-feature-name
+```
+
+**Documentation:**
+- 📖 [Development Workflow](docs/DEVELOPMENT_WORKFLOW.md) - Complete branching strategy and release process
+- 📋 [Contributing Guidelines](CONTRIBUTING.md) - Code style, accessibility checklist, and UI standards
+- 🔒 [Branch Protection Setup](.github/BRANCH_PROTECTION.md) - Recommended GitHub settings
+
 ### Windows Note (Playwright)
 
 On Windows, use the provided wrapper for E2E tests to avoid terminal hangs:
