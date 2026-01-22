@@ -21,6 +21,7 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     
     <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -90,6 +91,26 @@
           </div>
         </div>
       </header>
+
+      <div
+        id="updateBanner"
+        class="update-banner hidden"
+        role="region"
+        aria-live="polite"
+        aria-label="Update available"
+      >
+        <div class="update-banner-content">
+          <span class="update-banner-text">Update available. Refresh to get the latest version.</span>
+          <div class="update-banner-actions">
+            <button id="updateBannerRefresh" class="btn btn-sm btn-primary">
+              Refresh
+            </button>
+            <button id="updateBannerDismiss" class="btn btn-sm btn-secondary">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
       
       <!-- Workflow Progress Indicator (C3: COGA breadcrumbs) - Moved here to prevent header overlap -->
       <div class="workflow-progress hidden" id="workflowProgress" role="navigation" aria-label="Workflow progress">
@@ -118,8 +139,13 @@
             </svg>
             <span class="btn-text">Full Screen</span>
           </button>
-          <button id="featuresGuideBtn" class="btn btn-sm btn-outline" aria-label="Open features guide and examples" title="Help & Examples" data-tutorial-target="features-guide">
-            📖 Help
+          <button id="featuresGuideBtn" class="btn btn-sm btn-outline btn-with-icon" aria-label="Open features guide and examples" title="Help & Examples" data-tutorial-target="features-guide">
+            <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="11" x2="12" y2="16"></line>
+              <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"></circle>
+            </svg>
+            <span class="btn-text">Help</span>
           </button>
           <button id="clearFileBtn" class="btn btn-sm btn-outline" aria-label="Go back to welcome screen. Warning: unsaved changes will be lost" title="Back to welcome screen (unsaved changes will be lost)" data-tutorial-target="clear-file">
             ← Back
@@ -314,11 +340,19 @@
               </button>
               
               <div class="param-header-actions">
-                <button id="undoBtn" class="btn btn-sm btn-outline" aria-label="Undo last parameter change (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled>
-                  ↩️ Undo
+                <button id="undoBtn" class="btn btn-sm btn-outline btn-with-icon" aria-label="Undo last parameter change (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled>
+                  <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                    <polyline points="9 14 4 9 9 4"></polyline>
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                  </svg>
+                  <span class="btn-text">Undo</span>
                 </button>
-                <button id="redoBtn" class="btn btn-sm btn-outline" aria-label="Redo parameter change (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)" disabled>
-                  ↪️ Redo
+                <button id="redoBtn" class="btn btn-sm btn-outline btn-with-icon" aria-label="Redo parameter change (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)" disabled>
+                  <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                    <polyline points="15 14 20 9 15 4"></polyline>
+                    <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
+                  </svg>
+                  <span class="btn-text">Redo</span>
                 </button>
                 <button id="resetBtn" class="btn btn-sm" aria-label="Reset all parameters to default values">Reset</button>
               </div>
@@ -345,7 +379,14 @@
             <!-- Preset Controls (Collapsed by default on desktop) -->
             <details class="preset-controls" id="presetControls" role="region" aria-label="Parameter presets" data-tutorial-target="preset-controls">
               <summary class="preset-summary">
-                <span class="preset-icon">💾</span>
+                <span class="preset-icon" aria-hidden="true">
+                  <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                    <rect x="4" y="4" width="16" height="16" rx="0"></rect>
+                    <rect x="7" y="4" width="10" height="6" rx="0"></rect>
+                    <rect x="8" y="14" width="8" height="6" rx="0"></rect>
+                    <line x1="16" y1="7" x2="16" y2="9"></line>
+                  </svg>
+                </span>
                 Presets
               </summary>
               <div class="preset-content">
@@ -370,7 +411,12 @@
             <div class="library-controls hidden" id="libraryControls" role="region" aria-label="OpenSCAD library bundles" data-tutorial-target="library-controls">
               <details class="library-details">
                 <summary class="library-summary">
-                  📚 Libraries <span class="library-badge" id="libraryBadge">0</span>
+                  <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                    <rect x="4" y="4" width="16" height="5" rx="0"></rect>
+                    <rect x="4" y="10" width="16" height="5" rx="0"></rect>
+                    <rect x="4" y="16" width="16" height="4" rx="0"></rect>
+                  </svg>
+                  Libraries <span class="library-badge" id="libraryBadge">0</span>
                 </summary>
                 <div class="library-content">
                   <p class="library-help">Enable libraries used by this model:</p>
@@ -378,8 +424,13 @@
                     <!-- Library checkboxes will be dynamically generated here -->
                   </div>
                   <div class="library-footer">
-                    <button id="libraryHelpBtn" class="btn-link" aria-label="Learn more about libraries">
-                      ℹ️ What are libraries?
+                    <button id="libraryHelpBtn" class="btn-link btn-link-with-icon" aria-label="Learn more about libraries">
+                      <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="11" x2="12" y2="16"></line>
+                        <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                      What are libraries?
                     </button>
                   </div>
                 </div>
@@ -429,7 +480,16 @@
             <!-- Advanced Menu -->
             <details class="advanced-menu" id="advancedMenu">
               <summary class="advanced-menu-summary">
-                <span class="advanced-icon">⚙️</span>
+                <span class="advanced-icon" aria-hidden="true">
+                  <svg class="btn-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                    <rect x="8" y="4" width="4" height="4" rx="0"></rect>
+                    <rect x="12" y="10" width="4" height="4" rx="0"></rect>
+                    <rect x="6" y="16" width="4" height="4" rx="0"></rect>
+                  </svg>
+                </span>
                 Advanced
               </summary>
               <div class="advanced-menu-content">
@@ -551,7 +611,16 @@
 
                   <div class="preview-settings-panel" aria-label="Preview settings">
                     <div class="preview-settings-header">
-                      <span class="settings-icon">⚙️</span>
+                      <span class="settings-icon" aria-hidden="true">
+                        <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                          <line x1="4" y1="6" x2="20" y2="6"></line>
+                          <line x1="4" y1="12" x2="20" y2="12"></line>
+                          <line x1="4" y1="18" x2="20" y2="18"></line>
+                          <rect x="8" y="4" width="4" height="4" rx="0"></rect>
+                          <rect x="12" y="10" width="4" height="4" rx="0"></rect>
+                          <rect x="6" y="16" width="4" height="4" rx="0"></rect>
+                        </svg>
+                      </span>
                       <span>Preview Settings</span>
                     </div>
                     <div class="preview-settings">
@@ -571,6 +640,12 @@
                         <span>Show grid</span>
                       </label>
                       <span id="gridHelp" class="sr-only">Toggle grid plane visibility in 3D preview</span>
+
+                      <label class="preview-setting">
+                        <input type="checkbox" id="autoBedToggle" checked aria-describedby="autoBedHelp" />
+                        <span>Auto-bed (Z=0)</span>
+                      </label>
+                      <span id="autoBedHelp" class="sr-only">Automatically place models on the build plate at Z equals zero</span>
 
                       <label class="preview-setting">
                         <input type="checkbox" id="statusBarToggle" checked aria-describedby="statusBarHelp" />
@@ -597,6 +672,17 @@
                           <option value="high">High (smooth)</option>
                         </select>
                       </label>
+
+                      <div class="preview-setting cache-tools">
+                        <span class="preview-setting-label">App cache</span>
+                        <button
+                          id="clearCacheBtn"
+                          class="btn btn-sm btn-outline"
+                          aria-label="Clear cached files and reload the app"
+                        >
+                          Clear cache &amp; reload
+                        </button>
+                      </div>
                       
                       <div class="preview-setting complexity-indicator" id="complexityIndicator" title="Detected model complexity tier">
                         <span class="preview-setting-label">Complexity:</span>
@@ -637,19 +723,6 @@
                     </dl>
                   </div>
                 </div>
-                
-                <!-- Resize handle for dragging drawer height -->
-                <div 
-                  class="preview-drawer-resize-handle" 
-                  id="previewDrawerResizeHandle"
-                  role="separator"
-                  aria-orientation="horizontal"
-                  aria-label="Resize preview settings drawer"
-                  aria-valuenow="30"
-                  aria-valuemin="10"
-                  aria-valuemax="80"
-                  tabindex="0"
-                ></div>
               </div>
               
               <!-- Bottom section: 3D preview canvas -->
@@ -676,22 +749,24 @@
             <div class="actions-bar" id="actionsBar" role="toolbar" aria-label="Model actions">
               <!-- Actions Drawer (collapsible, left side) -->
               <div class="actions-drawer collapsed" id="actionsDrawer" role="region" aria-label="Additional actions">
-                <!-- Drawer toggle button -->
-                <button 
-                  id="actionsDrawerToggle" 
-                  class="btn btn-sm btn-icon actions-drawer-toggle-btn" 
-                  aria-expanded="false" 
-                  aria-controls="actionsDrawerBody"
-                  aria-label="Expand actions menu"
-                  title="More Actions"
-                  data-tutorial-target="actions-drawer-toggle"
-                >
-                  <svg class="actions-drawer-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <line class="drawer-edge" x1="7" y1="4" x2="7" y2="20" stroke-width="2"></line>
-                    <polyline class="drawer-chevron" points="11 6 17 12 11 18"></polyline>
-                  </svg>
-                </button>
-                <span class="actions-drawer-label">Actions</span>
+                <!-- Drawer header with toggle button and title -->
+                <div class="actions-drawer-header">
+                  <button 
+                    id="actionsDrawerToggle" 
+                    class="btn btn-sm btn-icon btn-collapse-panel actions-drawer-toggle-btn" 
+                    aria-expanded="false" 
+                    aria-controls="actionsDrawerBody"
+                    aria-label="Expand actions menu"
+                    title="More Actions"
+                    data-tutorial-target="actions-drawer-toggle"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <polyline points="13 6 7 12 13 18"></polyline>
+                      <line x1="17" y1="4" x2="17" y2="20" stroke-width="2"></line>
+                    </svg>
+                  </button>
+                  <h2 class="actions-drawer-title">Actions</h2>
+                </div>
                 
                 <!-- Drawer body (expandable content) -->
                 <div class="actions-drawer-body" id="actionsDrawerBody">
@@ -993,7 +1068,17 @@
               <div class="camera-shortcuts-help">
                 <details class="camera-shortcuts-details">
                   <summary class="camera-shortcuts-summary" aria-label="Keyboard shortcuts">
-                    <span class="camera-shortcuts-icon" aria-hidden="true">⌨️</span>
+                    <span class="camera-shortcuts-icon" aria-hidden="true">
+                      <svg class="btn-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+                        <rect x="3" y="7" width="18" height="10" rx="0"></rect>
+                        <line x1="6" y1="10" x2="8" y2="10"></line>
+                        <line x1="9.5" y1="10" x2="11.5" y2="10"></line>
+                        <line x1="13" y1="10" x2="15" y2="10"></line>
+                        <line x1="16.5" y1="10" x2="18.5" y2="10"></line>
+                        <line x1="6" y1="13.5" x2="10" y2="13.5"></line>
+                        <line x1="11.5" y1="13.5" x2="18.5" y2="13.5"></line>
+                      </svg>
+                    </span>
                     <span class="camera-shortcuts-label">Keyboard Shortcuts</span>
                   </summary>
                   <dl class="camera-shortcuts-list">

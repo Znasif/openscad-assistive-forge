@@ -98,7 +98,13 @@ export class ParameterHistory {
    * @returns {Object} Cloned state
    */
   cloneState(state) {
-    return JSON.parse(JSON.stringify(state));
+    try {
+      return JSON.parse(JSON.stringify(state));
+    } catch (e) {
+      // Fallback for non-serializable values (functions, circular refs, etc.)
+      console.warn('[State] Could not serialize state, using shallow clone:', e);
+      return { ...state };
+    }
   }
 }
 

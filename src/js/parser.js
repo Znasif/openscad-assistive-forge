@@ -159,6 +159,10 @@ function extractUnit(description, name) {
  * @returns {Object} Extracted parameters structure
  */
 export function extractParameters(scadContent) {
+  // Guard against null/undefined input
+  if (!scadContent || typeof scadContent !== 'string') {
+    return { groups: [], parameters: {} };
+  }
   const lines = scadContent.split('\n');
   const groups = [];
   const parameters = {};

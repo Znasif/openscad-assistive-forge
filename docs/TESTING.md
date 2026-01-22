@@ -8,7 +8,7 @@ The project uses a comprehensive testing strategy with multiple layers:
 
 1. **Unit Tests** - Test individual modules in isolation (Vitest)
 2. **E2E Tests** - Test complete user workflows (Playwright)
-3. **Accessibility Tests** - Ensure WCAG 2.1 AA compliance (axe-core)
+3. **Accessibility Tests** - Ensure WCAG 2.2 AA compliance (axe-core)
 4. **Lint Checks** - Code quality and style (ESLint, Prettier)
 5. **Build Tests** - Verify production build succeeds
 

@@ -19,7 +19,7 @@ The OpenSCAD Assistive Forge is a **fully functional, production-ready web appli
 - ✅ **Progressive Web App** (PWA) with offline support and installability
 - ✅ **Library bundles** (MCAD, BOSL2, NopSCADlib, dotSCAD) with auto-detection
 - ✅ **100% client-side** processing with OpenSCAD WASM integration
-- ✅ **WCAG 2.1 AA accessibility** compliance (WCAG AAA for high contrast mode)
+- ✅ **WCAG 2.2 AA accessibility** compliance (WCAG AAA for high contrast mode)
 - ✅ **Cross-browser tested** (Chrome, Firefox, Safari, Edge)
 - ✅ **Zero external dependencies** for runtime (pure client-side)
 - ✅ **v2.3.0 Audit**: Codebase reviewed, debug code removed, version strings aligned
@@ -35,12 +35,12 @@ The OpenSCAD Assistive Forge is a **fully functional, production-ready web appli
 ||--------|-------|
 || **Total Features** | 55+ implemented |
 || **Code Base** | ~5,500 lines (excluding node_modules) |
-|| **Bundle Size** | 180.31KB gzipped (reasonable for functionality) |
-|| **Build Time** | 3.05s (fast iteration) ⚡ |
-|| **Unit Tests** | 602 tests passing (14 test files) |
-|| **E2E Tests** | 42 tests (25 passing, 17 skipped) |
-|| **Test Coverage** | 80.31% statements, 74.85% branches |
-|| **Accessibility** | WCAG 2.1 AA compliant (AAA for high contrast) |
+|| **Bundle Size** | ~133KB gzipped (main bundle) |
+|| **Build Time** | ~4s (fast iteration) ⚡ |
+|| **Unit Tests** | 729 tests passing (20 test files) |
+|| **E2E Tests** | 137 tests (78 passing, 59 skipped) |
+|| **Test Coverage** | Comprehensive module coverage |
+|| **Accessibility** | WCAG 2.2 AA compliant (AAA for high contrast) |
 || **Browser Support** | Chrome 67+, Firefox 79+, Safari 15.2+, Edge 79+ |
 || **PWA Score** | Lighthouse 100/100 ✅ |
 

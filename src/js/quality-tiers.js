@@ -299,11 +299,18 @@ export function analyzeComplexity(scadContent, parameters = {}) {
     // Loops that multiply curved features
     forLoops: (scadContent.match(/for\s*\(/g) || []).length,
 
-    // Expensive operations
+    // Expensive boolean operations
     hulls: (scadContent.match(/hull\s*\(/g) || []).length,
     minkowskis: (scadContent.match(/minkowski\s*\(/g) || []).length,
     intersections: (scadContent.match(/intersection\s*\(/g) || []).length,
     differences: (scadContent.match(/difference\s*\(/g) || []).length,
+
+    // Additional expensive operations (keyguards, complex models)
+    offsets: (scadContent.match(/offset\s*\(/g) || []).length,
+    surfaces: (scadContent.match(/surface\s*\(/g) || []).length,
+    polyhedrons: (scadContent.match(/polyhedron\s*\(/g) || []).length,
+    imports: (scadContent.match(/import\s*\(/g) || []).length,
+    projections: (scadContent.match(/projection\s*\(/g) || []).length,
 
     // Extrusions
     linearExtrudes: (scadContent.match(/linear_extrude\s*\(/g) || []).length,
@@ -311,6 +318,9 @@ export function analyzeComplexity(scadContent, parameters = {}) {
 
     // Text (can generate many triangles)
     textCalls: (scadContent.match(/text\s*\(/g) || []).length,
+
+    // File size (large files often indicate complex models)
+    fileSize: scadContent.length,
   };
 
   // Estimate curved feature count (spheres and cylinders in loops multiply)
@@ -324,11 +334,23 @@ export function analyzeComplexity(scadContent, parameters = {}) {
   // Curved features are the main driver
   score += estimatedCurvedFeatures * 10;
 
-  // Expensive operations
+  // Expensive boolean operations - weight more heavily when repeated
   score += counts.hulls * 30;
   score += counts.minkowskis * 50;
-  score += counts.intersections * 20;
-  score += counts.differences * 15;
+  // Multiple intersections/differences are exponentially expensive
+  score +=
+    counts.intersections > 5
+      ? counts.intersections * 30
+      : counts.intersections * 20;
+  score +=
+    counts.differences > 10 ? counts.differences * 20 : counts.differences * 15;
+
+  // Additional expensive operations
+  score += counts.offsets * 25; // offset() is computationally expensive
+  score += counts.surfaces * 40; // surface() imports heightmaps
+  score += counts.polyhedrons * 15; // polyhedron() can be complex
+  score += counts.imports * 20; // import() external geometry
+  score += counts.projections * 35; // projection() is expensive
 
   // Extrusions
   score += counts.linearExtrudes * 8;
@@ -336,6 +358,18 @@ export function analyzeComplexity(scadContent, parameters = {}) {
 
   // Text
   score += counts.textCalls * 25;
+
+  // File size penalty (large SCAD files often correlate with complexity)
+  // Add 10 points per 5KB over 10KB
+  if (counts.fileSize > 10000) {
+    const extraKB = Math.floor((counts.fileSize - 10000) / 5000);
+    score += extraKB * 10;
+    if (counts.fileSize > 30000) {
+      warnings.push(
+        `Large file (${Math.round(counts.fileSize / 1024)}KB) - may indicate complex model`
+      );
+    }
+  }
 
   // Check for high $fn in parameters
   const fn = parameters.$fn || parameters.fn;
@@ -347,14 +381,15 @@ export function analyzeComplexity(scadContent, parameters = {}) {
   // Determine tier based on score and curved feature count
   let tier;
 
-  if (estimatedCurvedFeatures >= 50 || score >= 500) {
+  // Lowered thresholds to be more conservative
+  if (estimatedCurvedFeatures >= 40 || score >= 400) {
     tier = COMPLEXITY_TIER.COMPLEX;
-    if (estimatedCurvedFeatures >= 100) {
+    if (estimatedCurvedFeatures >= 80) {
       warnings.push(
         `Model has ~${estimatedCurvedFeatures} curved features - using conservative quality settings`
       );
     }
-  } else if (estimatedCurvedFeatures >= 10 || score >= 100) {
+  } else if (estimatedCurvedFeatures >= 8 || score >= 80) {
     tier = COMPLEXITY_TIER.STANDARD;
   } else {
     tier = COMPLEXITY_TIER.BEGINNER;
@@ -366,8 +401,18 @@ export function analyzeComplexity(scadContent, parameters = {}) {
       `${counts.minkowskis} minkowski() operations - these are very expensive`
     );
   }
-  if (counts.spheres > 20) {
+  if (counts.spheres > 15) {
     warnings.push(`${counts.spheres} spheres detected - may produce large STL`);
+  }
+  if (counts.differences > 20) {
+    warnings.push(
+      `${counts.differences} difference() operations - heavy boolean workload`
+    );
+  }
+  if (counts.offsets > 5) {
+    warnings.push(
+      `${counts.offsets} offset() operations - computationally expensive`
+    );
   }
 
   return {

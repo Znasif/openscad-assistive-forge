@@ -285,7 +285,18 @@ describe('AutoPreviewController', () => {
       expect(previewManager.setColorOverride).toHaveBeenCalledWith('#00ff00')
       expect(previewManager.loadSTL).toHaveBeenCalledWith(cached.stl)
       expect(controller.state).toBe(PREVIEW_STATE.CURRENT)
-      expect(previewReady).toHaveBeenCalledWith(cached.stl, cached.stats, true, undefined)
+      expect(previewReady).toHaveBeenCalledWith(
+        cached.stl,
+        cached.stats,
+        true,
+        undefined,
+        expect.objectContaining({
+          cached: true,
+          parseMs: 0,
+          renderMs: 0,
+          wasmInitMs: 0,
+        })
+      )
     })
 
     it('adds results to cache and evicts old entries', () => {

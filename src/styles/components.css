@@ -58,8 +58,17 @@ summary:focus-visible,
   transition:
     background-color 0.2s,
     transform 0.1s;
-  min-height: 44px;
-  min-width: 44px;
+  min-height: var(--size-touch-target);
+  min-width: var(--size-touch-target);
+  /* Default button styling - secondary-like appearance for buttons without color variant */
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--color-hover-bg);
+  border-color: var(--color-text-secondary);
 }
 
 /* WCAG 2.2 SC 2.4.13 Focus Appearance: minimum 2px thickness, 3:1 contrast */
@@ -121,7 +130,11 @@ summary:focus-visible,
 .btn-sm {
   padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-sm);
-  min-height: 32px;
+  min-height: var(--size-touch-target-sm);
+}
+
+.btn-with-icon {
+  gap: var(--space-xs);
 }
 
 .btn-outline {
@@ -153,8 +166,8 @@ summary:focus-visible,
   background: transparent;
   border: 1px solid var(--color-border);
   color: var(--color-text-primary);
-  min-width: 32px;
-  min-height: 32px;
+  min-width: var(--size-touch-target-sm);
+  min-height: var(--size-touch-target-sm);
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -206,8 +219,8 @@ summary:focus-visible,
   display: none;
   align-items: center;
   gap: var(--space-xs);
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--size-touch-target);
+  min-height: var(--size-touch-target);
 }
 
 @media (max-width: 767px) {
@@ -236,8 +249,8 @@ summary:focus-visible,
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 44px;
-  min-height: 44px;
+  height: var(--drawer-header-height);
+  min-height: var(--drawer-header-height);
   padding: 0 var(--space-sm);
   background-color: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
@@ -277,8 +290,8 @@ summary:focus-visible,
   border-radius: var(--border-radius-sm);
   border-right: 1px solid var(--color-border); /* override base .btn-collapse-panel */
   flex-shrink: 0;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--size-touch-target);
+  min-height: var(--size-touch-target);
   padding: var(--space-xs);
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
@@ -481,6 +494,15 @@ summary:focus-visible,
   color: var(--color-text-secondary);
 }
 
+.preview-setting.cache-tools {
+  flex-basis: 100%;
+  justify-content: space-between;
+}
+
+.preview-setting.cache-tools .btn {
+  margin-left: auto;
+}
+
 .preview-setting-label {
   margin-right: var(--space-xs);
 }
@@ -497,6 +519,38 @@ summary:focus-visible,
 .preview-settings input[type='checkbox'] {
   width: 18px;
   height: 18px;
+}
+
+.update-banner {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.update-banner.hidden {
+  display: none;
+}
+
+.update-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.update-banner-text {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.update-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 /* Model Color Picker */
@@ -880,7 +934,7 @@ select {
   border-radius: var(--border-radius-sm);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  min-height: 44px;
+  min-height: var(--size-touch-target);
 }
 
 select:focus {
@@ -1401,7 +1455,7 @@ select:focus-visible {
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   cursor: pointer;
-  min-height: 44px;
+  min-height: var(--size-touch-target);
   min-width: 200px;
   transition:
     border-color 0.2s,
@@ -1469,7 +1523,7 @@ select:focus-visible {
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   cursor: pointer;
-  min-height: 44px;
+  min-height: var(--size-touch-target);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -2324,7 +2378,7 @@ select:focus-visible {
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 44px;
+  min-height: var(--size-touch-target);
 }
 
 .library-item:hover {
@@ -2411,6 +2465,12 @@ select:focus-visible {
   font-size: var(--font-size-sm);
   padding: var(--space-xs);
   transition: color 0.2s;
+}
+
+.btn-link-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
 }
 
 .btn-link:hover {
@@ -3812,7 +3872,7 @@ select:focus-visible {
   font-weight: 500;
   font-size: var(--font-size-base);
   cursor: pointer;
-  min-height: 44px;
+  min-height: var(--size-touch-target);
   min-width: 80px; /* Minimum width so tabs aren't too small */
   white-space: nowrap;
   flex-shrink: 0; /* Don't shrink individual tabs */
@@ -4045,7 +4105,7 @@ select:focus-visible {
 #featuresGuideModal
   .modal-content.tutorial-target-highlight
   .features-tab[aria-selected='true'] {
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   border-bottom-color: var(--color-accent);
   background: color-mix(
     in srgb,
@@ -4063,7 +4123,7 @@ select:focus-visible {
   .modal-content.tutorial-target-highlight
   .features-panel
   h3 {
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   border-bottom: 2px solid var(--color-accent);
   padding-bottom: var(--space-xs);
   margin-bottom: var(--space-md);
@@ -4579,7 +4639,8 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
   width: 100%;
   justify-content: center;
   font-weight: 600;
-  /* Already meets 44×44px minimum via .btn styles */
+  /* Force 44px even on desktop to meet WCAG 2.5.8 AAA for primary CTAs */
+  min-height: 44px;
 }
 
 .btn-role-learn {
@@ -4887,7 +4948,7 @@ body:has(#featuresGuideModal:not(.hidden)) .tutorial-arrow {
 
 .tutorial-more summary {
   cursor: pointer;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   font-weight: 500;
   padding: var(--space-2xs) 0;
   list-style: none;
@@ -6586,4 +6647,19 @@ body.tutorial-body-locked {
     color: FieldText;
     border: 1px solid CanvasText !important;
   }
+}
+
+/* Hidden feature animations */
+@keyframes _hfm-flash {
+  0%,
+  100% {
+    filter: none;
+  }
+  50% {
+    filter: brightness(1.5) contrast(1.2);
+  }
+}
+
+.preview-container._hfm-unlock {
+  animation: _hfm-flash 0.3s ease-in-out;
 }

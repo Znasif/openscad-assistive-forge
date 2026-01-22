@@ -111,6 +111,26 @@ Any third-party product names, company names, or logos mentioned in this reposit
 
 ---
 
+## Rendering Techniques & References
+
+### Shape-Vector Character Rendering
+
+Certain rendering techniques in this project were inspired by research and educational articles on advanced character-based rendering approaches.
+
+**Reference**: Alex Harri, character-based rendering technique article  
+**URL**: https://alexharri.com/blog/ascii-rendering  
+**Usage**: Educational reference for technique concepts  
+**Note**: Implementation is original/clean-room; no code was copied
+
+### Three.js Examples Modules (MIT)
+
+This project uses modules from the Three.js examples collection (e.g., controls and loaders).
+
+**License**: MIT (covered by the Three.js license above)  
+**Source**: https://github.com/mrdoob/three.js/tree/dev/examples
+
+---
+
 ## Questions?
 
 For licensing questions about:

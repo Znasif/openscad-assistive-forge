@@ -133,16 +133,41 @@ export function estimateRenderTime(scadContent, parameters = {}) {
   const spheres = (scadContent.match(/sphere\s*\(/g) || []).length;
   const cylinders = (scadContent.match(/cylinder\s*\(/g) || []).length;
 
+  // Additional expensive operations (common in keyguards and complex models)
+  const offsets = (scadContent.match(/offset\s*\(/g) || []).length;
+  const surfaces = (scadContent.match(/surface\s*\(/g) || []).length;
+  const polyhedrons = (scadContent.match(/polyhedron\s*\(/g) || []).length;
+  const imports = (scadContent.match(/import\s*\(/g) || []).length;
+  const projections = (scadContent.match(/projection\s*\(/g) || []).length;
+
+  // File size signal
+  const fileSize = scadContent.length;
+
   // Weighted complexity scoring
   complexityScore += forLoops * 10;
-  complexityScore += intersections * 20;
-  complexityScore += differences * 15;
+  // Multiple intersections/differences are exponentially expensive
+  complexityScore +=
+    intersections > 5 ? intersections * 30 : intersections * 20;
+  complexityScore += differences > 10 ? differences * 20 : differences * 15;
   complexityScore += hulls * 30;
   complexityScore += minkowskis * 50; // Minkowski is very expensive
   complexityScore += linearExtrudes * 8;
   complexityScore += rotateExtrudes * 12;
   complexityScore += spheres * 5;
   complexityScore += cylinders * 3;
+
+  // Additional expensive operations
+  complexityScore += offsets * 25; // offset() is computationally expensive
+  complexityScore += surfaces * 40; // surface() imports heightmaps
+  complexityScore += polyhedrons * 15; // polyhedron() can be complex
+  complexityScore += imports * 20; // import() external geometry
+  complexityScore += projections * 35; // projection() is expensive
+
+  // File size penalty (large SCAD files often correlate with complexity)
+  if (fileSize > 10000) {
+    const extraKB = Math.floor((fileSize - 10000) / 5000);
+    complexityScore += extraKB * 8;
+  }
 
   // Check $fn value (affects tessellation complexity)
   const fn = parameters.$fn || parameters.fn;
@@ -171,6 +196,21 @@ export function estimateRenderTime(scadContent, parameters = {}) {
   if (forLoops > 5) {
     warnings.push(`Many for loops (${forLoops}) detected`);
   }
+  if (differences > 15) {
+    warnings.push(
+      `Many difference() operations (${differences}) - heavy boolean workload`
+    );
+  }
+  if (offsets > 3) {
+    warnings.push(
+      `Multiple offset() operations (${offsets}) - computationally expensive`
+    );
+  }
+  if (fileSize > 25000) {
+    warnings.push(
+      `Large file (${Math.round(fileSize / 1024)}KB) may indicate complex model`
+    );
+  }
 
   // Estimate time (in seconds)
   // Base time + complexity factor
@@ -178,14 +218,14 @@ export function estimateRenderTime(scadContent, parameters = {}) {
   const baseTime = 2;
   const estimatedSeconds = Math.max(
     2,
-    Math.round(baseTime + complexityScore * 0.15)
+    Math.round(baseTime + complexityScore * 0.12) // Slightly more aggressive estimate
   );
 
   // Determine confidence level
   let confidence;
   if (complexityScore < 20) {
     confidence = 'high';
-  } else if (complexityScore < 100) {
+  } else if (complexityScore < 80) {
     confidence = 'medium';
   } else {
     confidence = 'low'; // Complex models are harder to predict
@@ -206,6 +246,12 @@ export function estimateRenderTime(scadContent, parameters = {}) {
       rotateExtrudes,
       spheres,
       cylinders,
+      offsets,
+      surfaces,
+      polyhedrons,
+      imports,
+      projections,
+      fileSize,
     },
   };
 }
@@ -428,7 +474,11 @@ export class RenderController {
     switch (type) {
       case 'READY':
         this.ready = true;
-        console.log('[RenderController] Worker ready');
+        // Store WASM init timing if provided
+        this.wasmInitDurationMs = payload?.wasmInitDurationMs || 0;
+        console.log(
+          `[RenderController] Worker ready (WASM init: ${this.wasmInitDurationMs}ms)`
+        );
         if (onInitProgress) {
           onInitProgress(100, 'OpenSCAD engine ready');
         }
@@ -458,6 +508,8 @@ export class RenderController {
           const result = {
             ...payload,
             stl: payload.data, // Alias data as stl for backwards compatibility
+            // Include timing info from worker
+            timing: payload.timing || {},
           };
           this.currentRequest.resolve(result);
           this.currentRequest = null;
@@ -773,10 +825,13 @@ export class RenderController {
   cancel() {
     if (this.currentRequest) {
       const { id, reject } = this.currentRequest;
-      this.worker.postMessage({
-        type: 'CANCEL',
-        payload: { requestId: id },
-      });
+      // Guard against null worker (if terminate() was called)
+      if (this.worker) {
+        this.worker.postMessage({
+          type: 'CANCEL',
+          payload: { requestId: id },
+        });
+      }
       // Worker-side OpenSCAD render is blocking; we can't truly interrupt it mid-render.
       // But we must settle the promise to avoid leaks / hung awaits.
       reject(new Error('Render cancelled'));

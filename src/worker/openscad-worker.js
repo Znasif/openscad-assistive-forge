@@ -1,6 +1,42 @@
 /**
  * OpenSCAD WASM Web Worker
  * @license GPL-3.0-or-later
+ *
+ * ## Performance Notes: Threading and WASM
+ *
+ * This worker uses `openscad-wasm-prebuilt` which provides a **single-threaded** WASM build.
+ * OpenSCAD renders run on a single core, which is the primary bottleneck for complex models.
+ *
+ * ### Threaded WASM Considerations (Future Enhancement)
+ *
+ * **Potential Benefits:**
+ * - Multi-core speedup for CGAL boolean operations (difference, intersection, etc.)
+ * - Faster rendering of models with many independent geometry operations
+ * - Better utilization of modern multi-core CPUs
+ *
+ * **Requirements for pthread-enabled WASM:**
+ * - SharedArrayBuffer support (requires COOP/COEP headers - already configured in `public/_headers`)
+ * - Browser support: Chrome 67+, Firefox 79+, Safari 15.2+, Edge 79+
+ * - Web Workers for spawning pthread threads
+ * - Larger WASM binary size due to threading runtime
+ *
+ * **Tradeoffs:**
+ * - Increased memory usage (each thread needs stack space)
+ * - More complex error handling (thread synchronization issues)
+ * - Some browsers limit pthread thread counts
+ * - iOS Safari has stricter SharedArrayBuffer requirements
+ * - Threading overhead may slow simple models
+ *
+ * **How to Enable (if/when available):**
+ * 1. Switch to a pthread-enabled OpenSCAD WASM build
+ * 2. Configure thread pool size based on `navigator.hardwareConcurrency`
+ * 3. Test across target browsers for compatibility
+ * 4. Monitor memory usage and add safeguards for mobile devices
+ *
+ * For now, performance optimizations focus on:
+ * - Aggressive preview quality adaptation (auto-fast mode)
+ * - Caching of preview results
+ * - Lower tessellation for complex models during interactive editing
  */
 
 import { createOpenSCAD } from 'openscad-wasm-prebuilt';
@@ -13,6 +49,44 @@ let currentRenderTimeout = null;
 let mountedFiles = new Map(); // Track files in virtual filesystem
 let mountedLibraries = new Set(); // Track mounted library IDs
 let assetBaseUrl = ''; // Base URL for fetching assets (fonts, libraries, etc.)
+let wasmAssetLogShown = false;
+
+function isAbsoluteUrl(value) {
+  return /^[a-z]+:\/\//i.test(value);
+}
+
+function normalizeBaseUrl(value) {
+  if (!value) return '';
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function resolveWasmAsset(path, prefix) {
+  if (!path) return path;
+  if (/^(data:|blob:)/i.test(path)) return path;
+  if (isAbsoluteUrl(path)) return path;
+
+  const base = normalizeBaseUrl(assetBaseUrl || self.location.origin);
+  const resolvedBase = prefix
+    ? isAbsoluteUrl(prefix)
+      ? prefix
+      : new URL(prefix, base).toString()
+    : base;
+  const resolved = new URL(path, normalizeBaseUrl(resolvedBase)).toString();
+
+  if (
+    !wasmAssetLogShown &&
+    (path.endsWith('.wasm') || path.endsWith('.data'))
+  ) {
+    console.log('[Worker] Resolved WASM asset URL:', resolved);
+    wasmAssetLogShown = true;
+  }
+
+  return resolved;
+}
+
+// Timing metrics for performance profiling
+let wasmInitStartTime = 0;
+let wasmInitDurationMs = 0;
 
 /**
  * Ensure we have access to the underlying OpenSCAD WASM module
@@ -154,6 +228,9 @@ function translateError(rawError) {
  */
 async function initWASM(baseUrl = '') {
   try {
+    // Start timing WASM initialization
+    wasmInitStartTime = performance.now();
+
     // Set asset base URL (derive from self.location if not provided)
     assetBaseUrl = baseUrl || self.location.origin;
     console.log('[Worker] Asset base URL:', assetBaseUrl);
@@ -168,7 +245,14 @@ async function initWASM(baseUrl = '') {
     });
 
     // Initialize OpenSCAD WASM
-    openscadInstance = await createOpenSCAD();
+    openscadInstance = await createOpenSCAD({
+      locateFile: (path, prefix) => {
+        if (path.endsWith('.wasm') || path.endsWith('.data')) {
+          return resolveWasmAsset(path, prefix);
+        }
+        return prefix ? `${prefix}${path}` : path;
+      },
+    });
 
     self.postMessage({
       type: 'PROGRESS',
@@ -194,6 +278,9 @@ async function initWASM(baseUrl = '') {
     // Mount fonts for text() support
     await mountFonts();
 
+    // Calculate total WASM init duration
+    wasmInitDurationMs = Math.round(performance.now() - wasmInitStartTime);
+
     self.postMessage({
       type: 'PROGRESS',
       payload: {
@@ -205,9 +292,14 @@ async function initWASM(baseUrl = '') {
 
     self.postMessage({
       type: 'READY',
+      payload: {
+        wasmInitDurationMs,
+      },
     });
 
-    console.log('[Worker] OpenSCAD WASM initialized successfully');
+    console.log(
+      `[Worker] OpenSCAD WASM initialized successfully in ${wasmInitDurationMs}ms`
+    );
   } catch (error) {
     console.error('[Worker] Failed to initialize OpenSCAD:', error);
     self.postMessage({
@@ -984,6 +1076,10 @@ async function render(payload) {
     const useCallMainApproach =
       (parameters && Object.keys(parameters).length > 0) || mainFile;
 
+    // Track render timing
+    let renderStartTime = 0;
+    let renderDurationMs = 0;
+
     // Render to specified format
     const renderPromise = (async () => {
       // Note: render methods are blocking calls - we can't get intermediate progress
@@ -996,6 +1092,9 @@ async function render(payload) {
           message: `Rendering model to ${formatName} (this may take a while)...`,
         },
       });
+
+      // Start timing the actual render operation
+      renderStartTime = performance.now();
 
       let outputData;
 
@@ -1076,6 +1175,9 @@ async function render(payload) {
         }
       }
 
+      // Capture render duration
+      renderDurationMs = Math.round(performance.now() - renderStartTime);
+
       self.postMessage({
         type: 'PROGRESS',
         payload: {
@@ -1085,12 +1187,16 @@ async function render(payload) {
         },
       });
 
-      return { data: outputData, format };
+      return { data: outputData, format, renderDurationMs };
     })();
 
     // Race between render and timeout
     const result = await Promise.race([renderPromise, timeoutPromise]);
-    const { data: outputData, format: resultFormat } = result;
+    const {
+      data: outputData,
+      format: resultFormat,
+      renderDurationMs: workerRenderMs,
+    } = result;
 
     // Clear timeout
     if (currentRenderTimeout) {
@@ -1171,12 +1277,18 @@ async function render(payload) {
             triangles: triangleCount,
             size: outputBuffer.byteLength,
           },
+          timing: {
+            renderMs: workerRenderMs,
+            wasmInitMs: wasmInitDurationMs,
+          },
         },
       },
       [outputBuffer]
     ); // Transfer ownership of ArrayBuffer
 
-    console.log('[Worker] Render complete:', triangleCount, 'triangles');
+    console.log(
+      `[Worker] Render complete: ${triangleCount} triangles in ${workerRenderMs}ms`
+    );
   } catch (error) {
     // Clear timeout on error
     if (currentRenderTimeout) {

@@ -104,6 +104,22 @@ const PREVIEW_COLORS = {
     model: 0x66b3ff,
     ambientLight: 0xffffff,
   },
+  // Green phosphor (dark theme mono variant)
+  mono: {
+    background: 0x000000,
+    gridPrimary: 0x00ff00,
+    gridSecondary: 0x00aa00,
+    model: 0x00ff00,
+    ambientLight: 0x00ff00,
+  },
+  // Amber phosphor (light theme mono variant)
+  'mono-light': {
+    background: 0x000000,
+    gridPrimary: 0xffb000,
+    gridSecondary: 0xcc8c00,
+    model: 0xffb000,
+    ambientLight: 0xffb000,
+  },
 };
 
 function normalizeHexColor(value) {
@@ -138,6 +154,13 @@ export class PreviewManager {
 
     // Grid visibility
     this.gridEnabled = this.loadGridPreference();
+
+    // Auto-bed: place object on Z=0 build plate
+    this.autoBedEnabled = this.loadAutoBedPreference();
+
+    // Render hooks for extensibility
+    this._renderOverride = null;
+    this._resizeHook = null;
   }
 
   /**
@@ -231,6 +254,8 @@ export class PreviewManager {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
+      // Call resize hook if set (for alternate renderers)
+      this._resizeHook?.({ width, height });
     };
     window.addEventListener('resize', this.handleResize);
 
@@ -252,12 +277,28 @@ export class PreviewManager {
 
   /**
    * Detect current theme from document
-   * @returns {string} 'light', 'dark', 'light-hc', or 'dark-hc'
+   * @returns {string} 'light', 'dark', 'light-hc', 'dark-hc', 'mono', or 'mono-light'
    */
   detectTheme() {
     const root = document.documentElement;
-    const dataTheme = root.getAttribute('data-theme');
     const highContrast = root.getAttribute('data-high-contrast') === 'true';
+    const dataTheme = root.getAttribute('data-theme');
+
+    // Check for variant override (takes precedence)
+    const uiVariant = root.getAttribute('data-ui-variant');
+    if (uiVariant === 'mono') {
+      // Light theme = amber phosphor, Dark theme = green phosphor
+      if (dataTheme === 'light') {
+        return 'mono-light';
+      } else if (dataTheme === 'dark') {
+        return 'mono';
+      } else {
+        // Auto mode - check system preference
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'mono'
+          : 'mono-light';
+      }
+    }
 
     let baseTheme;
     if (dataTheme === 'dark') {
@@ -298,6 +339,13 @@ export class PreviewManager {
     // Update grid colors
     if (this.gridHelper) {
       this.scene.remove(this.gridHelper);
+      // Dispose old GridHelper to prevent memory leak
+      if (this.gridHelper.geometry) {
+        this.gridHelper.geometry.dispose();
+      }
+      if (this.gridHelper.material) {
+        this.gridHelper.material.dispose();
+      }
       // Use thicker grid lines in high contrast mode
       const gridSize = highContrast ? 3 : 2;
       this.gridHelper = new THREE.GridHelper(
@@ -357,7 +405,11 @@ export class PreviewManager {
   animate() {
     this.animationId = requestAnimationFrame(() => this.animate());
     this.controls.update();
-    this.renderer.render(this.scene, this.camera);
+    if (this._renderOverride) {
+      this._renderOverride();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   /**
@@ -853,10 +905,13 @@ export class PreviewManager {
   /**
    * Load and display STL from ArrayBuffer
    * @param {ArrayBuffer} stlData - Binary STL data
+   * @returns {Promise<{parseMs: number}>} Parse timing info
    */
   loadSTL(stlData) {
     return new Promise((resolve, reject) => {
       try {
+        const parseStartTime = performance.now();
+
         console.log(
           '[Preview] Loading STL, size:',
           stlData.byteLength,
@@ -880,8 +935,9 @@ export class PreviewManager {
 
         const vertexCount = geometry.attributes.position.count;
         const triangleCount = vertexCount / 3;
+        const parseMs = Math.round(performance.now() - parseStartTime);
         console.log(
-          '[Preview] STL parsed, vertices:',
+          `[Preview] STL parsed in ${parseMs}ms, vertices:`,
           vertexCount,
           'triangles:',
           triangleCount
@@ -903,6 +959,11 @@ export class PreviewManager {
         // Compute normals and center geometry
         geometry.computeVertexNormals();
         geometry.center();
+
+        // Apply auto-bed if enabled (place object on Z=0 build plate)
+        if (this.autoBedEnabled) {
+          this.applyAutoBed(geometry);
+        }
 
         // Create material with theme-aware color
         const colors = PREVIEW_COLORS[this.currentTheme];
@@ -937,7 +998,7 @@ export class PreviewManager {
         this.updateModelSummary();
 
         console.log('[Preview] STL loaded and displayed');
-        resolve();
+        resolve({ parseMs });
       } catch (error) {
         console.error('[Preview] Failed to load STL:', error);
         reject(error);
@@ -1444,6 +1505,95 @@ export class PreviewManager {
   }
 
   /**
+   * Toggle auto-bed feature (place object on Z=0 build plate)
+   * @param {boolean} enabled - Enable or disable auto-bed
+   */
+  toggleAutoBed(enabled) {
+    this.autoBedEnabled = enabled;
+    this.saveAutoBedPreference(enabled);
+    console.log(`[Preview] Auto-bed ${enabled ? 'enabled' : 'disabled'}`);
+
+    // If we have a mesh, we need to reload to apply the change
+    // Return true to indicate the model should be re-rendered
+    return this.mesh !== null;
+  }
+
+  /**
+   * Load auto-bed preference from localStorage
+   * @returns {boolean} Preference value (defaults to true - most users want this)
+   */
+  loadAutoBedPreference() {
+    try {
+      const pref = localStorage.getItem('openscad-customizer-auto-bed');
+      // Default to true (auto-bed enabled) if not set
+      return pref === null ? true : pref === 'true';
+    } catch (error) {
+      console.warn('[Preview] Could not load auto-bed preference:', error);
+      return true;
+    }
+  }
+
+  /**
+   * Save auto-bed preference to localStorage
+   * @param {boolean} enabled - Auto-bed enabled state
+   */
+  saveAutoBedPreference(enabled) {
+    try {
+      localStorage.setItem(
+        'openscad-customizer-auto-bed',
+        enabled ? 'true' : 'false'
+      );
+    } catch (error) {
+      console.warn('[Preview] Could not save auto-bed preference:', error);
+    }
+  }
+
+  /**
+   * Apply auto-bed transformation to geometry
+   * Moves the geometry so its lowest Z point sits on Z=0 (the build plate)
+   * @param {THREE.BufferGeometry} geometry - The geometry to transform
+   */
+  applyAutoBed(geometry) {
+    if (!geometry || !geometry.attributes.position) {
+      return;
+    }
+
+    const positions = geometry.attributes.position;
+    const positionArray = positions.array;
+
+    // Find minimum Z value
+    let minZ = Infinity;
+    for (let i = 2; i < positionArray.length; i += 3) {
+      if (positionArray[i] < minZ) {
+        minZ = positionArray[i];
+      }
+    }
+
+    // If minZ is already 0 or very close, no need to translate
+    if (Math.abs(minZ) < 0.0001) {
+      console.log('[Preview] Auto-bed: Object already on build plate');
+      return;
+    }
+
+    // Translate all Z coordinates up by -minZ (so minZ becomes 0)
+    const offset = -minZ;
+    for (let i = 2; i < positionArray.length; i += 3) {
+      positionArray[i] += offset;
+    }
+
+    // Mark the position attribute as needing update
+    positions.needsUpdate = true;
+
+    // Recompute the bounding box/sphere since we modified positions
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+
+    console.log(
+      `[Preview] Auto-bed applied: translated Z by ${offset.toFixed(3)} mm`
+    );
+  }
+
+  /**
    * Clear the preview
    */
   clear() {
@@ -1495,8 +1645,44 @@ export class PreviewManager {
       this.renderer.dispose();
     }
 
+    // Clear any render/resize hooks
+    this._renderOverride = null;
+    this._resizeHook = null;
+
     this.container.innerHTML = '';
 
     console.log('[Preview] Resources disposed');
+  }
+
+  /**
+   * Set an optional render override function
+   * When set, this function is called instead of the default renderer.render()
+   * @param {Function|null} fn - Override function or null to clear
+   */
+  setRenderOverride(fn) {
+    this._renderOverride = typeof fn === 'function' ? fn : null;
+  }
+
+  /**
+   * Clear the render override, restoring default rendering
+   */
+  clearRenderOverride() {
+    this._renderOverride = null;
+  }
+
+  /**
+   * Set an optional resize hook function
+   * Called after the default resize handling completes
+   * @param {Function|null} fn - Hook function receiving ({ width, height }) or null to clear
+   */
+  setResizeHook(fn) {
+    this._resizeHook = typeof fn === 'function' ? fn : null;
+  }
+
+  /**
+   * Clear the resize hook
+   */
+  clearResizeHook() {
+    this._resizeHook = null;
   }
 }

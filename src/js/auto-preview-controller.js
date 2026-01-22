@@ -381,16 +381,33 @@ export class AutoPreviewController {
       if (this.previewManager?.setColorOverride && previewColor !== null) {
         this.previewManager.setColorOverride(previewColor);
       }
-      await this.previewManager.loadSTL(cached.stl);
+      const loadResult = await this.previewManager.loadSTL(cached.stl);
       this.previewParamHash = paramHash;
       this.previewCacheKey = cacheKey;
+
+      // Include timing info (cached timing + fresh parse time)
+      const timing = {
+        totalMs: cached.durationMs,
+        renderMs: cached.timing?.renderMs || 0,
+        wasmInitMs: cached.timing?.wasmInitMs || 0,
+        parseMs: loadResult?.parseMs || 0,
+        cached: true,
+      };
+
       this.setState(PREVIEW_STATE.CURRENT, {
         cached: true,
         stats: cached.stats,
         renderDurationMs: cached.durationMs,
         qualityKey,
+        timing,
       });
-      this.onPreviewReady(cached.stl, cached.stats, true, cached.durationMs);
+      this.onPreviewReady(
+        cached.stl,
+        cached.stats,
+        true,
+        cached.durationMs,
+        timing
+      );
     } catch (error) {
       console.error('Failed to load cached preview:', error);
       // Remove from cache and try fresh render
@@ -467,14 +484,23 @@ export class AutoPreviewController {
           this.previewManager.setColorOverride(previewColor);
         }
       }
-      await this.previewManager.loadSTL(result.stl);
+      const loadResult = await this.previewManager.loadSTL(result.stl);
+
+      // Collect timing breakdown
+      const timing = {
+        totalMs: durationMs,
+        renderMs: result.timing?.renderMs || 0,
+        wasmInitMs: result.timing?.wasmInitMs || 0,
+        parseMs: loadResult?.parseMs || 0,
+      };
 
       this.setState(PREVIEW_STATE.CURRENT, {
         stats: result.stats,
         renderDurationMs: durationMs,
         qualityKey,
+        timing,
       });
-      this.onPreviewReady(result.stl, result.stats, false, durationMs);
+      this.onPreviewReady(result.stl, result.stats, false, durationMs, timing);
     } catch (error) {
       console.error('[AutoPreview] Preview render failed:', error);
 
@@ -520,7 +546,7 @@ export class AutoPreviewController {
   /**
    * Add result to cache, evicting old entries if needed
    * @param {string} cacheKey - Preview cache key
-   * @param {Object} result - Render result { stl, stats }
+   * @param {Object} result - Render result { stl, stats, timing }
    * @param {number} durationMs - Render duration in milliseconds
    */
   addToCache(cacheKey, result, durationMs = null) {
@@ -534,6 +560,7 @@ export class AutoPreviewController {
       stl: result.stl,
       stats: result.stats,
       durationMs,
+      timing: result.timing || {},
       timestamp: Date.now(),
     });
   }

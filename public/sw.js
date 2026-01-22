@@ -4,7 +4,7 @@
  * Version: 4.0.0
  */
 
-const CACHE_VERSION = 'v4.0.0';
+const CACHE_VERSION = '__SW_CACHE_VERSION__';
 const CACHE_NAME = `openscad-forge-${CACHE_VERSION}`;
 
 // Assets to cache immediately on install
@@ -22,11 +22,17 @@ const CACHE_STRATEGIES = {
   // Static assets: cache-first (CSS, JS, fonts)
   static: [/\.css$/, /\.js$/, /\.woff2?$/, /\.ttf$/],
   
+  // Fonts for text() support (loaded by worker): cache-first
+  fonts: [/\/fonts\//],
+  
   // Examples: cache-first (they don't change often)
   examples: [/\/examples\//],
   
   // WASM: cache-first with network fallback (large, rarely changes)
-  wasm: [/\/wasm\//],
+  wasm: [/\/wasm\//, /\.wasm$/, /\.data$/],
+  
+  // Libraries: cache-first (OpenSCAD library files)
+  libraries: [/\/libraries\//],
   
   // Images/icons: cache-first
   images: [/\.png$/, /\.jpg$/, /\.svg$/, /\.ico$/],
@@ -113,13 +119,23 @@ function getCacheStrategy(pathname) {
     return 'cache-first';
   }
   
+  // Fonts (for OpenSCAD text() support)
+  if (CACHE_STRATEGIES.fonts.some((pattern) => pathname.match(pattern))) {
+    return 'cache-first';
+  }
+  
   // Examples
   if (CACHE_STRATEGIES.examples.some((pattern) => pathname.match(pattern))) {
     return 'cache-first';
   }
   
-  // WASM files
+  // WASM files (including .wasm and .data files)
   if (CACHE_STRATEGIES.wasm.some((pattern) => pathname.match(pattern))) {
+    return 'cache-first';
+  }
+  
+  // OpenSCAD libraries
+  if (CACHE_STRATEGIES.libraries.some((pattern) => pathname.match(pattern))) {
     return 'cache-first';
   }
   

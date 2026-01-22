@@ -39,6 +39,17 @@ This is the **first major stable release** of OpenSCAD Assistive Forge, marking 
 - Comprehensive THIRD_PARTY_NOTICES.md
 - Clear licensing information throughout
 
+### Fixed
+
+- Guard against null worker in `render-controller` cancel flow after terminate
+- Dispose Three.js `GridHelper` geometry/material on theme changes to prevent leaks
+- Add null checks in parameter extraction to prevent crashes on unexpected inputs
+- Improve state cloning error handling for non-serializable values
+
+### Accessibility
+
+- Ensure `.btn-role-try` touch targets meet 44×44px minimum sizing
+
 ---
 
 ## [3.1.0] - 2026-01-20

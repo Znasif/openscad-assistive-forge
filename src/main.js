@@ -59,6 +59,7 @@ import { startTutorial, closeTutorial } from './js/tutorial-sandbox.js';
 import { initDrawerController } from './js/drawer-controller.js';
 import { initPreviewSettingsDrawer } from './js/preview-settings-drawer.js';
 import { initCameraPanelController } from './js/camera-panel-controller.js';
+import { initSequenceDetector } from './js/_seq.js';
 import Split from 'split.js';
 
 // Example definitions (used by welcome screen and Features Guide)
@@ -127,6 +128,424 @@ let autoPreviewController = null;
 let comparisonController = null;
 let comparisonView = null;
 let renderQueue = null;
+
+// Hidden feature state (non-persistent)
+let _hfmUnlocked = false;
+let _hfmAltView = null;
+let _hfmInitPromise = null;
+let _hfmEnabled = false;
+let _hfmPendingEnable = false;
+const _HFM_CONTRAST_RANGE = { min: 0.6, max: 2.5, step: 0.05, default: 1 };
+let _hfmContrastScale = _HFM_CONTRAST_RANGE.default;
+let _hfmContrastControls = null;
+const _HFM_FONT_SCALE_RANGE = { min: 0.7, max: 2.0, step: 0.05, default: 1 };
+let _hfmFontScale = _HFM_FONT_SCALE_RANGE.default;
+let _hfmFontScaleControls = null;
+const _HFM_ZOOM_EPSILON = 0.02;
+let _hfmZoomBaseline = null;
+let _hfmZoomListening = false;
+let _hfmZoomHandling = false;
+
+function _isLightThemeActive() {
+  const root = document.documentElement;
+  const dataTheme = root.getAttribute('data-theme');
+  if (dataTheme === 'light') return true;
+  if (dataTheme === 'dark') return false;
+  // Auto mode - check system preference
+  return !window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function _formatHfmContrastValue(scale) {
+  return `${Math.round(scale * 100)}%`;
+}
+
+function _formatHfmFontScaleValue(scale) {
+  return `${Math.round(scale * 100)}%`;
+}
+
+function _getHfmZoomLevel() {
+  const dpr = Number.isFinite(window.devicePixelRatio)
+    ? window.devicePixelRatio
+    : 1;
+  const vvScale =
+    window.visualViewport && Number.isFinite(window.visualViewport.scale)
+      ? window.visualViewport.scale
+      : 1;
+  return Math.max(0.1, dpr * vvScale);
+}
+
+function _setHfmZoomBaseline() {
+  _hfmZoomBaseline = {
+    zoom: _getHfmZoomLevel(),
+    contrastScale: _hfmContrastScale,
+    fontScale: _hfmFontScale,
+  };
+}
+
+function _applyHfmZoomCompensation() {
+  if (!_hfmEnabled || !_hfmZoomBaseline) return;
+  const currentZoom = _getHfmZoomLevel();
+  const baseZoom = _hfmZoomBaseline.zoom || 1;
+  if (!Number.isFinite(currentZoom) || !Number.isFinite(baseZoom)) return;
+  if (Math.abs(currentZoom - baseZoom) < _HFM_ZOOM_EPSILON) return;
+
+  const factor = baseZoom / currentZoom;
+  _hfmZoomHandling = true;
+  _applyHfmContrastScale(_hfmZoomBaseline.contrastScale * factor, {
+    setBaseline: false,
+  });
+  _applyHfmFontScale(_hfmZoomBaseline.fontScale * factor, {
+    setBaseline: false,
+  });
+  _hfmZoomHandling = false;
+}
+
+function _handleHfmZoomChange() {
+  _applyHfmZoomCompensation();
+}
+
+function _enableHfmZoomTracking() {
+  if (_hfmZoomListening) return;
+  _hfmZoomListening = true;
+  window.addEventListener('resize', _handleHfmZoomChange);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', _handleHfmZoomChange);
+    window.visualViewport.addEventListener('scroll', _handleHfmZoomChange);
+  }
+}
+
+function _disableHfmZoomTracking() {
+  if (!_hfmZoomListening) return;
+  _hfmZoomListening = false;
+  window.removeEventListener('resize', _handleHfmZoomChange);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', _handleHfmZoomChange);
+    window.visualViewport.removeEventListener('scroll', _handleHfmZoomChange);
+  }
+}
+
+function _applyHfmContrastScale(scale, options = {}) {
+  const { setBaseline = true } = options;
+  const raw = Number(scale);
+  const next = Number.isFinite(raw) ? raw : _HFM_CONTRAST_RANGE.default;
+  const clamped = Math.max(
+    _HFM_CONTRAST_RANGE.min,
+    Math.min(_HFM_CONTRAST_RANGE.max, next)
+  );
+  _hfmContrastScale = clamped;
+
+  if (_hfmAltView?.setContrastScale) {
+    _hfmAltView.setContrastScale(clamped);
+  }
+
+  _hfmContrastControls?.sync?.(clamped);
+  if (setBaseline && !_hfmZoomHandling) {
+    _setHfmZoomBaseline();
+  }
+  return clamped;
+}
+
+function _applyHfmFontScale(scale, options = {}) {
+  const { setBaseline = true } = options;
+  const raw = Number(scale);
+  const next = Number.isFinite(raw) ? raw : _HFM_FONT_SCALE_RANGE.default;
+  const clamped = Math.max(
+    _HFM_FONT_SCALE_RANGE.min,
+    Math.min(_HFM_FONT_SCALE_RANGE.max, next)
+  );
+  _hfmFontScale = clamped;
+
+  if (_hfmAltView?.setFontScale) {
+    _hfmAltView.setFontScale(clamped);
+  }
+
+  _hfmFontScaleControls?.sync?.(clamped);
+  if (setBaseline && !_hfmZoomHandling) {
+    _setHfmZoomBaseline();
+  }
+  return clamped;
+}
+
+function _initHfmContrastControls() {
+  if (_hfmContrastControls) return _hfmContrastControls;
+
+  const inputs = [];
+  const valueEls = [];
+  const sections = [];
+  const formatValue = (value) => _formatHfmContrastValue(value);
+
+  const buildSection = ({
+    container,
+    insertBefore,
+    sectionClass,
+    titleClass,
+    inputId,
+    titleText,
+  }) => {
+    if (!container || document.getElementById(inputId)) return null;
+
+    const section = document.createElement('div');
+    section.className = sectionClass;
+
+    const title = document.createElement('h3');
+    title.className = titleClass;
+    title.id = `${inputId}-label`;
+    title.textContent = titleText;
+
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'slider-container';
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = inputId;
+    input.min = String(_HFM_CONTRAST_RANGE.min);
+    input.max = String(_HFM_CONTRAST_RANGE.max);
+    input.step = String(_HFM_CONTRAST_RANGE.step);
+    input.value = String(_hfmContrastScale);
+    input.setAttribute('aria-labelledby', title.id);
+
+    const valueEl = document.createElement('span');
+    valueEl.className = 'slider-value';
+    valueEl.id = `${inputId}-value`;
+    valueEl.textContent = formatValue(_hfmContrastScale);
+
+    sliderContainer.appendChild(input);
+    sliderContainer.appendChild(valueEl);
+    section.appendChild(title);
+    section.appendChild(sliderContainer);
+
+    if (insertBefore) {
+      container.insertBefore(section, insertBefore);
+    } else {
+      container.appendChild(section);
+    }
+
+    inputs.push(input);
+    valueEls.push(valueEl);
+    sections.push(section);
+
+    input.addEventListener('input', () => {
+      _applyHfmContrastScale(parseFloat(input.value));
+    });
+
+    return section;
+  };
+
+  const panelBody = document.getElementById('cameraPanelBody');
+  const panelInsertBefore =
+    panelBody?.querySelector('.camera-shortcuts-help') ?? null;
+  buildSection({
+    container: panelBody,
+    insertBefore: panelInsertBefore,
+    sectionClass: 'camera-control-section hfm-contrast-section',
+    titleClass: 'camera-control-section-title',
+    inputId: '_hfmContrast',
+    titleText: 'Alt View Contrast',
+  });
+
+  const drawerBody = document.getElementById('cameraDrawerBody');
+  buildSection({
+    container: drawerBody,
+    insertBefore: null,
+    sectionClass: 'camera-drawer-section camera-drawer-contrast',
+    titleClass: 'camera-drawer-section-title',
+    inputId: '_hfmContrastMobile',
+    titleText: 'Alt View Contrast',
+  });
+
+  _hfmContrastControls = {
+    setEnabled(isEnabled) {
+      sections.forEach((section) => {
+        section.style.display = isEnabled ? '' : 'none';
+      });
+      inputs.forEach((input) => {
+        input.disabled = !isEnabled;
+      });
+    },
+    sync(value) {
+      const formatted = formatValue(value);
+      const rawValue = value.toFixed(2);
+      inputs.forEach((input) => {
+        if (input.value !== rawValue) {
+          input.value = rawValue;
+        }
+        input.setAttribute('aria-valuetext', formatted);
+      });
+      valueEls.forEach((el) => {
+        el.textContent = formatted;
+      });
+    },
+  };
+
+  _hfmContrastControls.setEnabled(false);
+  _hfmContrastControls.sync(_hfmContrastScale);
+
+  return _hfmContrastControls;
+}
+
+function _initHfmFontScaleControls() {
+  if (_hfmFontScaleControls) return _hfmFontScaleControls;
+
+  const inputs = [];
+  const valueEls = [];
+  const sections = [];
+  const formatValue = (value) => _formatHfmFontScaleValue(value);
+
+  const buildSection = ({
+    container,
+    insertBefore,
+    sectionClass,
+    titleClass,
+    inputId,
+    titleText,
+  }) => {
+    if (!container || document.getElementById(inputId)) return null;
+
+    const section = document.createElement('div');
+    section.className = sectionClass;
+
+    const title = document.createElement('h3');
+    title.className = titleClass;
+    title.id = `${inputId}-label`;
+    title.textContent = titleText;
+
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'slider-container';
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = inputId;
+    input.min = String(_HFM_FONT_SCALE_RANGE.min);
+    input.max = String(_HFM_FONT_SCALE_RANGE.max);
+    input.step = String(_HFM_FONT_SCALE_RANGE.step);
+    input.value = String(_hfmFontScale);
+    input.setAttribute('aria-labelledby', title.id);
+
+    const valueEl = document.createElement('span');
+    valueEl.className = 'slider-value';
+    valueEl.id = `${inputId}-value`;
+    valueEl.textContent = formatValue(_hfmFontScale);
+
+    sliderContainer.appendChild(input);
+    sliderContainer.appendChild(valueEl);
+    section.appendChild(title);
+    section.appendChild(sliderContainer);
+
+    if (insertBefore) {
+      container.insertBefore(section, insertBefore);
+    } else {
+      container.appendChild(section);
+    }
+
+    inputs.push(input);
+    valueEls.push(valueEl);
+    sections.push(section);
+
+    input.addEventListener('input', () => {
+      _applyHfmFontScale(parseFloat(input.value));
+    });
+
+    return section;
+  };
+
+  const panelBody = document.getElementById('cameraPanelBody');
+  const panelInsertBefore =
+    panelBody?.querySelector('.camera-shortcuts-help') ?? null;
+  buildSection({
+    container: panelBody,
+    insertBefore: panelInsertBefore,
+    sectionClass: 'camera-control-section hfm-font-scale-section',
+    titleClass: 'camera-control-section-title',
+    inputId: '_hfmFontScale',
+    titleText: 'Alt View Font Size',
+  });
+
+  const drawerBody = document.getElementById('cameraDrawerBody');
+  buildSection({
+    container: drawerBody,
+    insertBefore: null,
+    sectionClass: 'camera-drawer-section camera-drawer-font-scale',
+    titleClass: 'camera-drawer-section-title',
+    inputId: '_hfmFontScaleMobile',
+    titleText: 'Alt View Font Size',
+  });
+
+  _hfmFontScaleControls = {
+    setEnabled(isEnabled) {
+      sections.forEach((section) => {
+        section.style.display = isEnabled ? '' : 'none';
+      });
+      inputs.forEach((input) => {
+        input.disabled = !isEnabled;
+      });
+    },
+    sync(value) {
+      const formatted = formatValue(value);
+      const rawValue = value.toFixed(2);
+      inputs.forEach((input) => {
+        if (input.value !== rawValue) {
+          input.value = rawValue;
+        }
+        input.setAttribute('aria-valuetext', formatted);
+      });
+      valueEls.forEach((el) => {
+        el.textContent = formatted;
+      });
+    },
+  };
+
+  _hfmFontScaleControls.setEnabled(false);
+  _hfmFontScaleControls.sync(_hfmFontScale);
+
+  return _hfmFontScaleControls;
+}
+
+function _setHeaderLogoForVariant(enabled) {
+  const img = document.querySelector('.header-logo');
+  if (!img) return;
+
+  if (!img.dataset.defaultSrc) {
+    img.dataset.defaultSrc = img.getAttribute('src') || '';
+  }
+
+  if (enabled) {
+    // Use amber logo for light theme, green for dark theme
+    const isLight = _isLightThemeActive();
+    const logoSrc = isLight
+      ? '/icons/logo-mono-hc.svg'
+      : '/icons/logo-mono.svg';
+    img.setAttribute('src', logoSrc);
+  } else if (img.dataset.defaultSrc) {
+    img.setAttribute('src', img.dataset.defaultSrc);
+  }
+}
+
+function _setFaviconForVariant(enabled) {
+  const faviconSvg = document.querySelector(
+    'link[rel="icon"][type="image/svg+xml"]'
+  );
+  if (!faviconSvg) return;
+
+  if (!faviconSvg.dataset.defaultHref) {
+    faviconSvg.dataset.defaultHref = faviconSvg.getAttribute('href') || '';
+  }
+
+  if (enabled) {
+    // Use amber favicon for light theme, green for dark theme
+    const isLight = _isLightThemeActive();
+    const faviconSrc = isLight
+      ? '/icons/favicon-mono-hc.svg'
+      : '/icons/favicon-mono.svg';
+    faviconSvg.setAttribute('href', faviconSrc);
+  } else if (faviconSvg.dataset.defaultHref) {
+    faviconSvg.setAttribute('href', faviconSvg.dataset.defaultHref);
+  }
+}
+
+function _setAssetsForVariant(enabled) {
+  _setHeaderLogoForVariant(enabled);
+  _setFaviconForVariant(enabled);
+}
 
 /**
  * Show an accessible confirmation dialog (WCAG COGA compliant)
@@ -265,6 +684,250 @@ function sanitizeUrlParams(extracted, urlParams) {
   return { sanitized, adjustments };
 }
 
+/**
+ * Inject toggle button for alternate view (internal use)
+ */
+function _injectAltToggle() {
+  const themeToggle = document.getElementById('themeToggle');
+  if (!themeToggle) return;
+  if (document.getElementById('_hfmToggle')) return; // Already exists
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.id = '_hfmToggle';
+  toggleBtn.className = 'btn btn-sm btn-secondary alt-view-toggle';
+  toggleBtn.setAttribute('aria-pressed', 'false');
+  toggleBtn.setAttribute('aria-label', 'Toggle alternate view');
+  toggleBtn.setAttribute('title', 'Alternate view');
+  toggleBtn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <!-- Key icon: "unlock a secret" -->
+      <circle cx="8" cy="8" r="5" />
+      <path d="M11.3 11.3L21 21" />
+      <path d="M16 16l3-3" />
+      <path d="M18 18l3-3" />
+    </svg>
+  `;
+
+  // Insert after themeToggle (before next sibling)
+  themeToggle.parentElement.insertBefore(toggleBtn, themeToggle.nextSibling);
+
+  // Create auto-rotate toggle button (placed in camera D-pad center)
+  const rotateBtn = document.createElement('button');
+  rotateBtn.id = '_hfmRotate';
+  rotateBtn.className = 'btn btn-sm btn-icon alt-rotate-toggle dpad-center';
+  rotateBtn.setAttribute('aria-pressed', 'true'); // On by default
+  rotateBtn.setAttribute('aria-label', 'Toggle auto rotation');
+  rotateBtn.setAttribute('title', 'Auto rotate');
+  rotateBtn.style.display = 'none'; // Hidden until alt view is enabled
+  rotateBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </svg>
+  `;
+  rotateBtn.classList.add('active'); // Active by default
+
+  // Insert into the desktop camera panel's Rotate View D-pad (center position)
+  const desktopDpad = document.querySelector(
+    '#cameraPanel .camera-control-dpad'
+  );
+  if (desktopDpad) {
+    desktopDpad.appendChild(rotateBtn);
+  }
+
+  // Create a clone for the mobile camera drawer
+  const mobileRotateBtn = rotateBtn.cloneNode(true);
+  mobileRotateBtn.id = '_hfmRotateMobile';
+
+  // Replace the label in the mobile drawer's D-pad
+  const mobileDpadLabel = document.querySelector(
+    '.camera-drawer-dpad .camera-drawer-dpad-label'
+  );
+  if (mobileDpadLabel) {
+    mobileDpadLabel.parentNode.replaceChild(mobileRotateBtn, mobileDpadLabel);
+  }
+
+  // Sync function to keep both buttons in sync
+  const syncRotateState = (isRotating) => {
+    [rotateBtn, mobileRotateBtn].forEach((btn) => {
+      btn.setAttribute('aria-pressed', isRotating ? 'true' : 'false');
+      btn.classList.toggle('active', isRotating);
+    });
+  };
+
+  // Wire auto-rotate toggle handler for both buttons
+  const handleRotateClick = () => {
+    if (!_hfmAltView) return;
+    const isRotating = _hfmAltView.toggleAutoRotate();
+    syncRotateState(isRotating);
+  };
+
+  rotateBtn.addEventListener('click', handleRotateClick);
+  mobileRotateBtn.addEventListener('click', handleRotateClick);
+
+  // Wire toggle click handler
+  toggleBtn.addEventListener('click', async () => {
+    const root = document.documentElement;
+    const isCurrentlyEnabled =
+      toggleBtn.getAttribute('aria-pressed') === 'true';
+
+    if (!previewManager) {
+      if (!isCurrentlyEnabled) {
+        _setAssetsForVariant(true);
+        root.setAttribute('data-ui-variant', 'mono');
+        toggleBtn.setAttribute('aria-pressed', 'true');
+        _hfmPendingEnable = true;
+      } else {
+        root.removeAttribute('data-ui-variant');
+        _setAssetsForVariant(false);
+        toggleBtn.setAttribute('aria-pressed', 'false');
+        _hfmPendingEnable = false;
+      }
+      return;
+    }
+
+    if (!isCurrentlyEnabled) {
+      await _enableAltViewWithPreview(
+        toggleBtn,
+        rotateBtn,
+        mobileRotateBtn,
+        syncRotateState
+      );
+    } else {
+      _disableAltViewWithPreview(toggleBtn, rotateBtn, mobileRotateBtn);
+    }
+  });
+
+  // Keep injected control consistent if dev auto-enabled already ran
+  if (_hfmEnabled) {
+    toggleBtn.setAttribute('aria-pressed', 'true');
+    rotateBtn.style.display = 'flex';
+    mobileRotateBtn.style.display = 'flex';
+    syncRotateState(true);
+    _initHfmContrastControls().setEnabled(true);
+    _initHfmFontScaleControls().setEnabled(true);
+    _enableHfmZoomTracking();
+  }
+}
+
+/**
+ * Handle unlock sequence match (internal use)
+ */
+function _handleUnlock() {
+  if (_hfmUnlocked) return; // Already unlocked
+  _hfmUnlocked = true;
+
+  // Inject toggle button
+  _injectAltToggle();
+
+  // Optional: brief flash on preview container
+  const container = document.getElementById('previewContainer');
+  if (container) {
+    container.classList.add('_hfm-unlock');
+    container.addEventListener(
+      'animationend',
+      () => {
+        container.classList.remove('_hfm-unlock');
+      },
+      { once: true }
+    );
+  }
+}
+
+async function _enableAltViewWithPreview(
+  toggleBtn,
+  rotateBtn,
+  mobileRotateBtn,
+  syncRotateState
+) {
+  if (!previewManager) return;
+
+  const root = document.documentElement;
+  _setAssetsForVariant(true);
+
+  // Enabling - lazy load if needed
+  if (!_hfmInitPromise) {
+    _hfmInitPromise = import('./js/_hfm.js').then((mod) =>
+      mod.initAltView(previewManager)
+    );
+  }
+  _hfmAltView = await _hfmInitPromise;
+  _hfmAltView.enable();
+  _applyHfmContrastScale(_hfmContrastScale);
+  _applyHfmFontScale(_hfmFontScale);
+  _setHfmZoomBaseline();
+  _enableHfmZoomTracking();
+  _initHfmContrastControls().setEnabled(true);
+  _initHfmFontScaleControls().setEnabled(true);
+
+  // Reset camera to default view before starting rotation
+  if (previewManager.fitCameraToModel && previewManager.mesh) {
+    previewManager.fitCameraToModel();
+  }
+
+  // Enable auto-rotation by default
+  _hfmAltView.enableAutoRotate();
+
+  previewManager.setRenderOverride(() => _hfmAltView.render());
+  previewManager.setResizeHook(({ width, height }) =>
+    _hfmAltView.resize(width, height)
+  );
+
+  // Apply variant theme (non-persistent, session only)
+  root.setAttribute('data-ui-variant', 'mono');
+
+  // Update preview colors to match the variant theme
+  const newTheme = previewManager.detectTheme();
+  previewManager.updateTheme(newTheme, false);
+
+  // Trigger resize to sync dimensions
+  previewManager.handleResize?.();
+  toggleBtn?.setAttribute('aria-pressed', 'true');
+  _hfmEnabled = true;
+  _hfmPendingEnable = false;
+
+  // Show the rotate buttons when alt view is enabled (already active by default)
+  if (rotateBtn) rotateBtn.style.display = 'flex';
+  if (mobileRotateBtn) mobileRotateBtn.style.display = 'flex';
+  syncRotateState?.(true);
+}
+
+function _disableAltViewWithPreview(toggleBtn, rotateBtn, mobileRotateBtn) {
+  const root = document.documentElement;
+
+  // Disabling
+  if (_hfmAltView) {
+    _hfmAltView.disable();
+  }
+  previewManager?.clearRenderOverride();
+  previewManager?.clearResizeHook();
+
+  // Remove variant theme
+  root.removeAttribute('data-ui-variant');
+  _setAssetsForVariant(false);
+
+  // Restore normal theme
+  if (previewManager) {
+    const normalTheme = previewManager.detectTheme();
+    previewManager.updateTheme(
+      normalTheme,
+      root.getAttribute('data-high-contrast') === 'true'
+    );
+  }
+
+  toggleBtn?.setAttribute('aria-pressed', 'false');
+  _hfmEnabled = false;
+  _hfmPendingEnable = false;
+
+  // Hide the rotate buttons when alt view is disabled
+  if (rotateBtn) rotateBtn.style.display = 'none';
+  if (mobileRotateBtn) mobileRotateBtn.style.display = 'none';
+  _initHfmContrastControls().setEnabled(false);
+  _initHfmFontScaleControls().setEnabled(false);
+  _disableHfmZoomTracking();
+  _hfmZoomBaseline = null;
+}
+
 // Initialize app
 async function initApp() {
   console.log('OpenSCAD Assistive Forge v4.0.0');
@@ -274,17 +937,24 @@ async function initApp() {
   let cameraPanelController = null; // Declared here, initialized later
   let autoPreviewEnabled = true;
   let previewQuality = RENDER_QUALITY.PREVIEW;
-  let previewQualityMode = 'balanced';
+  // Default to 'auto' mode for adaptive preview quality based on model complexity
+  let previewQualityMode = 'auto';
 
   const AUTO_PREVIEW_FORCE_FAST_MS = 2 * 60 * 1000;
-  const AUTO_PREVIEW_SLOW_RENDER_MS = 7000;
-  const AUTO_PREVIEW_TRIANGLE_THRESHOLD = 200000;
+  // Lowered threshold to detect slow renders more promptly (5s instead of 7s)
+  const AUTO_PREVIEW_SLOW_RENDER_MS = 5000;
+  // Lowered threshold for heavy triangle counts (150K instead of 200K)
+  const AUTO_PREVIEW_TRIANGLE_THRESHOLD = 150000;
   const autoPreviewHints = {
     forceFastUntil: 0,
     lastPreviewDurationMs: null,
     lastPreviewTriangles: null,
   };
   let adaptivePreviewMemo = { key: null, info: null };
+
+  const updateBanner = document.getElementById('updateBanner');
+  const updateBannerRefreshBtn = document.getElementById('updateBannerRefresh');
+  const updateBannerDismissBtn = document.getElementById('updateBannerDismiss');
 
   // Register Service Worker for PWA support
   // In development, avoid Service Worker caching/stale assets which can break testing.
@@ -294,6 +964,67 @@ async function initApp() {
         scope: '/',
       });
       console.log('[PWA] Service Worker registered:', registration.scope);
+
+      let waitingWorker = registration.waiting || null;
+      let refreshRequested = false;
+      let cacheClearPending = false;
+
+      const showUpdateBanner = (worker) => {
+        if (!updateBanner) return;
+        waitingWorker = worker;
+        updateBanner.classList.remove('hidden');
+      };
+
+      const hideUpdateBanner = () => {
+        if (!updateBanner) return;
+        updateBanner.classList.add('hidden');
+      };
+
+      const requestUpdate = () => {
+        if (!waitingWorker) return;
+        refreshRequested = true;
+        updateStatus('Updating app... Reloading soon.');
+        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+      };
+
+      const requestCacheClear = () => {
+        if (!navigator.serviceWorker?.controller) {
+          updateStatus('Cache clear unavailable', 'error');
+          return;
+        }
+        if (cacheClearPending) return;
+        cacheClearPending = true;
+        updateStatus('Clearing cache...');
+        navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+
+        setTimeout(() => {
+          if (!cacheClearPending) return;
+          cacheClearPending = false;
+          updateStatus('Cache cleared. Reloading...', 'success');
+          window.location.reload();
+        }, 2000);
+      };
+
+      if (updateBannerRefreshBtn) {
+        updateBannerRefreshBtn.addEventListener('click', requestUpdate);
+      }
+      if (updateBannerDismissBtn) {
+        updateBannerDismissBtn.addEventListener('click', hideUpdateBanner);
+      }
+
+      const clearCacheBtn = document.getElementById('clearCacheBtn');
+      if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', requestCacheClear);
+        if (!navigator.serviceWorker.controller) {
+          clearCacheBtn.disabled = true;
+          clearCacheBtn.title =
+            'Cache clearing is available after the service worker activates.';
+        }
+      }
+
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdateBanner(registration.waiting);
+      }
 
       // Handle updates
       registration.addEventListener('updatefound', () => {
@@ -305,12 +1036,29 @@ async function initApp() {
             newWorker.state === 'installed' &&
             navigator.serviceWorker.controller
           ) {
-            // New version available - silent background update
-            console.log(
-              '[PWA] New version available - will activate on next reload'
-            );
+            console.log('[PWA] New version available - waiting to activate');
+            showUpdateBanner(newWorker);
           }
         });
+      });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (clearCacheBtn) {
+          clearCacheBtn.disabled = false;
+          clearCacheBtn.title = '';
+        }
+        if (refreshRequested) {
+          refreshRequested = false;
+          window.location.reload();
+        }
+      });
+
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'CACHE_CLEARED') {
+          cacheClearPending = false;
+          updateStatus('Cache cleared. Reloading...', 'success');
+          window.location.reload();
+        }
       });
 
       // Check for updates periodically (every hour)
@@ -322,9 +1070,19 @@ async function initApp() {
       );
     } catch (error) {
       console.error('[PWA] Service Worker registration failed:', error);
+      const clearCacheBtn = document.getElementById('clearCacheBtn');
+      if (clearCacheBtn) {
+        clearCacheBtn.disabled = true;
+        clearCacheBtn.title = 'Cache clearing is unavailable right now.';
+      }
     }
   } else {
     console.log('[PWA] Service Worker disabled (dev) or not supported');
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+      clearCacheBtn.disabled = true;
+      clearCacheBtn.title = 'Cache clearing is available in the installed app.';
+    }
   }
 
   // Note: App is installable via browser-native prompts (Chrome address bar, iOS Share menu)
@@ -651,6 +1409,7 @@ async function initApp() {
   const exportQualitySelect = document.getElementById('exportQualitySelect');
   const measurementsToggle = document.getElementById('measurementsToggle');
   const gridToggle = document.getElementById('gridToggle');
+  const autoBedToggle = document.getElementById('autoBedToggle');
   const dimensionsDisplay = document.getElementById('dimensionsDisplay');
   // Note: outputFormatSelect and formatInfo already declared above
 
@@ -749,10 +1508,14 @@ async function initApp() {
     let estimatedSlow = false;
     if (scadContent) {
       const estimate = estimateRenderTime(scadContent, parameters);
+      // Lower thresholds to trigger auto-fast more promptly for heavy models
+      // Also consider file size as a signal (large SCAD files often correlate with complexity)
+      const fileSizeHeavy = scadContent.length > 15000; // 15KB+ SCAD file
       estimatedSlow =
         estimate.warning ||
-        estimate.seconds >= 12 ||
-        estimate.complexity >= 120;
+        estimate.seconds >= 8 || // Lowered from 12s to 8s
+        estimate.complexity >= 80 || // Lowered from 120 to 80
+        fileSizeHeavy;
     }
 
     // Determine preview quality level based on conditions
@@ -894,6 +1657,24 @@ async function initApp() {
     });
   }
 
+  // Wire auto-bed toggle
+  if (autoBedToggle) {
+    autoBedToggle.addEventListener('change', () => {
+      const enabled = autoBedToggle.checked;
+      if (previewManager) {
+        const needsRerender = previewManager.toggleAutoBed(enabled);
+        // If model is loaded and setting changed, trigger re-render
+        const currentStl = stateManager.getState()?.stl;
+        if (needsRerender && currentStl) {
+          // Re-render to apply the new auto-bed setting
+          previewManager.loadSTL(currentStl);
+          updateDimensionsDisplay();
+        }
+      }
+      console.log(`[App] Auto-bed ${enabled ? 'enabled' : 'disabled'}`);
+    });
+  }
+
   // Wire status bar toggle
   const statusBarToggle = document.getElementById('statusBarToggle');
   if (statusBarToggle && previewStatusBar) {
@@ -977,8 +1758,17 @@ async function initApp() {
    * Get the theme default model color
    */
   function getThemeDefaultColor() {
-    const activeTheme = themeManager.getActiveTheme();
+    const root = document.documentElement;
+    const uiVariant = root.getAttribute('data-ui-variant');
     const highContrast = themeManager.isHighContrastEnabled();
+
+    // Check for mono variant first
+    if (uiVariant === 'mono') {
+      // Light theme = amber, dark theme = green
+      return _isLightThemeActive() ? '#ffb000' : '#00ff00';
+    }
+
+    const activeTheme = themeManager.getActiveTheme();
     const themeKey = highContrast ? `${activeTheme}-hc` : activeTheme;
 
     // Match PREVIEW_COLORS from preview.js
@@ -1088,9 +1878,25 @@ async function initApp() {
         : `<span class="stats-quality preview">Preview Quality${previewPercentText}</span>`;
       statsArea.innerHTML = `${qualityLabel} Size: ${formatFileSize(extra.stats.size)} | Triangles: ${extra.stats.triangles.toLocaleString()}`;
 
-      // Also update the preview status bar stats
-      updatePreviewStats(extra.stats, extra.fullQuality, previewPercentText);
+      // Also update the preview status bar stats with timing breakdown
+      updatePreviewStats(
+        extra.stats,
+        extra.fullQuality,
+        previewPercentText,
+        extra.timing
+      );
     }
+  }
+
+  /**
+   * Format timing duration for display
+   * @param {number} ms - Duration in milliseconds
+   * @returns {string} Formatted duration string
+   */
+  function formatTimingMs(ms) {
+    if (typeof ms !== 'number' || ms <= 0) return '';
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
   }
 
   /**
@@ -1098,8 +1904,14 @@ async function initApp() {
    * @param {Object} stats - Stats object with size and triangles
    * @param {boolean} fullQuality - Whether this is full quality render
    * @param {string} percentText - Optional percentage text for preview quality
+   * @param {Object} timing - Optional timing breakdown { totalMs, renderMs, parseMs, wasmInitMs }
    */
-  function updatePreviewStats(stats, fullQuality = false, percentText = '') {
+  function updatePreviewStats(
+    stats,
+    fullQuality = false,
+    percentText = '',
+    timing = null
+  ) {
     if (!previewStatusStats || !previewStatusBar) return;
 
     if (!stats) {
@@ -1109,7 +1921,36 @@ async function initApp() {
     }
 
     const qualityText = fullQuality ? 'Full' : `Preview${percentText}`;
-    previewStatusStats.textContent = `${qualityText} | ${formatFileSize(stats.size)} | ${stats.triangles.toLocaleString()} triangles`;
+
+    // Build timing breakdown string if timing data is available
+    let timingText = '';
+    if (timing && timing.totalMs > 0) {
+      const parts = [];
+
+      // Show total time
+      parts.push(formatTimingMs(timing.totalMs));
+
+      // Show breakdown if we have detailed timing
+      const details = [];
+      if (timing.renderMs > 0) {
+        details.push(`render: ${formatTimingMs(timing.renderMs)}`);
+      }
+      if (timing.parseMs > 0) {
+        details.push(`parse: ${formatTimingMs(timing.parseMs)}`);
+      }
+
+      if (details.length > 0) {
+        parts.push(`(${details.join(', ')})`);
+      }
+
+      if (timing.cached) {
+        parts.push('(cached)');
+      }
+
+      timingText = ` | ${parts.join(' ')}`;
+    }
+
+    previewStatusStats.textContent = `${qualityText} | ${formatFileSize(stats.size)} | ${stats.triangles.toLocaleString()} triangles${timingText}`;
     previewStatusBar.classList.remove('no-stats');
   }
 
@@ -1654,14 +2495,8 @@ async function initApp() {
       );
       if (complexityTierLabel) {
         const tierName = adaptiveConfig.tierName;
-        const tierIcon =
-          {
-            Beginner: '🟢',
-            Standard: '🔵',
-            Complex: '🟡',
-          }[tierName] || '⚪';
-
-        complexityTierLabel.textContent = `${tierIcon} ${tierName}`;
+        // Avoid emoji icons so the badge stays in-theme (mono mode) and consistent.
+        complexityTierLabel.textContent = tierName;
         complexityTierLabel.className = `complexity-tier-label tier-${adaptiveConfig.tier}`;
         complexityTierLabel.title =
           `${adaptiveConfig.tierDescription}\n` +
@@ -1788,9 +2623,40 @@ async function initApp() {
           gridToggle.checked = previewManager.gridEnabled;
         }
 
+        // Sync auto-bed toggle with saved preference
+        if (autoBedToggle) {
+          autoBedToggle.checked = previewManager.autoBedEnabled;
+        }
+
         // Update camera panel controller with preview manager reference
         if (cameraPanelController) {
           cameraPanelController.setPreviewManager(previewManager);
+        }
+
+        // If unlock was triggered before preview was ready, inject toggle now
+        if (_hfmUnlocked && !document.getElementById('_hfmToggle')) {
+          _injectAltToggle();
+        }
+
+        // If user toggled the alt view on from the welcome screen, enable it now.
+        if (_hfmPendingEnable && !_hfmEnabled) {
+          const toggleBtn = document.getElementById('_hfmToggle');
+          const rotateBtn = document.getElementById('_hfmRotate');
+          const mobileRotateBtn = document.getElementById('_hfmRotateMobile');
+          if (toggleBtn && rotateBtn && mobileRotateBtn) {
+            const syncRotateState = (isRotating) => {
+              [rotateBtn, mobileRotateBtn].forEach((btn) => {
+                btn.setAttribute('aria-pressed', isRotating ? 'true' : 'false');
+                btn.classList.toggle('active', isRotating);
+              });
+            };
+            await _enableAltViewWithPreview(
+              toggleBtn,
+              rotateBtn,
+              mobileRotateBtn,
+              syncRotateState
+            );
+          }
         }
 
         // Apply saved model color if exists
@@ -1824,6 +2690,12 @@ async function initApp() {
               modelColorPicker.value =
                 '#' + colorHex.toString(16).padStart(6, '0');
             }
+          }
+
+          // Update mono variant assets when theme changes (light=amber, dark=green)
+          const root = document.documentElement;
+          if (root.getAttribute('data-ui-variant') === 'mono') {
+            _setAssetsForVariant(true);
           }
         });
 
@@ -2572,6 +3444,9 @@ async function initApp() {
     cameraPanelController = initCameraPanelController({
       previewManager: null, // Will be set after preview manager is initialized
     });
+
+    // Initialize input sequence detector (passive)
+    initSequenceDetector(_handleUnlock);
 
     // Initialize actions drawer toggle
     const initActionsDrawer = () => {

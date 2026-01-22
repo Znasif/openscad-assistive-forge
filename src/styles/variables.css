@@ -108,6 +108,57 @@
 }
 
 /* ============================================================================
+   Desktop Density Mode - Compact sizing for precise pointer devices
+   ============================================================================
+   Applies to devices with mouse/trackpad (pointer: fine) on larger screens.
+   Touch devices and mobile retain full 44px touch targets for accessibility.
+   This still exceeds WCAG 2.2 SC 2.5.8 minimum of 24×24px.
+   ============================================================================ */
+
+@media (pointer: fine) and (min-width: 768px) {
+  :root:not([data-high-contrast='true']) {
+    /* Reduced spacing for desktop density */
+    --space-sm: 6px;
+    --space-md: 12px;
+    --space-lg: 20px;
+    --space-xl: 28px;
+
+    /* Compact touch targets for desktop (still accessible at 36px) */
+    --size-touch-target: 36px;
+    --size-touch-target-sm: 32px;
+
+    /* Slightly smaller icons on desktop */
+    --size-icon-md: 18px;
+    --size-icon-lg: 22px;
+
+    /* Compact drawer dimensions */
+    --drawer-collapsed-width: 40px;
+    --drawer-header-height: 36px;
+    --drawer-padding: var(--space-xs);
+
+    /* Compact actions bar */
+    --actions-bar-height: 44px;
+    --actions-bar-collapsed-offset: calc(
+      var(--actions-bar-height) + var(--space-xs)
+    );
+    --actions-bar-expanded-offset: 180px;
+    --actions-bar-expanded-padding: 100px;
+  }
+}
+
+/* Large desktop screens get even more compact layout */
+@media (pointer: fine) and (min-width: 1200px) {
+  :root:not([data-high-contrast='true']) {
+    /* Further reduced spacing on large screens */
+    --space-md: 10px;
+    --space-lg: 16px;
+
+    /* Drawer can be narrower */
+    --drawer-collapsed-width: 36px;
+  }
+}
+
+/* ============================================================================
    High Contrast Mode - Works with any theme (Light/Dark/Auto)
    ============================================================================
    Activated via data-high-contrast="true" on :root
