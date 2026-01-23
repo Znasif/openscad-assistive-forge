@@ -1,105 +1,96 @@
+# Pull Request
+
 ## Description
 
-**Provide a clear and concise description of what this PR does.**
-
-Fixes # (issue number, if applicable)
+<!-- Brief description of your changes -->
 
 ## Type of Change
 
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] ♿ Accessibility improvement
-- [ ] 🎨 UI/UX enhancement
-- [ ] ⚡ Performance improvement
-- [ ] 🧪 Test coverage improvement
-- [ ] 🔧 Refactoring (no functional changes)
+<!-- Check all that apply -->
+
+- [ ] 🎉 New feature (`feat:`)
+- [ ] 🐛 Bug fix (`fix:`)
+- [ ] 💥 Breaking change
+- [ ] 📚 Documentation update (`docs:`)
+- [ ] ♻️ Refactoring (`refactor:`)
+- [ ] 🎨 Style/UI changes
+- [ ] ✅ Test updates (`test:`)
+- [ ] 🔧 Chore/maintenance (`chore:`)
 
 ## Test Plan
 
-**Describe how you tested your changes:**
+<!-- Describe how you tested your changes -->
 
-- [ ] Tested in browser(s): [e.g., Chrome 120, Firefox 121]
-- [ ] Tested on device(s): [e.g., Desktop, iPhone, Android]
-- [ ] Unit tests pass: `npm run test:run`
-- [ ] E2E tests pass: `npm run test:e2e`
-- [ ] Linter passes: `npm run lint`
-- [ ] Build succeeds: `npm run build`
+1. Steps to reproduce/test
+2. What to verify
+3. Expected behavior
 
-**Manual testing steps:**
-
-1. 
-2. 
-3. 
+**Tested on:**
+- [ ] Desktop (Chrome/Firefox/Safari)
+- [ ] Mobile (specify device/browser)
+- [ ] Tablet
 
 ## Accessibility Checklist
 
-> **Required for all UI changes** — Please verify before submitting:
+<!-- Required for UI changes. Skip if not applicable -->
 
-- [ ] **Keyboard-only**: Feature is fully usable without a mouse
-- [ ] **Visible focus**: Focus indicators are visible and focus order is logical
-- [ ] **Screen reader**: Controls have proper labels and status changes are announced
-- [ ] **Reduced motion**: Animations are optional and respect `prefers-reduced-motion`
-- [ ] **High contrast**: Content is visible and controls are discoverable in high contrast mode
-- [ ] **Touch targets**: Interactive elements are at least 44x44px (WCAG 2.1 AA)
-- [ ] **Color contrast**: Text meets WCAG AA (4.5:1 normal, 3:1 large) or AAA (7:1) for HC mode
-
-**Screen reader tested with**: [e.g., NVDA, JAWS, VoiceOver, or "Not applicable - no UI changes"]
+- [ ] ⌨️ Keyboard-only navigation works
+- [ ] 👁️ Visible focus indicators
+- [ ] 🔊 Screen reader compatible (tested with NVDA/JAWS/VoiceOver)
+- [ ] 🎬 Reduced motion respected
+- [ ] 🎨 High contrast mode works
+- [ ] 👆 Touch targets ≥44×44px (mobile)
+- [ ] N/A - No UI changes
 
 ## UI Consistency Checklist
 
-> **Required for UI changes** — Verify these before submitting (see [UI_STANDARDS.md](../docs/guides/UI_STANDARDS.md)):
+<!-- Required for UI changes. Skip if not applicable -->
 
-- [ ] **Design tokens**: All new UI components use design tokens (no hardcoded colors/sizes)
-- [ ] **Drawer patterns**: Follows documented orientation rules (side panels collapse outward, bottom drawers open upward)
-- [ ] **Mobile portrait**: Tested in portrait mode (≤480px) — title abbreviation, buttons right-aligned, drawers work correctly
-- [ ] **All themes tested**: Visual elements visible and functional in:
-  - [ ] Light mode
-  - [ ] Dark mode
-  - [ ] High contrast mode
-- [ ] **Component patterns**: Follows existing patterns (buttons, drawers, forms) documented in UI_STANDARDS.md
-- [ ] **No hardcoded values**: Uses tokens from `variables.css` instead of magic numbers
+- [ ] ✨ Uses design tokens from `src/styles/variables.css` (no hardcoded colors/spacing)
+- [ ] 🌓 Tested in light mode
+- [ ] 🌙 Tested in dark mode
+- [ ] 🔲 Tested in high contrast mode
+- [ ] 📱 Mobile responsive (portrait ≤480px)
+- [ ] 📱 Mobile responsive (landscape)
+- [ ] 🎯 Follows existing component patterns
+- [ ] N/A - No UI changes
 
-## Screenshots (if applicable)
+## Code Quality
+
+- [ ] ✅ Unit tests pass (`npm run test:run`)
+- [ ] 🎭 E2E tests pass (`npm run test:e2e`)
+- [ ] 🔍 Linting passes (`npm run lint`)
+- [ ] 💅 Formatting applied (`npm run format`)
+- [ ] 📖 Documentation updated (if needed)
+
+## Screenshots/Videos
+
+<!-- Add screenshots or videos if this involves UI changes -->
 
 **Before:**
-<!-- Add screenshots -->
+<!-- Screenshot or description -->
 
 **After:**
-<!-- Add screenshots -->
+<!-- Screenshot or description -->
 
-## Breaking Changes (if applicable)
+## Related Issues
 
-**List any breaking changes and migration steps:**
+<!-- Link related issues -->
 
-- 
-- 
-
-## Documentation
-
-- [ ] Updated relevant documentation in `docs/`
-- [ ] Updated `CHANGELOG.md` (if applicable)
-- [ ] Updated `README.md` (if applicable)
-- [ ] Added JSDoc comments to new functions/classes
-- [ ] No documentation changes needed
+Closes #
+Related to #
 
 ## Additional Context
 
-**Any other information that reviewers should know:**
+<!-- Any other information reviewers should know -->
 
 ---
 
-## Checklist
+## Reviewer Notes
 
-- [ ] My code follows the project's code style (`npm run format`)
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code where necessary, especially in complex areas
-- [ ] My changes generate no new warnings or errors
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing tests pass locally
-- [ ] Any dependent changes have been merged and published
+<!-- For maintainers -->
 
-## Contribution Agreement
-
-By submitting this pull request, I confirm that my contribution is made under the terms of the GPL-3.0-or-later license.
+- [ ] Code review complete
+- [ ] Accessibility verified (for UI changes)
+- [ ] Breaking changes documented
+- [ ] Changelog updated (for releases)

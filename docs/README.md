@@ -27,7 +27,6 @@
 ### Alternative Platforms
 
 - [Vercel Deployment Guide](guides/DEPLOYMENT_GUIDE.md) — Legacy hosting option
-- [Vercel Legacy Configuration](guides/VERCEL_LEGACY_CONFIG.md) — Rollback instructions for existing Vercel deployments
 - [PWA Deployment Guide](guides/PWA_DEPLOYMENT_GUIDE.md) — Progressive Web App setup
 
 ### Technical Research & Validation
@@ -51,13 +50,13 @@
 - [Dark Mode Testing Guide](guides/DARK_MODE_TESTING_GUIDE.md) — Theme and accessibility testing
 - [Library Testing Guide](guides/LIBRARY_TESTING_GUIDE.md) — External library integration tests
 - [ZIP Upload Testing Guide](guides/ZIP_UPLOAD_TESTING_GUIDE.md) — Multi-file project testing
-- [UI Testing Guide](guides/UI_TESTING_GUIDE_v1.11.1.md) — UI component testing (v1.11.1)
+- [Testing Instructions](guides/TESTING_INSTRUCTIONS.md) — Tutorial and interactive testing procedures
 
 ### Verification & Checklists
 
 - [Production Verification Checklist](guides/PRODUCTION_VERIFICATION_CHECKLIST.md) — Pre-deployment validation
 - [Deployment Verification](guides/DEPLOYMENT_VERIFICATION.md) — Post-deployment checks
-- [Test Report](../TEST_REPORT.md) — Comprehensive testing results
+- [Test Report](TEST_REPORT.md) — Comprehensive testing results
 
 ---
 
@@ -72,10 +71,21 @@
 
 ## 🏗️ Development & Architecture
 
+### Development Workflow
+
+- **[Development Workflow](DEVELOPMENT_WORKFLOW.md)** ⭐ **Start Here for Contributors**
+  - Complete branching strategy (Git Flow)
+  - Commit message conventions
+  - Pull request process
+  - Release procedures
+- [Quick Reference](QUICK_REFERENCE.md) — Command cheat sheet for daily development
+- [Contributing Guidelines](../CONTRIBUTING.md) — Code style, accessibility checklist, and UI standards
+- [Branch Protection Setup](../.github/BRANCH_PROTECTION.md) — GitHub repository configuration
+
 ### Planning Documents
 
 - [Build Plan](BUILD_PLAN_NEW.md) — Current development roadmap
-- [Build Plan (Original)](BUILD_PLAN.md) — Historical reference
+- [Welcome Feature Paths](guides/WELCOME_FEATURE_PATHS_INVENTORY.md) — Role-based entry points and tutorial inventory
 
 ### User Guidance
 
@@ -88,11 +98,12 @@
 
 ### Latest Releases
 
+- [Main Changelog](../CHANGELOG.md) — Complete version history (v1.0.0 - v4.0.0)
 - [v2.10.1 Changelog](changelogs/CHANGELOG_v2.10.1.md) — Bug fixes and improvements
 - [v2.10 Changelog](changelogs/CHANGELOG_v2.10.md) — Enhanced accessibility & layout
 - [v2.6 Changelog](changelogs/CHANGELOG_v2.6.md) — WASM progress & mobile enhancements
 - [v2.5 Changelog](changelogs/CHANGELOG_v2.5.md) — Panel layout & resizable UI
-- [v2.4 Release Notes](v2.4.0-RELEASE_NOTES.md) — Major feature release
+- [v2.4 Release Notes](changelogs/v2.4.0-RELEASE_NOTES.md) — Major feature release
 - [v2.3 Changelog](changelogs/CHANGELOG_v2.3.md) — Codebase audit & polish
 - [v2.2 Changelog](changelogs/CHANGELOG_v2.2.md) — Vue/Svelte templates
 - [v2.1 Changelog](changelogs/CHANGELOG_v2.1.md) — Enhanced CLI
@@ -112,6 +123,14 @@ All version changelogs are available in [changelogs/](changelogs/)
 
 Historical documents and legacy content: [archive/](archive/)
 
+The archive contains:
+- **Completion summaries** for versions v1.1 through v2.2 (development artifacts)
+- **Historical deployment summaries** (superseded by current deployment guides)
+- **Original build plan** (v0.1.0, superseded by BUILD_PLAN_NEW.md)
+- **Legacy configuration files** (Vercel legacy config, versioned testing guides)
+- **Implementation summaries** (panel layout, welcome feature paths, library features)
+- **Historical progress reports** (v2.4, commit summaries, next steps)
+
 ---
 
 ## 🔍 Finding What You Need
@@ -123,7 +142,7 @@ Historical documents and legacy content: [archive/](archive/)
 | **Deployment** | [Cloudflare Guide](guides/CLOUDFLARE_PAGES_DEPLOYMENT.md), [Vercel Guide](guides/DEPLOYMENT_GUIDE.md), [PWA Guide](guides/PWA_DEPLOYMENT_GUIDE.md) |
 | **Testing** | [Quick Start](guides/TESTING_QUICK_START.md), [Manual Procedures](guides/MANUAL_TESTING_PROCEDURES.md), [Test Report](../TEST_REPORT.md) |
 | **Troubleshooting** | [Troubleshooting Guide](TROUBLESHOOTING.md), [Deployment Verification](guides/DEPLOYMENT_VERIFICATION.md) |
-| **Development** | [Build Plan](BUILD_PLAN_NEW.md), [Parameter Schema](specs/PARAMETER_SCHEMA_SPEC.md), [Performance](PERFORMANCE.md) |
+| **Development** | [Workflow](DEVELOPMENT_WORKFLOW.md), [Quick Reference](QUICK_REFERENCE.md), [Contributing](../CONTRIBUTING.md), [Build Plan](BUILD_PLAN_NEW.md) |
 | **Research** | [WASM Analysis](research/WASM_THREADING_ANALYSIS.md), [Comparable Projects](research/COMPARABLE_PROJECTS.md) |
 
 ### By User Role
@@ -139,6 +158,9 @@ Historical documents and legacy content: [archive/](archive/)
 - [Cloudflare Configuration Validation](research/CLOUDFLARE_VALIDATION.md)
 
 **For Developers:**
+- [Development Workflow](DEVELOPMENT_WORKFLOW.md) ⭐ **Start Here**
+- [Quick Reference](QUICK_REFERENCE.md) — Daily workflow commands
+- [Contributing Guidelines](../CONTRIBUTING.md)
 - [Build Plan](BUILD_PLAN_NEW.md)
 - [Parameter Schema Spec](specs/PARAMETER_SCHEMA_SPEC.md)
 - [Testing Documentation](TESTING.md)
@@ -147,7 +169,7 @@ Historical documents and legacy content: [archive/](archive/)
 **For Researchers:**
 - [WASM Threading Analysis](research/WASM_THREADING_ANALYSIS.md)
 - [Comparable Projects Research](research/COMPARABLE_PROJECTS.md)
-- [Test Report](../TEST_REPORT.md)
+- [Test Report](TEST_REPORT.md)
 
 ---
 
