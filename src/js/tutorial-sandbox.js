@@ -818,6 +818,26 @@ const TUTORIALS = {
         position: 'right',
       },
       {
+        title: 'Expand a parameter group',
+        content: `
+          <p>Parameters are organized into <strong>collapsible groups</strong>.</p>
+          <p><strong>Try it:</strong> click the <strong>Dimensions</strong> group header to expand it and reveal the sliders inside.</p>
+          <p class="tutorial-hint">Each group can be expanded or collapsed independently.</p>
+        `,
+        contentCompact: `
+          <p>Click <strong>Dimensions</strong> to expand the group.</p>
+        `,
+        highlightSelector:
+          '.param-group[data-group-id="Dimensions"] summary, .param-group summary',
+        position: 'right',
+        lockScroll: true,
+        completion: {
+          type: 'detailsOpen',
+          selector:
+            '.param-group[data-group-id="Dimensions"], .param-group:first-of-type',
+        },
+      },
+      {
         title: 'Adjust a parameter',
         content: `
           <p><strong>Try it:</strong> change <strong>Width</strong> and watch the preview update.</p>
@@ -1228,6 +1248,23 @@ const TUTORIALS = {
           </ul>
         `,
         position: 'center',
+      },
+      {
+        title: 'Expand Parameter Groups',
+        content: `
+          <p>Parameters are in collapsible <strong>disclosure widgets</strong> (details/summary).</p>
+          <p><strong>Try it:</strong> Navigate to <strong>Dimensions</strong> and activate it to expand.</p>
+          <p class="tutorial-hint">Press Enter or Space on the group header to toggle.</p>
+        `,
+        highlightSelector:
+          '.param-group[data-group-id="Dimensions"] summary, .param-group summary',
+        position: 'right',
+        lockScroll: true,
+        completion: {
+          type: 'detailsOpen',
+          selector:
+            '.param-group[data-group-id="Dimensions"], .param-group:first-of-type',
+        },
       },
       {
         title: 'Status Announcements',
@@ -1845,7 +1882,6 @@ export async function startTutorial(tutorialId, { triggerEl } = {}) {
   activeTutorial = tutorial;
   currentStepIndex = startIndex;
   isMinimized = false;
-
   createTutorialOverlay();
   await showStep(startIndex);
   announceToScreenReader(
@@ -2069,6 +2105,9 @@ function showKeyboardHelp() {
  * Handle clicks on the overlay (outside the panel)
  */
 function handleOverlayClick(e) {
+  if (!tutorialOverlay) {
+    return;
+  }
   const panel = tutorialOverlay.querySelector('.tutorial-panel');
   const minimized = tutorialOverlay.querySelector('.tutorial-minimized');
 
@@ -2762,7 +2801,7 @@ function measureSafeAreaInsets() {
     document.body.appendChild(testEl);
     const rect = testEl.getBoundingClientRect();
     document.body.removeChild(testEl);
-    
+
     if (prop === 'top') return rect.top;
     if (prop === 'left') return rect.left;
     if (prop === 'right') return window.innerWidth - rect.right;
