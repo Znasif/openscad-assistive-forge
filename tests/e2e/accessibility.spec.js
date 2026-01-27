@@ -674,6 +674,13 @@ test.describe('Screen Reader Support', () => {
   })
   
   test.describe('Role-Based Feature Paths (Welcome Screen)', () => {
+    // These tests need the first-visit modal to be visible, so override the global beforeEach
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.removeItem('openscad-forge-first-visit-seen')
+      })
+    })
+    
     test('should display beginner tutorial card with keyboard-accessible CTAs', async ({ page }) => {
       await page.goto('/')
       
