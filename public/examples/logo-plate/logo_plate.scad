@@ -81,40 +81,29 @@ else if (render_mode == 2) {
 
 module plate_with_logo() {
     difference() {
-        // 1. The Plate
         plate_part();
-        
-        // 2. The Logo Cutter
-        // We move it up to the top surface of the plate
         translate([0, 0, plate_thickness - cut_depth]) 
             logo_cutter();
     }
 }
 
 module logo_cutter() {
-    // This pipeline converts a PNG -> 3D Terrain -> 2D Slice -> Solid Cutter
-    
-    // 4. Extrude the 2D shape back into a 3D cutter
-    linear_extrude(height = cut_depth + 1) { // +1 extra to ensure clean top cut
-        
-        // 3. Resize to fit the plate (leave 2mm margin on edges)
+    // Use injected logo geometry instead of surface() which doesn't work in WASM
+    linear_extrude(height = cut_depth + 1) {
+        // Resize to fit the plate (leave 2mm margin on edges)
         resize([base_width - 4, base_length - 4]) {
-            
-            // 2. "Binarize" / Threshold
-            // This cuts the 3D terrain at Z=0. 
-            // Only parts of the image that are "high" enough will appear here.
-            projection(cut = true) {
-                
-                // 1. Import PNG as 3D Heightmap
-                // We move it down -50 so only the very brightest parts (highest peaks)
-                // cross the Z=0 plane.
-                // File is mounted to /tmp/ by the file upload system
-                translate([0, 0, -50]) 
-                    surface(file = str("/tmp/", image_file), center = true, invert = image_invert);
-            }
+            generated_logo();
         }
     }
 }
+
+// === GENERATED LOGO MODULE - INJECTED BY JS ===
+// GENERATED_LOGO_PLACEHOLDER
+module generated_logo() {
+    // Default empty - JS injects real geometry here
+    square([1, 1], center = true);
+}
+// === END GENERATED LOGO MODULE ===
 
 module plate_part() {
     difference() {

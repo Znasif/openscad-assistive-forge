@@ -15,6 +15,89 @@ function formatParamName(name) {
 }
 
 /**
+ * Convert an image to a binary grid (2D array of 0s and 1s)
+ * @param {string} dataUrl - Base64 data URL of the image
+ * @param {number} targetSize - Target width/height (aspect ratio preserved)
+ * @param {number} threshold - Brightness threshold (0-255) for binary conversion
+ * @returns {Promise<{grid: number[][], width: number, height: number}>}
+ */
+async function convertToBinaryGrid(dataUrl, targetSize = 50, threshold = 128) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      // Calculate dimensions preserving aspect ratio
+      let width = img.width;
+      let height = img.height;
+
+      if (width > targetSize || height > targetSize) {
+        if (width > height) {
+          height = Math.round(height * (targetSize / width));
+          width = targetSize;
+        } else {
+          width = Math.round(width * (targetSize / height));
+          height = targetSize;
+        }
+      }
+
+      // Create canvas to read pixel data
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      // Build binary grid
+      const grid = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          // Grayscale: 0.299R + 0.587G + 0.114B
+          const brightness = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          // Binary: 1 if above threshold (will be engraved), 0 otherwise
+          row.push(brightness >= threshold ? 1 : 0);
+        }
+        grid.push(row);
+      }
+
+      resolve({ grid, width, height });
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image for conversion'));
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Render a binary grid as a visual CSS grid preview
+ * @param {number[][]} grid - 2D binary array
+ * @param {HTMLElement} container - Container element to render into
+ */
+function renderBinaryGridPreview(grid, container) {
+  container.innerHTML = '';
+  container.style.display = 'grid';
+  container.style.gridTemplateColumns = `repeat(${grid[0].length}, 1fr)`;
+  container.style.gap = '0';
+  container.style.maxWidth = '200px';
+  container.style.margin = '8px 0';
+  container.style.border = '1px solid var(--color-border)';
+  container.style.borderRadius = '4px';
+  container.style.overflow = 'hidden';
+
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      const cell = document.createElement('div');
+      cell.style.aspectRatio = '1';
+      cell.style.backgroundColor = grid[y][x] === 1 ? '#000' : '#fff';
+      container.appendChild(cell);
+    }
+  }
+}
+
+/**
  * Create a label container with optional help tooltip and reset button
  * Consolidates duplicated label creation logic across control types
  * @param {Object} param - Parameter definition
@@ -1346,6 +1429,21 @@ function createFileControl(param, onChange) {
   previewInfo.className = 'file-preview-info';
   imagePreview.appendChild(previewInfo);
 
+  // Binary grid preview (for engraving visualization)
+  const binaryGridPreview = document.createElement('div');
+  binaryGridPreview.className = 'binary-grid-preview';
+  binaryGridPreview.style.display = 'none';
+
+  const gridLabel = document.createElement('div');
+  gridLabel.className = 'binary-grid-label';
+  gridLabel.textContent = 'Engraving Preview:';
+  gridLabel.style.fontSize = '11px';
+  gridLabel.style.color = 'var(--color-text-muted)';
+  gridLabel.style.marginTop = '8px';
+
+  const gridContainer = document.createElement('div');
+  gridContainer.className = 'binary-grid-container';
+
   const clearButton = document.createElement('button');
   clearButton.type = 'button';
   clearButton.className = 'file-clear-button';
@@ -1377,13 +1475,26 @@ function createFileControl(param, onChange) {
 
           // Show image preview for image files
           if (file.type.startsWith('image/')) {
-            previewImg.onload = () => {
+            previewImg.onload = async () => {
               previewInfo.textContent = `${previewImg.naturalWidth}×${previewImg.naturalHeight}px`;
               imagePreview.style.display = 'flex';
+
+              // Generate and show binary grid preview
+              try {
+                const { grid, width, height } = await convertToBinaryGrid(dataUrl, 50);
+                renderBinaryGridPreview(grid, gridContainer);
+                gridLabel.textContent = `Engraving Preview (${width}×${height}):`;
+                binaryGridPreview.style.display = 'block';
+                console.log(`[UI] Binary grid generated: ${width}×${height}`);
+              } catch (err) {
+                console.warn('[UI] Binary grid conversion failed:', err);
+                binaryGridPreview.style.display = 'none';
+              }
             };
             previewImg.src = dataUrl;
           } else {
             imagePreview.style.display = 'none';
+            binaryGridPreview.style.display = 'none';
           }
 
           // Pass file data to onChange
@@ -1414,6 +1525,8 @@ function createFileControl(param, onChange) {
     fileInfo.className = 'file-info';
     clearButton.style.display = 'none';
     imagePreview.style.display = 'none';
+    binaryGridPreview.style.display = 'none';
+    gridContainer.innerHTML = '';
     previewImg.src = '';
     onChange(param.name, null);
   });
@@ -1421,6 +1534,9 @@ function createFileControl(param, onChange) {
   fileContainer.appendChild(fileButton);
   fileContainer.appendChild(fileInfo);
   fileContainer.appendChild(imagePreview);
+  binaryGridPreview.appendChild(gridLabel);
+  binaryGridPreview.appendChild(gridContainer);
+  fileContainer.appendChild(binaryGridPreview);
   fileContainer.appendChild(clearButton);
   fileContainer.appendChild(fileInput);
 

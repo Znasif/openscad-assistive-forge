@@ -80,6 +80,9 @@ export class AutoPreviewController {
     this.fullQualityStats = null;
     this.fullQualityKey = null;
 
+    // Pending logo module for injection into SCAD content
+    this.pendingLogoModule = null;
+
     // Callbacks
     this.onStateChange = options.onStateChange || (() => { });
     this.onPreviewReady = options.onPreviewReady || (() => { });
@@ -88,19 +91,136 @@ export class AutoPreviewController {
   }
 
   /**
-   * Mount file parameters (e.g., uploaded images) to virtual FS before rendering
-   * Also transforms file parameter objects to just filename strings for SCAD
-   * File parameters are objects with { name, data } where data is a base64 data URL
+   * Convert image data URL to a binary grid (2D array of 0s and 1s)
+   * @param {string} dataUrl - Base64 data URL of the image
+   * @param {number} targetSize - Target width/height (aspect ratio preserved)
+   * @param {number} threshold - Brightness threshold (0-255)
+   * @returns {Promise<{grid: number[][], width: number, height: number}>}
+   */
+  async convertToBinaryGrid(dataUrl, targetSize = 100, threshold = 128) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > targetSize || height > targetSize) {
+          if (width > height) {
+            height = Math.round(height * (targetSize / width));
+            width = targetSize;
+          } else {
+            width = Math.round(width * (targetSize / height));
+            height = targetSize;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        const grid = [];
+        for (let y = 0; y < height; y++) {
+          const row = [];
+          for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            const brightness = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            row.push(brightness >= threshold ? 1 : 0);
+          }
+          grid.push(row);
+        }
+
+        resolve({ grid, width, height });
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image for binary conversion'));
+      img.src = dataUrl;
+    });
+  }
+
+  /**
+   * Generate OpenSCAD module code from a binary grid
+   * Creates a union of squares for each "on" pixel
+   * @param {number[][]} grid - 2D binary array (1 = solid, 0 = empty)
+   * @param {boolean} invert - If true, invert the grid (0 becomes solid)
+   * @returns {string} OpenSCAD module code
+   */
+  generateLogoScadModule(grid, invert = false) {
+    const height = grid.length;
+    const width = grid[0].length;
+
+    // Build list of squares
+    const squares = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const isOn = invert ? (grid[y][x] === 0) : (grid[y][x] === 1);
+        if (isOn) {
+          // Flip Y axis (OpenSCAD Y goes up, image Y goes down)
+          const scadY = height - 1 - y;
+          squares.push(`translate([${x}, ${scadY}]) square([1, 1]);`);
+        }
+      }
+    }
+
+    // Generate module with centered geometry
+    // The translate centers the geometry so resize() works correctly
+    const moduleCode = `
+// === GENERATED LOGO MODULE - INJECTED BY JS ===
+// Grid size: ${width}x${height}, pixels: ${squares.length}
+module generated_logo() {
+  translate([-${width}/2, -${height}/2, 0])
+  union() {
+    ${squares.join('\n    ')}
+  }
+}
+// === END GENERATED LOGO MODULE ===`;
+
+    console.log(`[AutoPreview] Generated logo module: ${width}x${height}, ${squares.length} pixels`);
+    return moduleCode;
+  }
+
+  /**
+   * Inject generated logo module into SCAD source code
+   * @param {string} scadContent - Original SCAD source
+   * @param {string} moduleCode - Generated module code
+   * @returns {string} Modified SCAD source with injected module
+   */
+  injectLogoModule(scadContent, moduleCode) {
+    // Find and replace the placeholder module
+    const placeholderRegex = /\/\/ === GENERATED LOGO MODULE[\s\S]*?\/\/ === END GENERATED LOGO MODULE ===/;
+
+    if (placeholderRegex.test(scadContent)) {
+      return scadContent.replace(placeholderRegex, moduleCode.trim());
+    } else {
+      // Fallback: append at the end
+      console.warn('[AutoPreview] Logo placeholder not found, appending module');
+      return scadContent + '\n\n' + moduleCode;
+    }
+  }
+
+  /**
+   * Process file parameters (e.g., uploaded images) for rendering
+   * Converts images to binary grids and generates SCAD geometry for injection
    * @param {Object} parameters - Parameter values
-   * @returns {Promise<Object>} Transformed parameters with file objects replaced by filenames
+   * @returns {Promise<Object>} Transformed parameters (file params removed, logo injected via SCAD)
    */
   async mountFileParameters(parameters) {
     if (!parameters || !this.renderController) return parameters;
 
     const transformed = { ...parameters };
 
+    // Debug: Log all parameters and state
+    console.log('[AutoPreview] mountFileParameters called with:', Object.keys(parameters));
+    console.log('[AutoPreview] exampleBasePath:', this.exampleBasePath);
+    console.log('[AutoPreview] mainFilePath:', this.mainFilePath);
+
     for (const [key, value] of Object.entries(parameters)) {
-      // Check if this is a file parameter (object with data URL)
+      console.log(`[AutoPreview] Checking param ${key}:`, typeof value, value);
+      // Case 1: Uploaded file - object with data URL
       if (
         value &&
         typeof value === 'object' &&
@@ -109,26 +229,64 @@ export class AutoPreviewController {
         value.data.startsWith('data:')
       ) {
         try {
-          // Decode base64 data URL to binary
-          const base64 = value.data.split(',')[1];
-          if (!base64) continue;
+          // Convert image to binary grid
+          const { grid, width, height } = await this.convertToBinaryGrid(value.data, 100);
 
-          const binaryString = atob(base64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
+          // Generate SCAD module and store for injection
+          const invert = parameters.image_invert === true || parameters.image_invert === 'true';
+          this.pendingLogoModule = this.generateLogoScadModule(grid, invert);
 
-          // Mount to /tmp/ directory (where OpenSCAD looks by default)
-          const filePath = `/tmp/${value.name}`;
-          await this.renderController.mountBinaryFile(filePath, bytes);
-          console.log(`[AutoPreview] Mounted file parameter ${key}: ${filePath}`);
+          console.log(`[AutoPreview] Generated logo from upload: ${width}x${height}`);
 
-          // Transform the parameter to just the filename for SCAD
-          // SCAD code will use str("/tmp/", filename) to get the path
-          transformed[key] = value.name;
+          // Remove file parameter from render params (logo is now inline)
+          delete transformed[key];
         } catch (error) {
-          console.warn(`[AutoPreview] Failed to mount file ${key}:`, error);
+          console.warn(`[AutoPreview] Failed to process uploaded file ${key}:`, error);
+        }
+      }
+      // Case 2: String filename for bundled asset - fetch and convert
+      else if (
+        typeof value === 'string' &&
+        value.match(/\.(png|jpg|jpeg|gif)$/i) &&
+        (this.exampleBasePath || this.mainFilePath)
+      ) {
+        try {
+          // Use exampleBasePath if available, otherwise derive from mainFilePath
+          let baseDir;
+          if (this.exampleBasePath) {
+            baseDir = this.exampleBasePath;
+          } else {
+            baseDir = this.mainFilePath.substring(0, this.mainFilePath.lastIndexOf('/'));
+          }
+          const assetUrl = `${baseDir}/${value}`;
+
+          console.log(`[AutoPreview] Fetching bundled asset for ${key}: ${assetUrl}`);
+
+          const response = await fetch(assetUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+
+            try {
+              // Convert to binary grid
+              const { grid, width, height } = await this.convertToBinaryGrid(objectUrl, 100);
+
+              // Generate SCAD module and store for injection
+              const invert = parameters.image_invert === true || parameters.image_invert === 'true';
+              this.pendingLogoModule = this.generateLogoScadModule(grid, invert);
+
+              console.log(`[AutoPreview] Generated logo from bundled asset: ${width}x${height}`);
+
+              // Remove file parameter from render params
+              delete transformed[key];
+            } finally {
+              URL.revokeObjectURL(objectUrl);
+            }
+          } else {
+            console.warn(`[AutoPreview] Bundled asset not found: ${assetUrl} (${response.status})`);
+          }
+        } catch (error) {
+          console.warn(`[AutoPreview] Failed to process bundled asset ${key}:`, error);
         }
       }
     }
@@ -292,6 +450,17 @@ export class AutoPreviewController {
       console.log(
         `[AutoPreview] Multi-file project: ${projectFiles.size} files, main: ${mainFilePath}`
       );
+    }
+  }
+
+  /**
+   * Set the base path for example assets (used for fetching bundled files like images)
+   * @param {string|null} basePath - Path to the example directory (e.g., '/examples/logo-plate')
+   */
+  setExampleBasePath(basePath) {
+    this.exampleBasePath = basePath;
+    if (basePath) {
+      console.log(`[AutoPreview] Example base path set: ${basePath}`);
     }
   }
 
@@ -571,8 +740,15 @@ export class AutoPreviewController {
       // Returns transformed parameters with file objects replaced by filename strings
       const renderParameters = await this.mountFileParameters(previewParameters);
 
+      // Inject generated logo module into SCAD content if available
+      let scadContent = this.currentScadContent;
+      if (this.pendingLogoModule) {
+        scadContent = this.injectLogoModule(scadContent, this.pendingLogoModule);
+        console.log('[AutoPreview] Injected logo module into SCAD');
+      }
+
       const result = await this.renderController.renderPreview(
-        this.currentScadContent,
+        scadContent,
         renderParameters,
         {
           ...(quality ? { quality } : {}),

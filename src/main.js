@@ -4654,6 +4654,12 @@ async function initApp() {
         }
       }
 
+      // Set the example base path for fetching bundled assets (e.g., logo.png)
+      if (autoPreviewController) {
+        const exampleDir = example.path.substring(0, example.path.lastIndexOf('/'));
+        autoPreviewController.setExampleBasePath(exampleDir);
+      }
+
       // Treat as uploaded file
       handleFile({ name: example.name }, content, null, null, 'example');
     } catch (error) {
