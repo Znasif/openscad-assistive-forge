@@ -1815,8 +1815,8 @@ async function initApp() {
     if (deferDownloads) {
       const proceed = confirm(
         'This app requires downloading ~15MB of WebAssembly files.\n\n' +
-          'You appear to be on a metered or slow connection.\n\n' +
-          'Do you want to proceed with the download?'
+        'You appear to be on a metered or slow connection.\n\n' +
+        'Do you want to proceed with the download?'
       );
       if (!proceed) {
         updateStatus('WASM download deferred', 'info');
@@ -1870,9 +1870,9 @@ async function initApp() {
           // Also log to console with helpful context
           console.warn(
             '[Performance] Manifold not detected. Expected speedups:\n' +
-              '- With Manifold: 5-30x faster for complex boolean operations\n' +
-              '- Current: Using slower CGAL/nef backend\n' +
-              'Check that official OpenSCAD WASM is loading from /wasm/openscad-official/'
+            '- With Manifold: 5-30x faster for complex boolean operations\n' +
+            '- Current: Using slower CGAL/nef backend\n' +
+            'Check that official OpenSCAD WASM is loading from /wasm/openscad-official/'
           );
         }
 
@@ -1880,7 +1880,7 @@ async function initApp() {
         if (!capabilities.hasBinarySTL) {
           console.warn(
             '[Performance] Binary STL export may not be supported. ' +
-              'ASCII STL is ~18x slower.'
+            'ASCII STL is ~18x slower.'
           );
         }
       });
@@ -1913,8 +1913,8 @@ async function initApp() {
         const details = error?.details ? ` Details: ${error.details}` : '';
         alert(
           'Failed to initialize OpenSCAD engine. Some features may not work. Error: ' +
-            error.message +
-            details
+          error.message +
+          details
         );
         return false;
       }
@@ -3334,17 +3334,17 @@ async function initApp() {
 
     console.log(
       `[Render Stats] ` +
-        `Time: ${timing.renderMs || 0}ms | ` +
-        `Triangles: ${stats.triangles?.toLocaleString() || 0} | ` +
-        `Size: ${(dataSize / 1024).toFixed(1)}KB | ` +
-        `Format: ${isLikelyBinary ? 'Binary STL ✓' : isLikelyASCII ? 'ASCII STL ⚠️' : 'Unknown'}`
+      `Time: ${timing.renderMs || 0}ms | ` +
+      `Triangles: ${stats.triangles?.toLocaleString() || 0} | ` +
+      `Size: ${(dataSize / 1024).toFixed(1)}KB | ` +
+      `Format: ${isLikelyBinary ? 'Binary STL ✓' : isLikelyASCII ? 'ASCII STL ⚠️' : 'Unknown'}`
     );
 
     // Warn if ASCII STL detected
     if (isLikelyASCII && stats.triangles > 1000) {
       console.warn(
         '[Performance Warning] ASCII STL detected! ' +
-          'Add --export-format=binstl for ~18x faster exports.'
+        'Add --export-format=binstl for ~18x faster exports.'
       );
     }
 
@@ -3352,7 +3352,7 @@ async function initApp() {
     if (!capabilities.hasManifold && timing.renderMs > 5000) {
       console.warn(
         `[Performance Warning] Render took ${timing.renderMs}ms without Manifold. ` +
-          'With Manifold enabled, complex models can be 5-30x faster.'
+        'With Manifold enabled, complex models can be 5-30x faster.'
       );
     }
 
@@ -5402,7 +5402,7 @@ async function initApp() {
     let isFocusMode = false;
     let cameraFocusExitBtn = null;
     // Assigned below; used by the camera focus exit button handler.
-    let toggleFocusMode = () => {};
+    let toggleFocusMode = () => { };
 
     /**
      * Check if we're in mobile portrait mode
@@ -6694,8 +6694,8 @@ async function initApp() {
       presets.length === 0
         ? '<div class="preset-empty">No presets saved for this model</div>'
         : presets
-            .map(
-              (preset) => `
+          .map(
+            (preset) => `
           <div class="preset-item" data-preset-id="${preset.id}">
             <div class="preset-item-info">
               <h4 class="preset-item-name">${preset.name}</h4>
@@ -6717,8 +6717,8 @@ async function initApp() {
             </div>
           </div>
         `
-            )
-            .join('');
+          )
+          .join('');
 
     modal.innerHTML = `
       <div class="preset-modal-content">
@@ -7100,6 +7100,89 @@ async function initApp() {
       }, 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
+    }
+  });
+
+  // Source Viewer Save Button - saves edited content back to state
+  const sourceViewerSave = document.getElementById('sourceViewerSave');
+  sourceViewerSave?.addEventListener('click', async () => {
+    const state = stateManager.getState();
+    const newContent = sourceViewerContent.value;
+
+    if (!state.uploadedFile) {
+      alert('No file to save');
+      return;
+    }
+
+    try {
+      // Update the uploaded file content in state
+      const updatedFile = {
+        ...state.uploadedFile,
+        content: newContent,
+      };
+
+      // Update state with new content
+      stateManager.setState({
+        uploadedFile: updatedFile,
+      });
+
+      // Re-extract parameters from the modified source
+      const { extractParameters } = await import('./js/parser.js');
+      const extracted = extractParameters(newContent);
+
+      // Update parameters in state
+      stateManager.setState({
+        extractedParameters: extracted,
+        parameterValues: Object.fromEntries(
+          Object.entries(extracted.parameters).map(([name, param]) => [
+            name,
+            param.default,
+          ])
+        ),
+      });
+
+      // Update parameter UI with correct signature: (extracted, container, onChange)
+      const parametersContainer = document.getElementById('parametersContainer');
+      const newValues = renderParameterUI(
+        extracted,
+        parametersContainer,
+        (values) => {
+          // Record state for undo before applying change
+          stateManager.recordParameterState();
+          stateManager.setState({ parameters: values });
+          // Trigger auto-preview on parameter change
+          if (autoPreviewController) {
+            autoPreviewController.onParameterChange(values);
+          }
+        }
+      );
+
+      // Update the file info display
+      const lineCount = newContent.split('\n').length;
+      const charCount = newContent.length;
+      sourceViewerInfo.innerHTML = `
+        <span>📄 ${updatedFile.name}</span>
+        <span>📏 ${lineCount.toLocaleString()} lines</span>
+        <span>📊 ${charCount.toLocaleString()} characters</span>
+        <span style="color: var(--color-success);">✓ Saved</span>
+      `;
+
+      // Trigger preview update
+      if (autoPreviewController) {
+        autoPreviewController.setScadContent(newContent);
+        autoPreviewController.onParameterChange(newValues);
+      }
+
+      // Visual feedback on button
+      sourceViewerSave.textContent = '✅ Saved!';
+      updateStatus('Source code saved and parameters updated');
+      setTimeout(() => {
+        sourceViewerSave.textContent = '💾 Save';
+      }, 2000);
+
+    } catch (error) {
+      console.error('Failed to save source:', error);
+      alert('Failed to save: ' + error.message);
     }
   });
 

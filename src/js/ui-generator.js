@@ -1071,18 +1071,44 @@ function createSelectControl(param, onChange) {
   select.id = `param-${param.name}`;
   select.setAttribute('aria-label', `Select ${formatParamName(param.name)}`);
 
-  param.enum.forEach((value) => {
+  param.enum.forEach((enumItem) => {
     const option = document.createElement('option');
+
+    // Handle OpenSCAD labeled enum format: "value:label"
+    // e.g., "0:Assembly" -> value=0, label="Assembly"
+    const colonIdx = enumItem.indexOf(':');
+    let value, displayLabel;
+
+    if (colonIdx !== -1) {
+      // Labeled enum: "0:Assembly" -> value="0", label="Assembly"
+      value = enumItem.substring(0, colonIdx).trim();
+      displayLabel = enumItem.substring(colonIdx + 1).trim();
+    } else {
+      // Plain enum: use the whole string for both
+      value = enumItem;
+      displayLabel = enumItem;
+    }
+
     option.value = value;
-    option.textContent = value;
-    if (value === param.default) {
+    option.textContent = displayLabel;
+
+    // For default comparison, check both the full string and extracted value
+    if (enumItem === param.default || value === String(param.default)) {
       option.selected = true;
     }
     select.appendChild(option);
   });
 
   select.addEventListener('change', (e) => {
-    onChange(param.name, e.target.value);
+    let selectedValue = e.target.value;
+
+    // Convert numeric strings to numbers for OpenSCAD compatibility
+    // e.g., "1" -> 1, "2.5" -> 2.5
+    if (!isNaN(selectedValue) && selectedValue.trim() !== '') {
+      selectedValue = Number(selectedValue);
+    }
+
+    onChange(param.name, selectedValue);
   });
 
   container.appendChild(select);

@@ -1292,8 +1292,11 @@
       <div class="modal-overlay" id="sourceViewerOverlay"></div>
       <div class="modal-content modal-large modal-source">
         <div class="modal-header">
-          <h2 id="sourceViewerTitle">OpenSCAD Source</h2>
+          <h2 id="sourceViewerTitle">OpenSCAD Source (Editable)</h2>
           <div class="source-viewer-actions">
+            <button class="btn btn-sm btn-primary" id="sourceViewerSave" aria-label="Save source code changes">
+              💾 Save
+            </button>
             <button class="btn btn-sm btn-outline" id="sourceViewerCopy" aria-label="Copy source code">
               📋 Copy
             </button>
@@ -1306,7 +1309,7 @@
           </div>
         </div>
         <div class="modal-body source-viewer-body">
-          <textarea id="sourceViewerContent" class="source-viewer-textarea" readonly aria-label="OpenSCAD source code" spellcheck="false"></textarea>
+          <textarea id="sourceViewerContent" class="source-viewer-textarea" aria-label="OpenSCAD source code (editable)" spellcheck="false"></textarea>
           <div class="source-viewer-info" id="sourceViewerInfo">
             <!-- File info will be displayed here -->
           </div>
