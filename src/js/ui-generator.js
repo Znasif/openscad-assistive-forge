@@ -1306,6 +1306,20 @@ function createFileControl(param, onChange) {
   fileInfo.setAttribute('role', 'status');
   fileInfo.setAttribute('aria-live', 'polite');
 
+  // Image preview element
+  const imagePreview = document.createElement('div');
+  imagePreview.className = 'file-image-preview';
+  imagePreview.style.display = 'none';
+
+  const previewImg = document.createElement('img');
+  previewImg.className = 'file-preview-thumbnail';
+  previewImg.alt = 'Preview';
+  imagePreview.appendChild(previewImg);
+
+  const previewInfo = document.createElement('span');
+  previewInfo.className = 'file-preview-info';
+  imagePreview.appendChild(previewInfo);
+
   const clearButton = document.createElement('button');
   clearButton.type = 'button';
   clearButton.className = 'file-clear-button';
@@ -1335,6 +1349,17 @@ function createFileControl(param, onChange) {
           fileInfo.title = file.name;
           clearButton.style.display = 'inline-block';
 
+          // Show image preview for image files
+          if (file.type.startsWith('image/')) {
+            previewImg.onload = () => {
+              previewInfo.textContent = `${previewImg.naturalWidth}×${previewImg.naturalHeight}px`;
+              imagePreview.style.display = 'flex';
+            };
+            previewImg.src = dataUrl;
+          } else {
+            imagePreview.style.display = 'none';
+          }
+
           // Pass file data to onChange
           onChange(param.name, {
             name: file.name,
@@ -1362,11 +1387,14 @@ function createFileControl(param, onChange) {
     fileInfo.textContent = 'No file selected';
     fileInfo.className = 'file-info';
     clearButton.style.display = 'none';
+    imagePreview.style.display = 'none';
+    previewImg.src = '';
     onChange(param.name, null);
   });
 
   fileContainer.appendChild(fileButton);
   fileContainer.appendChild(fileInfo);
+  fileContainer.appendChild(imagePreview);
   fileContainer.appendChild(clearButton);
   fileContainer.appendChild(fileInput);
 

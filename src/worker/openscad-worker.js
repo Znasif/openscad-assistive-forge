@@ -764,6 +764,50 @@ function clearMountedFiles() {
 }
 
 /**
+ * Mount a binary file (e.g., PNG image) into OpenSCAD virtual filesystem
+ * @param {string} filePath - Path where file should be mounted (e.g., '/tmp/logo.png')
+ * @param {Uint8Array|ArrayBuffer} data - Binary file data
+ * @returns {Promise<void>}
+ */
+async function mountBinaryFile(filePath, data) {
+  const module = await ensureOpenSCADModule();
+  if (!module || !module.FS) {
+    throw new Error('OpenSCAD filesystem not available');
+  }
+
+  const FS = module.FS;
+
+  // Convert ArrayBuffer to Uint8Array if needed
+  const uint8Data = data instanceof Uint8Array ? data : new Uint8Array(data);
+
+  // Create directory structure if needed
+  const parts = filePath.split('/');
+  let currentPath = '';
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (parts[i]) {
+      currentPath = currentPath ? `${currentPath}/${parts[i]}` : `/${parts[i]}`;
+      try {
+        FS.mkdir(currentPath);
+      } catch (error) {
+        if (error.code !== 'EEXIST') {
+          // Directory may already exist, ignore
+        }
+      }
+    }
+  }
+
+  // Write the binary file
+  try {
+    FS.writeFile(filePath, uint8Data);
+    mountedFiles.set(filePath, uint8Data);
+    console.log(`[Worker FS] Mounted binary file: ${filePath} (${uint8Data.length} bytes)`);
+  } catch (error) {
+    console.error(`[Worker FS] Failed to mount binary file ${filePath}:`, error);
+    throw new Error(`Failed to mount binary file: ${filePath}`);
+  }
+}
+
+/**
  * Mount library files from public/libraries/ into virtual filesystem
  * @param {Array<{id: string, path: string}>} libraries - Array of library configurations
  * @returns {Promise<void>}
@@ -1907,7 +1951,31 @@ self.onmessage = async (e) => {
       });
       break;
 
+    case 'MOUNT_BINARY_FILE':
+      try {
+        if (!initialized) {
+          throw new Error('Worker not initialized');
+        }
+        const { path, data } = payload;
+        await mountBinaryFile(path, data);
+        self.postMessage({
+          type: 'BINARY_FILE_MOUNTED',
+          payload: { success: true, path },
+        });
+      } catch (error) {
+        self.postMessage({
+          type: 'ERROR',
+          payload: {
+            requestId: 'mount-binary',
+            code: 'BINARY_MOUNT_FAILED',
+            message: 'Failed to mount binary file: ' + error.message,
+          },
+        });
+      }
+      break;
+
     default:
       console.warn('[Worker] Unknown message type:', type);
   }
+
 };

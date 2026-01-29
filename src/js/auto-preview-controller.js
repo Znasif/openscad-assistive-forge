@@ -81,10 +81,59 @@ export class AutoPreviewController {
     this.fullQualityKey = null;
 
     // Callbacks
-    this.onStateChange = options.onStateChange || (() => {});
-    this.onPreviewReady = options.onPreviewReady || (() => {});
-    this.onProgress = options.onProgress || (() => {});
-    this.onError = options.onError || (() => {});
+    this.onStateChange = options.onStateChange || (() => { });
+    this.onPreviewReady = options.onPreviewReady || (() => { });
+    this.onProgress = options.onProgress || (() => { });
+    this.onError = options.onError || (() => { });
+  }
+
+  /**
+   * Mount file parameters (e.g., uploaded images) to virtual FS before rendering
+   * Also transforms file parameter objects to just filename strings for SCAD
+   * File parameters are objects with { name, data } where data is a base64 data URL
+   * @param {Object} parameters - Parameter values
+   * @returns {Promise<Object>} Transformed parameters with file objects replaced by filenames
+   */
+  async mountFileParameters(parameters) {
+    if (!parameters || !this.renderController) return parameters;
+
+    const transformed = { ...parameters };
+
+    for (const [key, value] of Object.entries(parameters)) {
+      // Check if this is a file parameter (object with data URL)
+      if (
+        value &&
+        typeof value === 'object' &&
+        value.data &&
+        typeof value.data === 'string' &&
+        value.data.startsWith('data:')
+      ) {
+        try {
+          // Decode base64 data URL to binary
+          const base64 = value.data.split(',')[1];
+          if (!base64) continue;
+
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          // Mount to /tmp/ directory (where OpenSCAD looks by default)
+          const filePath = `/tmp/${value.name}`;
+          await this.renderController.mountBinaryFile(filePath, bytes);
+          console.log(`[AutoPreview] Mounted file parameter ${key}: ${filePath}`);
+
+          // Transform the parameter to just the filename for SCAD
+          // SCAD code will use str("/tmp/", filename) to get the path
+          transformed[key] = value.name;
+        } catch (error) {
+          console.warn(`[AutoPreview] Failed to mount file ${key}:`, error);
+        }
+      }
+    }
+
+    return transformed;
   }
 
   /**
@@ -517,9 +566,14 @@ export class AutoPreviewController {
     let renderFailed = false;
     try {
       const startTime = Date.now();
+
+      // Mount any file parameters (e.g., uploaded images) to virtual FS before rendering
+      // Returns transformed parameters with file objects replaced by filename strings
+      const renderParameters = await this.mountFileParameters(previewParameters);
+
       const result = await this.renderController.renderPreview(
         this.currentScadContent,
-        previewParameters,
+        renderParameters,
         {
           ...(quality ? { quality } : {}),
           files: this.projectFiles,
@@ -574,9 +628,9 @@ export class AutoPreviewController {
           : 0;
       console.log(
         `[Preview Performance] ${qualityKey} | ` +
-          `${timing.renderMs}ms | ` +
-          `${result.stats?.triangles || 0} triangles | ` +
-          `${bytesPerTri < 80 ? 'Binary STL ✓' : bytesPerTri > 100 ? 'ASCII STL ⚠️' : 'Unknown'}`
+        `${timing.renderMs}ms | ` +
+        `${result.stats?.triangles || 0} triangles | ` +
+        `${bytesPerTri < 80 ? 'Binary STL ✓' : bytesPerTri > 100 ? 'ASCII STL ⚠️' : 'Unknown'}`
       );
 
       this.setState(PREVIEW_STATE.CURRENT, {
@@ -706,10 +760,14 @@ export class AutoPreviewController {
       };
     }
 
+    // Mount any file parameters (e.g., uploaded images) to virtual FS before rendering
+    // Returns transformed parameters with file objects replaced by filename strings
+    const renderParameters = await this.mountFileParameters(parameters);
+
     // Perform full render
     const result = await this.renderController.renderFull(
       this.currentScadContent,
-      parameters,
+      renderParameters,
       {
         files: this.projectFiles,
         mainFile: this.mainFilePath,

@@ -500,8 +500,8 @@ export class RenderController {
 
         console.log(
           `[RenderController] Worker ready (WASM init: ${this.wasmInitDurationMs}ms, ` +
-            `Manifold: ${this.capabilities.hasManifold}, ` +
-            `fast-csg: ${this.capabilities.hasFastCSG})`
+          `Manifold: ${this.capabilities.hasManifold}, ` +
+          `fast-csg: ${this.capabilities.hasFastCSG})`
         );
 
         // Emit capability event for UI to handle
@@ -894,7 +894,7 @@ export class RenderController {
     };
 
     const queued = this.renderQueue.then(run, run);
-    this.renderQueue = queued.catch(() => {});
+    this.renderQueue = queued.catch(() => { });
     return queued;
   }
 
@@ -945,6 +945,51 @@ export class RenderController {
       reject(new Error('Render cancelled'));
       this.currentRequest = null;
     }
+  }
+
+  /**
+   * Mount a binary file (e.g., PNG image) into the worker's virtual filesystem
+   * This is used for image files that SCAD code references via surface()
+   * @param {string} path - Virtual filesystem path (e.g., '/tmp/logo.png')
+   * @param {ArrayBuffer|Uint8Array} data - Binary file data
+   * @returns {Promise<boolean>} True if mounted successfully
+   */
+  async mountBinaryFile(path, data) {
+    if (!this.ready || !this.worker) {
+      throw new Error('Worker not ready. Call init() first.');
+    }
+
+    return new Promise((resolve, reject) => {
+      // Set up one-time handler for mount response
+      const handler = (e) => {
+        const { type, payload } = e.data;
+        if (type === 'BINARY_FILE_MOUNTED' && payload.path === path) {
+          this.worker.removeEventListener('message', handler);
+          resolve(payload.success);
+        } else if (type === 'ERROR' && payload.requestId === 'mount-binary') {
+          this.worker.removeEventListener('message', handler);
+          reject(new Error(payload.message));
+        }
+      };
+
+      this.worker.addEventListener('message', handler);
+
+      // Transfer the ArrayBuffer for efficiency
+      const transferable = data instanceof ArrayBuffer ? [data] : [];
+      this.worker.postMessage(
+        {
+          type: 'MOUNT_BINARY_FILE',
+          payload: { path, data },
+        },
+        transferable
+      );
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        this.worker.removeEventListener('message', handler);
+        reject(new Error('Timeout mounting binary file'));
+      }, 10000);
+    });
   }
 
   /**

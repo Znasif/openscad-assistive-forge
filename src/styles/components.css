@@ -3164,6 +3164,32 @@ body.first-visit-blocking #app {
   transform: translateY(1px);
 }
 
+/* Image Preview in File Upload */
+.file-image-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--space-xs);
+}
+
+.file-preview-thumbnail {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: var(--border-radius-sm);
+  background: repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 8px 8px;
+}
+
+.file-preview-info {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+}
+
 /* High Contrast Mode */
 [data-high-contrast='true'] .file-upload-button {
   border: 2px solid currentColor;
