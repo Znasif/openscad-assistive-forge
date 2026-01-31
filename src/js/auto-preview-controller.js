@@ -940,9 +940,16 @@ module generated_logo() {
     // Returns transformed parameters with file objects replaced by filename strings
     const renderParameters = await this.mountFileParameters(parameters);
 
+    // Inject generated logo module into SCAD content if available
+    let scadContent = this.currentScadContent;
+    if (this.pendingLogoModule) {
+      scadContent = this.injectLogoModule(scadContent, this.pendingLogoModule);
+      console.log('[AutoPreview] Injected logo module into SCAD for full render');
+    }
+
     // Perform full render
     const result = await this.renderController.renderFull(
-      this.currentScadContent,
+      scadContent,
       renderParameters,
       {
         files: this.projectFiles,
@@ -954,6 +961,7 @@ module generated_logo() {
         },
       }
     );
+
 
     // Store for reuse
     this.fullQualitySTL = result.stl;

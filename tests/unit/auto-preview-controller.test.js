@@ -38,7 +38,7 @@ describe('AutoPreviewController', () => {
   describe('Constructor', () => {
     it('initializes with default options', () => {
       const ctrl = new AutoPreviewController(renderController, previewManager)
-      
+
       // MANIFOLD OPTIMIZED: Default debounceMs reduced from 1500 to 800
       expect(ctrl.debounceMs).toBe(800)
       expect(ctrl.maxCacheSize).toBe(10)
@@ -52,7 +52,7 @@ describe('AutoPreviewController', () => {
         maxCacheSize: 5,
         enabled: false
       })
-      
+
       expect(ctrl.debounceMs).toBe(500)
       expect(ctrl.maxCacheSize).toBe(5)
       expect(ctrl.enabled).toBe(false)
@@ -63,14 +63,14 @@ describe('AutoPreviewController', () => {
       const onPreviewReady = vi.fn()
       const onProgress = vi.fn()
       const onError = vi.fn()
-      
+
       const ctrl = new AutoPreviewController(renderController, previewManager, {
         onStateChange,
         onPreviewReady,
         onProgress,
         onError
       })
-      
+
       expect(ctrl.onStateChange).toBe(onStateChange)
       expect(ctrl.onPreviewReady).toBe(onPreviewReady)
       expect(ctrl.onProgress).toBe(onProgress)
@@ -162,7 +162,7 @@ describe('AutoPreviewController', () => {
   describe('Enable/Disable', () => {
     it('clears debounce timer when disabling auto-preview', () => {
       vi.useFakeTimers()
-      controller.debounceTimer = setTimeout(() => {}, 1000)
+      controller.debounceTimer = setTimeout(() => { }, 1000)
       controller.setEnabled(false)
       expect(controller.debounceTimer).toBeNull()
     })
@@ -170,7 +170,7 @@ describe('AutoPreviewController', () => {
     it('sets enabled flag', () => {
       controller.setEnabled(false)
       expect(controller.enabled).toBe(false)
-      
+
       controller.setEnabled(true)
       expect(controller.enabled).toBe(true)
     })
@@ -212,9 +212,9 @@ describe('AutoPreviewController', () => {
     it('returns early when no SCAD content', () => {
       controller.currentScadContent = null
       const stateSpy = vi.spyOn(controller, 'setState')
-      
+
       controller.onParameterChange({ width: 20 })
-      
+
       expect(stateSpy).not.toHaveBeenCalled()
     })
 
@@ -229,9 +229,9 @@ describe('AutoPreviewController', () => {
       controller.currentPreviewKey = cacheKey
       controller.state = PREVIEW_STATE.CURRENT
       const stateSpy = vi.spyOn(controller, 'setState')
-      
+
       controller.onParameterChange(params)
-      
+
       expect(stateSpy).not.toHaveBeenCalled()
     })
 
@@ -241,21 +241,21 @@ describe('AutoPreviewController', () => {
       // Use compound cache key: paramHash|qualityKey (default qualityKey is 'model' when no quality set)
       const cacheKey = `${hash}|model`
       controller.previewCache.set(cacheKey, { stl: new ArrayBuffer(4), stats: {}, timestamp: Date.now() })
-      
+
       const loadCachedSpy = vi.spyOn(controller, 'loadCachedPreview').mockResolvedValue()
-      
+
       controller.onParameterChange(params)
-      
+
       expect(loadCachedSpy).toHaveBeenCalledWith(hash, cacheKey, 'model')
     })
 
     it('clears existing debounce timer when busy', () => {
       vi.useFakeTimers()
-      controller.debounceTimer = setTimeout(() => {}, 1000)
+      controller.debounceTimer = setTimeout(() => { }, 1000)
       renderController.isBusy.mockReturnValue(true)
-      
+
       controller.onParameterChange({ width: 20 })
-      
+
       expect(controller.debounceTimer).toBeNull()
     })
 
@@ -263,9 +263,9 @@ describe('AutoPreviewController', () => {
       controller.enabled = false
       controller.previewParamHash = null
       controller.previewCacheKey = null
-      
+
       controller.onParameterChange({ width: 20 })
-      
+
       // When auto-preview disabled (not complexity pause), state should be IDLE if no cached preview
       expect(controller.state).toBe(PREVIEW_STATE.IDLE)
     })
@@ -318,7 +318,7 @@ describe('AutoPreviewController', () => {
       const hash = 'nonexistent'
       const cacheKey = `${hash}|model`
       await controller.loadCachedPreview(hash, cacheKey, 'model')
-      
+
       expect(previewManager.loadSTL).not.toHaveBeenCalled()
     })
 
@@ -330,24 +330,24 @@ describe('AutoPreviewController', () => {
       const cacheKey = `${hash}|${qualityKey}`
       controller.previewCache.set(cacheKey, { stl: new ArrayBuffer(4), stats: {}, timestamp: Date.now() })
       previewManager.loadSTL.mockRejectedValueOnce(new Error('Load failed'))
-      
+
       const renderSpy = vi.spyOn(controller, 'renderPreview').mockResolvedValue()
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+
       await controller.loadCachedPreview(hash, cacheKey, qualityKey)
-      
+
       expect(controller.previewCache.has(cacheKey)).toBe(false)
       expect(renderSpy).toHaveBeenCalled()
-      
+
       consoleSpy.mockRestore()
     })
 
     it('clears preview cache', () => {
       controller.previewCache.set('hash1', { stl: new ArrayBuffer(1), stats: {}, timestamp: Date.now() })
       controller.previewCache.set('hash2', { stl: new ArrayBuffer(2), stats: {}, timestamp: Date.now() })
-      
+
       controller.clearPreviewCache()
-      
+
       expect(controller.previewCache.size).toBe(0)
     })
 
@@ -357,9 +357,9 @@ describe('AutoPreviewController', () => {
       controller.fullQualityStats = { triangles: 10 }
       controller.fullRenderParamHash = 'hash'
       controller.previewParamHash = 'hash'
-      
+
       controller.clearCache()
-      
+
       expect(controller.previewCache.size).toBe(0)
       expect(controller.fullQualitySTL).toBeNull()
       expect(controller.fullQualityStats).toBeNull()
@@ -385,17 +385,17 @@ describe('AutoPreviewController', () => {
 
     it('increments scad version on new content', () => {
       const initialVersion = controller.scadVersion
-      
+
       controller.setScadContent('new content')
-      
+
       expect(controller.scadVersion).toBe(initialVersion + 1)
     })
 
     it('cancels pending work on new content', () => {
       const cancelSpy = vi.spyOn(controller, 'cancelPending')
-      
+
       controller.setScadContent('new content')
-      
+
       expect(cancelSpy).toHaveBeenCalled()
     })
   })
@@ -403,16 +403,16 @@ describe('AutoPreviewController', () => {
   describe('Project Files', () => {
     it('sets project files and main file path', () => {
       const files = new Map([['main.scad', 'cube(10);']])
-      
+
       controller.setProjectFiles(files, 'main.scad')
-      
+
       expect(controller.projectFiles).toBe(files)
       expect(controller.mainFilePath).toBe('main.scad')
     })
 
     it('handles null project files', () => {
       controller.setProjectFiles(null, null)
-      
+
       expect(controller.projectFiles).toBeNull()
       expect(controller.mainFilePath).toBeNull()
     })
@@ -421,9 +421,9 @@ describe('AutoPreviewController', () => {
   describe('Preview Quality', () => {
     it('sets preview quality and clears cache', () => {
       controller.previewCache.set('hash', { stl: new ArrayBuffer(1), stats: {}, timestamp: Date.now() })
-      
+
       controller.setPreviewQuality({ $fn: 20 })
-      
+
       expect(controller.previewQuality).toEqual({ $fn: 20 })
       expect(controller.previewCache.size).toBe(0)
     })
@@ -432,9 +432,9 @@ describe('AutoPreviewController', () => {
       // The controller sets state to stale when currentPreviewKey exists
       controller.currentPreviewKey = 'hash|model'
       controller.state = PREVIEW_STATE.CURRENT
-      
+
       controller.setPreviewQuality({ $fn: 20 })
-      
+
       expect(controller.state).toBe(PREVIEW_STATE.STALE)
     })
   })
@@ -442,15 +442,15 @@ describe('AutoPreviewController', () => {
   describe('Libraries', () => {
     it('sets enabled libraries', () => {
       const libraries = [{ id: 'BOSL2', path: '/libraries/BOSL2' }]
-      
+
       controller.setEnabledLibraries(libraries)
-      
+
       expect(controller.enabledLibraries).toEqual(libraries)
     })
 
     it('handles null libraries', () => {
       controller.setEnabledLibraries(null)
-      
+
       expect(controller.enabledLibraries).toEqual([])
     })
   })
@@ -459,9 +459,9 @@ describe('AutoPreviewController', () => {
     it('sets state and calls callback', () => {
       const onStateChange = vi.fn()
       controller.onStateChange = onStateChange
-      
+
       controller.setState(PREVIEW_STATE.RENDERING, { extra: 'data' })
-      
+
       expect(controller.state).toBe(PREVIEW_STATE.RENDERING)
       expect(onStateChange).toHaveBeenCalledWith(PREVIEW_STATE.RENDERING, PREVIEW_STATE.IDLE, { extra: 'data' })
     })
@@ -470,19 +470,19 @@ describe('AutoPreviewController', () => {
   describe('Color Param Names', () => {
     it('sets color param names', () => {
       controller.setColorParamNames(['color1', 'color2'])
-      
+
       expect(controller.colorParamNames).toEqual(['color1', 'color2'])
     })
 
     it('filters out falsy values', () => {
       controller.setColorParamNames(['color1', null, '', 'color2', undefined])
-      
+
       expect(controller.colorParamNames).toEqual(['color1', 'color2'])
     })
 
     it('handles non-array input', () => {
       controller.setColorParamNames('not an array')
-      
+
       expect(controller.colorParamNames).toEqual([])
     })
   })
@@ -490,10 +490,10 @@ describe('AutoPreviewController', () => {
   describe('Cancel Pending', () => {
     it('clears debounce timer', () => {
       vi.useFakeTimers()
-      controller.debounceTimer = setTimeout(() => {}, 1000)
-      
+      controller.debounceTimer = setTimeout(() => { }, 1000)
+
       controller.cancelPending()
-      
+
       expect(controller.debounceTimer).toBeNull()
     })
 
@@ -501,7 +501,7 @@ describe('AutoPreviewController', () => {
       // cancelPending() only clears debounce timers and pending parameters
       // It does NOT cancel in-progress renders (OpenSCAD WASM is blocking)
       controller.cancelPending()
-      
+
       expect(renderController.cancel).not.toHaveBeenCalled()
     })
   })
@@ -513,9 +513,9 @@ describe('AutoPreviewController', () => {
       controller.fullRenderParamHash = hash
       controller.fullQualitySTL = new ArrayBuffer(8)
       controller.fullQualityStats = { triangles: 10 }
-      
+
       const result = controller.getCurrentFullSTL(params)
-      
+
       expect(result).toEqual({
         stl: controller.fullQualitySTL,
         stats: controller.fullQualityStats
@@ -525,18 +525,54 @@ describe('AutoPreviewController', () => {
     it('returns null when hash does not match', () => {
       controller.fullRenderParamHash = 'different'
       controller.fullQualitySTL = new ArrayBuffer(8)
-      
+
       const result = controller.getCurrentFullSTL({ width: 20 })
-      
+
       expect(result).toBeNull()
     })
 
     it('returns null when no full STL exists', () => {
       controller.fullQualitySTL = null
-      
+
       const result = controller.getCurrentFullSTL({ width: 20 })
-      
+
       expect(result).toBeNull()
+    })
+  })
+
+  describe('renderFull', () => {
+    it('injects pending logo module into SCAD content', async () => {
+      renderController.renderFull = vi.fn().mockResolvedValue({
+        stl: new ArrayBuffer(8),
+        stats: { triangles: 12 }
+      })
+
+      controller.pendingLogoModule = 'module generated_logo() { square([1,1]); }'
+
+      await controller.renderFull({ width: 20 })
+
+      expect(renderController.renderFull).toHaveBeenCalledWith(
+        expect.stringContaining('module generated_logo()'),
+        expect.any(Object),
+        expect.any(Object)
+      )
+    })
+
+    it('uses original SCAD content when no logo module pending', async () => {
+      renderController.renderFull = vi.fn().mockResolvedValue({
+        stl: new ArrayBuffer(8),
+        stats: { triangles: 12 }
+      })
+
+      controller.pendingLogoModule = null
+
+      await controller.renderFull({ width: 20 })
+
+      expect(renderController.renderFull).toHaveBeenCalledWith(
+        'cube(10);',
+        expect.any(Object),
+        expect.any(Object)
+      )
     })
   })
 })
